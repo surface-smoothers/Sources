@@ -42,6 +42,8 @@ PROCEDURES:
  sep(f,k);         the separabel part of f as polynomial in Fp(t1,...,tm)
 ";
 
+//not fixed for unit ideal input: equiRadical equidim equidimMax equidimMaxEHV zerodec minAssChar
+
 LIB "general.lib";
 LIB "elim.lib";
 LIB "poly.lib";
@@ -51,6 +53,7 @@ LIB "matrix.lib";
 LIB "triang.lib";
 LIB "absfact.lib";
 LIB "ring.lib";
+LIB "wrappers.lib";
 ///////////////////////////////////////////////////////////////////////////////
 //
 //                      Gianni/Trager/Zacharias
@@ -2029,6 +2032,7 @@ EXAMPLE: example minAssPrimes; shows an example
 "
 {
   if(size(i) == 0){return(list(ideal(0)));}
+  if (idealsAreEqual(i, ideal(1)) ) {return( list() ); }
   string algorithm;    // Algorithm to be used
   string facstdOption;    // To uses proc facstd
   int j;          // Counter
@@ -2324,6 +2328,7 @@ EXAMPLE:example equidim; shows an example
       "// Not implemented for this ordering, please change to global ordering."
       );
   }
+ 
   intvec op ;
   def  P = basering;
   list eq;
@@ -2331,6 +2336,25 @@ EXAMPLE:example equidim; shows an example
   int n,m;
   int g=size(i);
   int a=attrib(i,"isSB");
+  /*
+  dbprint(printlevel-voice,"bsering, basering",basering);
+  dbprint(printlevel-voice,"bsering, typeof(basering)",typeof(basering));
+  dbprint(printlevel-voice,"bsering, ringlist(basering)",ringlist(basering) ); 
+  dbprint(printlevel-voice,"bsering, attrib(basering)",attrib(basering));
+  dbprint(printlevel-voice,"bsering, attrib(basering,global)",attrib(basering,"global"));
+  dbprint(printlevel-voice,"equidim, i",i);
+  dbprint(printlevel-voice,"bsering, attrib(i)",attrib(i));
+  dbprint(printlevel-voice,"equidim, size(i)",size(i) );
+  dbprint(printlevel-voice,"equidim, string(i)",string(i) );
+  def Path = attrib(basering,"Path");
+  dbprint(printlevel-voice,"equidim, Path",Path);
+  dbprint(printlevel-voice,"equidim, string(Path)",string(Path));
+  dbprint(printlevel-voice,"equidim, minpoly",minpoly);
+  dbprint(printlevel-voice,"equidim, list #",#);
+  ideal j = i;
+  int homoj=homog(j);
+  dbprint(printlevel-voice,"equidim, homog(j)",homoj);
+  */
   int homo=homog(i);
   if(size(#)!=0)
   {
@@ -2703,7 +2727,6 @@ EXAMPLE: example decomp; shows an example
   ideal peek=i;
   ideal ser,tras;
   int isS=(attrib(i,"isSB")==1);
-
 
   if(size(#)>0)
   {
@@ -5136,6 +5159,7 @@ EXAMPLE: example primdecGTZ; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       ideal i=imap(r,i);
+      if (idealsAreEqual(i,ideal(1))) {return(list());}
 // decompose and go back
       list li=primdecGTZ(i);
       setring r;
@@ -5162,6 +5186,7 @@ EXAMPLE: example primdecGTZ; shows an example
       "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
       );
    }
+  if (idealsAreEqual(i,ideal(1))) {return(list());}
   return(convList(decomp(i)));
 }
 example
@@ -5220,6 +5245,7 @@ EXAMPLE: example absPrimdecGTZ; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       def I=imap(r,I);
+      if (idealsAreEqual(I,ideal(1)) ) {return(list());}
       def S=absPrimdecGTZ(I);
       setring S;
       ring r1=char(basering),var(nvars(r)+1),dp;
@@ -5257,6 +5283,7 @@ EXAMPLE: example absPrimdecGTZ; shows an example
       export(absolute_primes);
       return(rS);
   }
+  if (idealsAreEqual(I,ideal(1)) ) {return(list());}
   if(minpoly!=0)
   {
     //return(algeDeco(i,0));
@@ -5380,6 +5407,7 @@ EXAMPLE: example primdecSY; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       ideal i=imap(r,i);
+      if (idealsAreEqual(i,ideal(1))) { return( list() ); }
 // decompose and go back
       list li=primdecSY(i);
       setring r;
@@ -5399,6 +5427,8 @@ EXAMPLE: example primdecSY; shows an example
       return(li);
    }
    i=simplify(i,2);
+   if (idealsAreEqual(i,ideal(1))) { return( list() ); }
+
    if ((i[1]==0)||(i[1]==1))
    {
      list L=list(ideal(i[1]),ideal(i[1]));
