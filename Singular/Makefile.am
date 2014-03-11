@@ -160,7 +160,9 @@ SingularHEADERS = \
 # plural_cmd.inc
 nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc 
 
-libSingular_la_LDFLAGS    = ${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION}
+# -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc
+
+libSingular_la_LDFLAGS    = ${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION} -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc
 libSingular_la_LIBADD      = ${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} ${EMBED_PYOBJECT} ${top_builddir}/kernel/libkernel.la
 
 libSingular_includedir = ${includedir}/singular/Singular

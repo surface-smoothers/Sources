@@ -2,14 +2,20 @@ ACLOCAL_AMFLAGS = -I ../m4
 
 SUBDIRS=include/factory libfac
 
-AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include $(FLINT_CFLAGS) $(GMP_CFLAGS) $(NTL_CFLAGS) $(OMALLOC_CFLAGS) 
+#-I${srcdir} -I${srcdir}/.. -I${includedir}
 
-lib_LTLIBRARIES = libfactory.la
+AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include -I${srcdir} -I${srcdir}/.. -I${includedir}  $(FLINT_CFLAGS) $(GMP_CFLAGS) $(NTL_CFLAGS) $(OMALLOC_CFLAGS) 
 
-libfactory_la_LIBADD     = ${builddir}/libfac/libfac.la \
+lib_LTLIBRARIES = libfactory.la 
+
+#${builddir}/../resources/libresources.la
+
+libfactory_la_LIBADD     = ${builddir}/libfac/libfac.la   -L$(builddir)/../resources/.libs/ -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc \
 $(OMALLOC_LDFLAGS) $(OMALLOC_R_LDADD) $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
 
-libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION}
+# -L$(builddir)/../resources/.libs/ -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc
+
+libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION} 
 
 # factory source files
 SOURCES = \
