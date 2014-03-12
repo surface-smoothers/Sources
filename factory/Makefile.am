@@ -12,6 +12,8 @@ $(RESOURCES_LDFLAGS) $(OMALLOC_LDFLAGS) $(OMALLOC_R_LDADD) $(FLINT_LIBS) $(GMP_L
 libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION}
 
 
+
+
 # to exclude files in documentation itself from processing it is neccesary to divide the path into 2 parts.
 # M2_E_DOXYGEN_OUTPUT_DIR_POSTFIX should be unique in the sense that the pattern *$(M2_E_DOXYGEN_OUTPUT_DIR_POSTFIX)* does not match for any of the source file directories.
 FACTORY_DOXYGEN_OUTPUT_DIR_PREFIX := .
@@ -280,6 +282,8 @@ all-local:
 #	cp $(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)  ; \
 #
 
+# tested with doxygen 1.8.6.
+
 extended_doxygen:
 	export DOXYGEN_INPUT_DIR=$(srcdir); \
 	export SRCDIR=$(srcdir); \
@@ -295,9 +299,9 @@ extended_doxygen:
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/doxygen.cfg ${builddir}/doxygen.cfg ; \
 	doxygen  -u ./doxygen.cfg ;  \
 	doxygen ./doxygen.cfg ; \
-	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/styleSheetFile.css $(DOXYGEN_OUTPUT_DIR)  ; \
-	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/tabs.css $(DOXYGEN_OUTPUT_DIR)  ; \
-	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)  ; \
+	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/styleSheetFile.css $(DOXYGEN_OUTPUT_DIR)/html/styleSheetFile.css ; \
+	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/tabs.css $(DOXYGEN_OUTPUT_DIR)/html/tabs.css  ; \
+	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)/html/navtree.css ; \
 	echo "documentation was written to "$(DOXYGEN_OUTPUT_DIR) ;
 
 #doxygen -s  -u ./Doxyconf_copy ; # updates a config file and drops parameter documentation.
