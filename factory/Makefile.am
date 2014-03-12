@@ -299,7 +299,7 @@ extended_doxygen:
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/doxygen.cfg ${builddir}/doxygen.cfg ; \
 	doxygen  -u ./doxygen.cfg ;  \
 	doxygen ./doxygen.cfg ; \
-	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/styleSheetFile.css $(DOXYGEN_OUTPUT_DIR)/html/styleSheetFile.css ; \
+	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/styleSheetFile.css $(DOXYGEN_OUTPUT_DIR)/html/doxygen.css ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/tabs.css $(DOXYGEN_OUTPUT_DIR)/html/tabs.css  ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)/html/navtree.css ; \
 	echo "documentation was written to "$(DOXYGEN_OUTPUT_DIR) ;
