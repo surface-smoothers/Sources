@@ -11,14 +11,13 @@ $(RESOURCES_LDFLAGS) $(OMALLOC_LDFLAGS) $(OMALLOC_R_LDADD) $(FLINT_LIBS) $(GMP_L
 
 libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION}
 
-
-
+DOXYGEN=doxygen # allow replacement from terminal to check different versions easily
 
 # to exclude files in documentation itself from processing it is neccesary to divide the path into 2 parts.
-# M2_E_DOXYGEN_OUTPUT_DIR_POSTFIX should be unique in the sense that the pattern *$(M2_E_DOXYGEN_OUTPUT_DIR_POSTFIX)* does not match for any of the source file directories.
-FACTORY_DOXYGEN_OUTPUT_DIR_PREFIX := .
-FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX :=/srcdoc/
-FACTORY_DOXYGEN_OUTPUT_BASEDIR :=$(FACTORY_DOXYGEN_OUTPUT_DIR_PREFIX)/$(FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX)
+# FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX should be unique in the sense that the pattern *$(FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX)* does not match for any of the source file directories.
+DOXYGEN_OUTPUT_DIR_PREFIX := .
+DOXYGEN_OUTPUT_DIR_POSTFIX :=/doxygen/
+DOXYGEN_OUTPUT_BASEDIR :=$(DOXYGEN_OUTPUT_DIR_PREFIX)/$(DOXYGEN_OUTPUT_DIR_POSTFIX)
 
 DOXYGEN_CONF_DIR :=$(SRCDIR)/doxygen-settings
 
@@ -282,7 +281,7 @@ all-local:
 #	cp $(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)  ; \
 #
 
-# tested with doxygen 1.8.6.
+# works with doxygen 1.7.3-1.8.6. Earlier versions needs different css files.
 
 extended_doxygen:
 	export DOXYGEN_INPUT_DIR=$(srcdir); \
@@ -295,10 +294,12 @@ extended_doxygen:
 	export HAVE_DOT_SETTING=$(HAVE_DOT_SETTING) ; \
 	export INHERITMEMBERS=$(INHERITMEMBERS); \
 	export CALL_GRAPH_SETTING=$(CALL_GRAPH_SETTING) ; \
+	export PROJECT=$(PACKAGE) ; \
+	export VERSION=$(PACKAGE_VERSION) ; \
 	mkdir -p $(DOXYGEN_OUTPUT_DIR) ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/doxygen.cfg ${builddir}/doxygen.cfg ; \
-	doxygen  -u ./doxygen.cfg ;  \
-	doxygen ./doxygen.cfg ; \
+	$(DOXYGEN)  -u ./doxygen.cfg ;  \
+	$(DOXYGEN) ./doxygen.cfg ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/styleSheetFile.css $(DOXYGEN_OUTPUT_DIR)/html/doxygen.css ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/tabs.css $(DOXYGEN_OUTPUT_DIR)/html/tabs.css  ; \
 	cp ${srcdir}/$(DOXYGEN_CONF_DIR)/navtree.css $(DOXYGEN_OUTPUT_DIR)/html/navtree.css ; \
@@ -307,7 +308,7 @@ extended_doxygen:
 #doxygen -s  -u ./Doxyconf_copy ; # updates a config file and drops parameter documentation.
 
 # -exporting DOXYGEN_EXCLUDE_PATTERN is required to exclude the documentation folder from parsing if documentation is a subfolder in the source file tree.
-# -it is possible to customize the output folder directory by calling 'make tinydocs FACTORY_DOXYGEN_OUTPUT_BASEDIR=$custom_output_directory'
+# -it is possible to customize the output folder directory by calling 'make tinydocs DOXYGEN_OUTPUT_BASEDIR=$custom_output_directory'
 
 
 
@@ -321,28 +322,28 @@ extended_doxygen:
 
 tinydoc:
 	$(MAKE) extended_doxygen \
-	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR) \
-	DOXYGEN_OUTPUT_DIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR)/tiny$(INHERITED_POSTFIX) \
-	DOXYGEN_EXCLUDE_PATTERN=*$(FACTORY_OUTPUT_DIR_POSTFIX)* \
+	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR) \
+	DOXYGEN_OUTPUT_DIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR)/tiny$(INHERITED_POSTFIX) \
+	DOXYGEN_EXCLUDE_PATTERN=*$(OUTPUT_DIR_POSTFIX)* \
 	HAVE_DOT_SETTING=NO \
 	CALL_GRAPH_SETTING=NO \
 	INHERITMEMBERS=$(INHERITMEMBERS) 
 
 smalldoc:
 	$(MAKE) extended_doxygen \
-	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR) \
-	DOXYGEN_OUTPUT_DIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR)/small$(INHERITED_POSTFIX) \
-	DOXYGEN_EXCLUDE_PATTERN=*$(FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX)* \
+	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR) \
+	DOXYGEN_OUTPUT_DIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR)/small$(INHERITED_POSTFIX) \
+	DOXYGEN_EXCLUDE_PATTERN=*$(DOXYGEN_OUTPUT_DIR_POSTFIX)* \
 	HAVE_DOT_SETTING=YES \
 	CALL_GRAPH_SETTING=NO \
 	INHERITMEMBERS=$(INHERITMEMBERS) 
-	ln -s $(FACTORY_DOXYGEN_OUTPUT_BASEDIR)/small$(INHERITED_POSTFIX) default
+	ln -s $(DOXYGEN_OUTPUT_BASEDIR)/small$(INHERITED_POSTFIX) default
 
 fulldoc:
 	$(MAKE) extended_doxygen \
-	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR) \
-	DOXYGEN_OUTPUT_DIR=${builddir}/$(FACTORY_DOXYGEN_OUTPUT_BASEDIR)/full$(INHERITED_POSTFIX) \
-	DOXYGEN_EXCLUDE_PATTERN=*$(FACTORY_DOXYGEN_OUTPUT_DIR_POSTFIX)* \
+	DOXYGEN_OUTPUT_BASEDIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR) \
+	DOXYGEN_OUTPUT_DIR=${builddir}/$(DOXYGEN_OUTPUT_BASEDIR)/full$(INHERITED_POSTFIX) \
+	DOXYGEN_EXCLUDE_PATTERN=*$(DOXYGEN_OUTPUT_DIR_POSTFIX)* \
 	HAVE_DOT_SETTING=YES \
 	CALL_GRAPH_SETTING=YES \
 	INHERITMEMBERS=$(INHERITMEMBERS)
