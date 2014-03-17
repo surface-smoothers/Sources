@@ -37,6 +37,7 @@
 #include <polys/monomials/maps.h>
 #include <polys/nc/nc.h>
 #include <polys/nc/sca.h>
+#include <polys/prCopy.h>
 
 #include <kernel/febase.h>
 #include <kernel/polys.h>
@@ -724,42 +725,129 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     return TRUE;
   }
 
-  ring qr;
+  ring qr,origr;
   //qr=(ring)res->Data();
   //if (qr!=NULL) omFreeBin((ADDRESS)qr, ip_sring_bin);
   assume(res->Data()==NULL);
-  qr=rCopy(currRing);
+  origr = rCopy(currRing);
+
+#ifdef HAVE_RINGS
+  ideal id=(ideal)a->CopyD(IDEAL_CMD);
+  if((rField_is_Ring(currRing)) && (idPosConstant(id) != -1))
+  {
+// computing over Rings: handle constant generators of id properly
+      if(nCoeff_is_Ring_ModN(currRing->cf) || 
+         nCoeff_is_Ring_PtoM(currRing->cf) || 
+         nCoeff_is_Ring_2toM(currRing->cf))
+      {
+      // already computing mod modNumber: use gcd(modNumber,constant entry of id)
+        mpz_t gcd;
+        mpz_t newConst;
+        mpz_init(newConst);
+        mpz_set_ui(newConst, currRing->cf->cfInt(p_GetCoeff(id->m[idPosConstant(id)], currRing),currRing->cf));
+        mpz_init(gcd);
+        mpz_gcd(gcd, currRing->cf->modNumber, newConst);
+        if(mpz_cmp_ui(gcd, 1) == 0)
+        {
+            WerrorS("constant in q-ideal is coprime to modulus in ground ring");
+            WerrorS("Unable to create qring!");
+            return TRUE;
+        }
+        if(nCoeff_is_Ring_PtoM(currRing->cf) || 
+           nCoeff_is_Ring_2toM(currRing->cf))
+        {
+        // modNumber is prime power: set modExponent appropriately
+          int kNew = 1;
+          mpz_t baseTokNew;
+          mpz_init(baseTokNew);
+          mpz_set(baseTokNew, currRing->cf->modBase);
+          while(mpz_cmp(gcd, baseTokNew) > 0)
+          {
+            kNew++;
+            mpz_mul(baseTokNew, baseTokNew, currRing->cf->modBase);
+          }
+          //To Do: currently we stay in case Z/p^n even for n=1
+          //       for performance reasons passing to groundfield Z/p 
+          //       would be more suitable
+          qr = rCopyNewCoeff(currRing, currRing->cf->modBase, kNew, currRing->cf->type);
+          mpz_clear(baseTokNew);
+        }
+        else
+        {
+        // previously over modNumber, now over new modNumber
+          qr = rCopyNewCoeff(currRing, gcd, 1, currRing->cf->type);
+          //printf("\nAfter rCopyNewCoeff: \n");
+          //rWrite(qr);
+        }
+        mpz_clear(gcd);
+        //printf("\nAfter mpz_clear: \n");
+        //rWrite(qr);
+        mpz_clear(newConst);
+      }
+      else
+      {
+      // previously over Z, now over Z/m
+        mpz_t newConst;
+        mpz_init(newConst);
+        mpz_set_ui(newConst, currRing->cf->cfInt(p_GetCoeff(id->m[idPosConstant(id)], currRing),currRing->cf));
+        qr= rCopyNewCoeff( currRing, newConst, 1, n_Zn);
+        mpz_clear(newConst);
+      }
+  }    
+  else
+#endif
+    qr=rCopy(currRing);
+    
                  // we have to fill it, but the copy also allocates space
   idhdl h=(idhdl)res->data; // we have res->rtyp==IDHDL
   IDRING(h)=qr;
-
-  ideal id=(ideal)a->CopyD(IDEAL_CMD);
-
-  if ((idElem(id)>1) || rIsSCA(currRing) || (currRing->qideal!=NULL))
-    assumeStdFlag(a);
-
+  ideal qid;
+  //rWrite(qr);
+  //printf("\norigr\n");
+  //rWrite(origr);
+  //  printf("\nqr\n");
+  //rWrite(qr);
+  //  printf("\ncurrRing\n");
+  //rWrite(currRing);
 #ifdef HAVE_RINGS
-  if (rField_is_Ring(currRing))
-  {
-    if (idPosConstant(id) != -1)
+  if((rField_is_Ring(currRing)) && (idPosConstant(id) != -1))
     {
-      WerrorS("constant in q-ideal; please modify ground field/ring instead");
-      return TRUE;
+      //rChangeCurrRing(qr);
+      //rWrite(qr);
+      int *perm=NULL;
+      int i;
+      perm=(int *)omAlloc0((qr->N+1)*sizeof(int));
+      for(i=qr->N;i>0;i--) 
+      {
+        perm[i]=i;
+      }
+      nMapFunc nMap = NULL;
+      nMap = n_SetMap(origr->cf, qr->cf);
+      qid = idInit(IDELEMS(id),1);
+      for(i = 0; i<IDELEMS(id); i++)
+      {
+        qid->m[i] = p_PermPoly(id->m[i], perm, origr, qr, nMap, NULL, 0);
+        
+      }
     }
-  }
+    else
 #endif
+      qid = idrCopyR(id,currRing,qr);
+  idSkipZeroes(qid);
+  //idPrint(qid);
+  if ((idElem(qid)>1) || rIsSCA(currRing) || (currRing->qideal!=NULL))
+    assumeStdFlag(a);
 
   if (currRing->qideal!=NULL) /* we are already in a qring! */
   {
-    ideal tmp=idSimpleAdd(id,currRing->qideal);
+    ideal tmp=idSimpleAdd(qid,currRing->qideal);
     // both ideals should be GB, so dSimpleAdd is sufficient
-    idDelete(&id);
-    id=tmp;
+    idDelete(&qid);
+    qid=tmp;
     // delete the qr copy of quotient ideal!!!
     idDelete(&qr->qideal);
   }
-  qr->qideal = id;
-
+  qr->qideal = qid;
   // qr is a copy of currRing with the new qideal!
   #ifdef HAVE_PLURAL
   if(rIsPluralRing(currRing))
@@ -775,6 +863,7 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     }
   }
   #endif
+  //rWrite(qr);
   rSetHdl((idhdl)res->data);
   return FALSE;
 }
