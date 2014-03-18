@@ -156,6 +156,8 @@ char * StringEndS()
   feBufferStart=feBufferStart_save[feBuffer_cnt];
   if (strlen(r)<1024)
   {
+    // if the used buffer is a "smal block",
+    // substitue the "large" initial block by a smal one
     char *s=omStrDup(r); omFree(r); r=s;
   }
   return r;
@@ -353,7 +355,7 @@ void Print(const char *fmt, ...)
     char *s=(char *)omAlloc(ls+512);
 #ifdef HAVE_VSNPRINTF
     l = vsnprintf(s, ls+511, fmt, ap);
-    if ((l==-1)||(s[l]!='\0')||(l!=strlen(s)))
+    if ((l==-1)||(s[l]!='\0')||(l!=(int)strlen(s)))
     {
       printf("Print problem: l=%d, fmt=>>%s<<\n",l,fmt);
     }

@@ -339,8 +339,6 @@ fi
 
 AH_TEMPLATE([HAVE_OMALLOC], [define if build with OMALLOC])
 
-if test "x$with_Singular" = xyes; then
-
 AC_MSG_CHECKING([whether to use omalloc/omalloc.h])
 if test "x$ENABLE_OMALLOC" = xyes; then
   AC_MSG_RESULT(yes)
@@ -350,7 +348,7 @@ if test "x$ENABLE_OMALLOC" = xyes; then
   fi
   if test "x$with_omalloc_extra_dir" != "x"; then
     OMALLOC_CFLAGS="$OMALLOC_CFLAGS -I${with_omalloc_extra_dir}"
-    OMALLOC_LDFLAGS="$OMALLOC_LDFLAGS -L${with_omalloc_extra_dir}/omalloc -L${with_omalloc_extra_dir}/resources"
+    OMALLOC_LDFLAGS="$OMALLOC_LDFLAGS -L${with_omalloc_extra_dir}/omalloc"
   fi
   
   CPPFLAGS_save="$CPPFLAGS"
@@ -364,8 +362,8 @@ if test "x$ENABLE_OMALLOC" = xyes; then
   CPPFLAGS="$CPPFLAGS_save"
 
 #  OMALLOC_G_LDADD="-lresources_g -lomalloc_g"
-  OMALLOC_R_LDADD="-lresources -lomalloc"
-  
+  OMALLOC_R_LDADD="-lomalloc"
+
   AC_DEFINE(HAVE_OMALLOC, 1, [omalloc support])
  
   AC_SUBST(OMALLOC_CFLAGS)
@@ -377,7 +375,10 @@ else
   AC_MSG_RESULT(no)
 fi
 
-fi
+if test "x$ENABLE_OMALLOC" = xyes && test "x$with_Singular" = xyes; then
+  RESOURCES_LDFLAGS="$RESOURCES_LDFLAGS -L${with_omalloc_dir}/resources -L${with_omalloc_extra_dir}/resources -lresources "
+  AC_SUBST(RESOURCES_LDFLAGS)
+fi 
 
 AM_CONDITIONAL([ENABLE_OMALLOC],[test "x$ENABLE_OMALLOC" = xyes])
 
@@ -437,7 +438,7 @@ AC_SUBST(MAKEHEADERFLAGS)
 #AC_SUBST(installtargets)
 #AC_SUBST(uninstalltargets)
 
-factory_version="3.1.3"
+factory_version="4.0.0"
 factory_configuration="'$ac_configure_args' in `pwd`"
 AC_SUBST(factory_version)
 
