@@ -42,10 +42,10 @@
 #include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <kernel/timer.h>
-#include <kernel/stairc.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/stairc.h>
+#include <kernel/GBEngine/syz.h>
 
 //#include "weight.h"
 #include "tok.h"
@@ -861,10 +861,18 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     // delete the qr copy of quotient ideal!!!
     idDelete(&qr->qideal);
   }
-  qr->qideal = qid;
+  if (idElem(id)==0)
+  {
+    qr->qideal = NULL;
+    id_Delete(&id,currRing);
+    IDTYP(h)=RING_CMD;
+  }
+  else
+    qr->qideal = id;
+
   // qr is a copy of currRing with the new qideal!
   #ifdef HAVE_PLURAL
-  if(rIsPluralRing(currRing))
+  if(rIsPluralRing(currRing) &&(qr->qideal!=NULL))
   {
     if (!hasFlag(a,FLAG_TWOSTD))
     {

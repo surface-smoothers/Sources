@@ -17,7 +17,7 @@
 
 #include <misc/auxiliary.h>
 #include <kernel/mod2.h>
-#include <Singular/si_signals.h>
+#include <reporter/si_signals.h>
 
 #include <factory/factory.h>
 
@@ -386,7 +386,7 @@ lists primeFactorisation(const number n, const int pBound)
 #include <polys/templates/p_Procs.h>
 
 #include <kernel/febase.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <kernel/timer.h>
 
 
