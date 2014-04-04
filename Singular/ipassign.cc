@@ -859,14 +859,15 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     // delete the qr copy of quotient ideal!!!
     idDelete(&qr->qideal);
   }
-  if (idElem(id)==0)
+  if (idElem(qid)==0)
   {
     qr->qideal = NULL;
+    id_Delete(&qid,currRing);
     id_Delete(&id,currRing);
     IDTYP(h)=RING_CMD;
   }
   else
-    qr->qideal = id;
+    qr->qideal = qid;
 
   // qr is a copy of currRing with the new qideal!
   #ifdef HAVE_PLURAL
