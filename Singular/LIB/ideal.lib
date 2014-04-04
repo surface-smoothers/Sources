@@ -12,7 +12,7 @@ PROCEDURES:
 LIB "ring.lib";
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 proc isSubset_assumeSB(ideal I, ideal stdJ)
 "USAGE:   isSubset_assumeSB(I,stdJ); I, stdJ ideals, where stdJ is assumed as standard basis
 RETURN:  integer, 1 if I is a subset of stdJ and 0 otherwise
@@ -67,7 +67,7 @@ example
     ideal J2 = 5;
     isSubset(J2, I);   //=0 
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 

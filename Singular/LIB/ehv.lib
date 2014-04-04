@@ -39,7 +39,7 @@ PROCEDURES:
 ";
 
 LIB "ring.lib";
-LIB "ideal.lib";
+LIB "wrappers.lib";
 LIB "general.lib";
 LIB "elim.lib";
 LIB "poly.lib";
