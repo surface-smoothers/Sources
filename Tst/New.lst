@@ -47,3 +47,5 @@ New/qring_ntom.tst
 New/qring_ZmtoZmn.tst
 New/qring_ZmtoZmn_errorCoprime.tst
 New/qring_ZtoZm.tst
+New/mstd_integer.tst
+
