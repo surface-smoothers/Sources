@@ -1309,10 +1309,13 @@ static proc stdZ(ideal I)
    int i;
    for(i=1;i<=ncols(J);i++)
    {
-      if(leadcoef(J[i])<0){J[i]=-J[i];}
+      // if(leadcoef(J[i])<0) { J[i]=-J[i]; }
+      ASSUME(1 , leadcoef(J[i]) >= 0 ); 
    }
-   J=normalizeZ(J);
-   attrib(J,"isSB",1);
+   J = normalizeZ(J);
+   ASSUME( 0, isZNormalized(J) );
+   attrib( J, "isSB",1);
+   ASSUME( 0, isReducedSB(J) );
    return(J);
 }
 
