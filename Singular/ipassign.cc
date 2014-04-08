@@ -863,7 +863,6 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
   {
     qr->qideal = NULL;
     id_Delete(&qid,currRing);
-    id_Delete(&id,currRing);
     IDTYP(h)=RING_CMD;
   }
   else
