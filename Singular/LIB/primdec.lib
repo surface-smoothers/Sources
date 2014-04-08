@@ -3653,6 +3653,7 @@ EXAMPLE: example decomp; shows an example
   {
     primary=cleanPrimary(primary);
   }
+  ASSUME(0, size(primary) > 0 ); //otherwise code below will fail.
   if (abspri && (typeof(primary[1][1])=="poly"))
   { return(prepare_absprimdec(primary));}
   return(primary);
