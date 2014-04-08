@@ -909,9 +909,9 @@ EXAMPLE: example intersectZ; shows an example
    int i;
    ideal L;
    ASSUME(0, size(K)==ncols(K) || size(K)==0 ); 
-   for(i=1; i<=size(K); i++)
+   for(i=1; i<=size(K); i++)  // should be size, otherwise we get an unnecessary empty entry in L
    {
-      if ( lead(K[i])/t == 0 )  { L[size(L)+1] = K[i]; } // ok, since K[i]<>0
+      if ( lead(K[i])/t == 0 )  { L[size(L)+1] = K[i]; } // size(L) ok, since K[i]<>0 and mandatory, otherwise we get an unnecessary empty entry in L
    }
    setring R;
    ideal L = imap(S,L);
@@ -971,7 +971,7 @@ static proc modp(ideal J, int p, int nu)
    number h=1;
    int i;
    I = delZeroGens(I);
-   for(i=1; i<=ncols(I); i++)  // no differ
+   for(i=1; i<=ncols(I); i++)  // no difference, since primefactors(0)=primefactors(1)={}
    {
       h=h*leadcoef(I[i]);  // besser machen (gleich zerlegen,
                            // nicht ausmultiplizieren)
@@ -1104,7 +1104,8 @@ static proc extractZ(ideal J, int j, list L, list B)
             list C;
             C[1]= ideal(0); //add dummy entry to tie C to current ring
             int i;
-            for(i=1;i<=ncols(I);i++) // differ or not?
+            ASSUME(0, size(I)==ncols(I) || size(I)==0);
+            for(i=1;i<=size(I);i++) // differ or not?
             {
                C[i+1]=I[i];
             }
@@ -1119,7 +1120,8 @@ static proc extractZ(ideal J, int j, list L, list B)
             list C;
             C[1]= ideal(0); //add dummy entry to tie C to current ring
             int i;
-            for(i=1;i<=ncols(I);i++) // differ or not?
+            ASSUME(0, size(I)==ncols(I) || size(I)==0);
+            for(i=1;i<=size(I);i++) // differ or not?
             {
                C[i+1]=leadcoef(I[i]);
             }
@@ -1135,7 +1137,8 @@ static proc extractZ(ideal J, int j, list L, list B)
          list C;
          C[1]= ideal(0); //add dummy entry to tie C to current ring
          int i;
-         for(i=1;i<=ncols(I);i++) // differ or not?
+         ASSUME(0, size(I)==ncols(I) || size(I)==0);
+         for(i=1;i<=size(I);i++) // differ or not?
          {
             C[i+1]=I[i];
          }
@@ -1154,7 +1157,8 @@ static proc extractZ(ideal J, int j, list L, list B)
       ideal fac=factorize(h,1);
       setring R;
       ideal fac=imap(Shelp,fac);
-      for(i=1;i<=ncols(fac);i++)  //ncols or size?
+      ASSUME(0, size(fac)==ncols(fac) || size(fac)==0);
+      for(i=1;i<=size(fac);i++)  //ncols or size?
       {
          I=satZ(I,fac[i]);
       }
@@ -1192,7 +1196,7 @@ static proc normalizeZ(ideal I)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static proc satZ(ideal I,poly h)
+ proc satZ(ideal I,poly h)
 {
 //=== saturates I by h
    ideal J=quotientOneZ(I,h);
@@ -1476,7 +1480,8 @@ static proc extractZM(list M, list L)
       list II;
       h=1;
       ideal fac=imap(Shelp,fac);
-      for(i=1; i<=ncols(fac); i++)  //ncols or size?
+      ASSUME(0, size(fac)==ncols(fac) || size(fac)==0);
+      for(i=1; i<=size(fac); i++)  //ncols or size?
       {
          II=sat(I,fac[i]);
           I=II[1];
