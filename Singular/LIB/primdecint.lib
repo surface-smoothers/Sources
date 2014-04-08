@@ -998,8 +998,8 @@ static proc coefZ(ideal I)
    int i,e;
    ideal K=1;
    attrib(I,"isSB",1);
-   list L=coefPrimeZ(I);
-   if(size(L)==0){return(list(I,1));}
+   list L = coefPrimeZ(I);
+   if ( size(L)==0 ) { return( list(I,1) ); }
    int d=1;
    while(d!=0)
    {
@@ -1220,7 +1220,7 @@ static proc quotientOneZ(ideal I, poly f)
    ideal K = imap(R,K);
    poly  f = imap(R,f);
 
-   K = delZeroGens(K); 
+   ASSUM(0, size(K)==ncols(K) );
 
    for(i=1; i <= ncols(K); i++)
    {
@@ -1255,7 +1255,7 @@ static proc reduceZ(poly f, ideal I)
 {
 //=== this is needed because reduce(f,I) does not work properly, should be
 //=== replaced by reduce later
-   if(f==0){return(f);}
+   if (f==0) { return(f); }
    def R=basering;
    execute("ring Rhelp=0,("+varstr(R)+"),dp;");
    ideal I=imap(R,I);
@@ -1264,12 +1264,11 @@ static proc reduceZ(poly f, ideal I)
    poly m;
    number n;
    I = delZeroGens(I);
-   ASSUME(0, size(I)==ncols(I) );
    while(!i)
    {
       i=1;
       j=0;
-      while(j<ncols(I))
+      while( j<ncols(I) )
       {
          j++;
          m=leadmonom(f)/leadmonom(I[j]);
@@ -1303,11 +1302,11 @@ static proc stdZ(ideal I)
 {
 //=== this is needed because we want the leading coefficients to be positive
 //=== otherwhise reduce gives wrong results! should be replaced later by std
-   I=simplify(I,2);
-   I=normalizeZ(I);
-   ideal J=std(I);
+   I = delZeroGens(I);
+   I = normalizeZ(I);
+   ideal J = std(I);
    int i;
-   for(i=1;i<=ncols(J);i++)
+   for(i=1; i<=ncols(J); i++)
    {
       // if(leadcoef(J[i])<0) { J[i]=-J[i]; }
       ASSUME(1 , leadcoef(J[i]) >= 0 ); 
@@ -1325,7 +1324,7 @@ static proc addIdealZ(ideal I,ideal J)
 {
 //=== this is needed because I+J does not work, should be replaced by + later
    int i;
-   for(i=1;i<=ncols(J);i++)
+   for(i=1; i<=ncols(J); i++)
    {
       I[ncols(I)+1]=J[i];
    }
