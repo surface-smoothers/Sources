@@ -2645,7 +2645,14 @@ proc algeDeco(ideal i, int w)
       for(j=1;j<=size(pr);j++)
       {
          K=groebner(pr[j]);
-         K=K[2..size(K)];
+         if (size(K)>1)
+         {
+            K=K[2..size(K)];
+         }
+         else
+         {
+            K = 0;
+         }
          pr[j]=K;
       }
       setring R;
