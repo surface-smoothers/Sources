@@ -1214,13 +1214,13 @@ static proc quotientOneZ(ideal I, poly f)
    def R = basering;
    int i;
    ideal K = intersectZ(I,ideal(f));
+
    //=== K[i]/f; does not work in rings with integer! This should be replaced
    //=== later
    execute("ring Rhelp=0,("+varstr(R)+"),dp;");
    ideal K = imap(R,K);
    poly  f = imap(R,f);
-
-   ASSUME(0, size(K)==ncols(K) );
+   K = delZeroGens(K);
 
    for(i=1; i <= ncols(K); i++)
    {
