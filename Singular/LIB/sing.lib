@@ -430,7 +430,7 @@ EXAMPLE: example slocus; shows an example
     return(ist);
   }
   int cod  = nvars(basering) - dim(ist);
-  i        = i + minor( jacob(i), cod );
+  i        = i + minor( jacob(mstd(i)[2]), cod ); // performance optimization 
   return(i);
 }
 example
