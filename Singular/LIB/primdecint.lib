@@ -1152,7 +1152,7 @@ static proc extractZ(ideal J, int j, list L, list B)
          def Shelp =ring(rl);
       }
       poly h=1;
-      for(i=2;i<=ncols(C);i++) // leave out first dummy entry in C.
+      for(i=2;i<=size(C);i++) // leave out first dummy entry in C.
       {
          if(deg(C[i])>0){h=h*C[i];}  // das muss noch besser gemacht werden,
                                      // nicht ausmultiplizieren!
