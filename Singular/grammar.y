@@ -23,7 +23,7 @@
 #include <Singular/fehelp.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
-#include <kernel/febase.h>
+#include <Singular/febase.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
 #include <kernel/GBEngine/kstd1.h>
@@ -35,7 +35,7 @@
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
 #include <kernel/GBEngine/stairc.h>
-#include <kernel/timer.h>
+#include <Singular/timer.h>
 #include <Singular/cntrlc.h>
 #include <polys/monomials/maps.h>
 #include <kernel/GBEngine/syz.h>
@@ -1387,7 +1387,7 @@ setringcmd:
             && ($2.rtyp==IDHDL))
             {
               idhdl h=(idhdl)$2.data;
-              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL, NULL);
+              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL);
               //Print("setring %s lev %d (ptr:%x)\n",IDID(h),IDLEV(h),IDRING(h));
               if ($1==KEEPRING_CMD)
               {

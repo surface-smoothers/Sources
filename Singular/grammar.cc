@@ -87,7 +87,7 @@
 #include <Singular/fehelp.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
-#include <kernel/febase.h>
+#include <Singular/febase.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
 #include <kernel/GBEngine/kstd1.h>
@@ -99,7 +99,7 @@
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
 #include <kernel/GBEngine/stairc.h>
-#include <kernel/timer.h>
+#include <Singular/timer.h>
 #include <Singular/cntrlc.h>
 #include <polys/monomials/maps.h>
 #include <kernel/GBEngine/syz.h>
@@ -3970,7 +3970,7 @@ yyreduce:
             && ((yyvsp[(2) - (2)].lv).rtyp==IDHDL))
             {
               idhdl h=(idhdl)(yyvsp[(2) - (2)].lv).data;
-              if ((yyvsp[(2) - (2)].lv).e!=NULL) h=rFindHdl((ring)(yyvsp[(2) - (2)].lv).Data(),NULL, NULL);
+              if ((yyvsp[(2) - (2)].lv).e!=NULL) h=rFindHdl((ring)(yyvsp[(2) - (2)].lv).Data(),NULL);
               //Print("setring %s lev %d (ptr:%x)\n",IDID(h),IDLEV(h),IDRING(h));
               if ((yyvsp[(1) - (2)].i)==KEEPRING_CMD)
               {

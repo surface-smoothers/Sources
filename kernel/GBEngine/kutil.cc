@@ -48,13 +48,11 @@
 
 #include <kernel/GBEngine/kutil.h>
 #include <polys/kbuckets.h>
-#include <kernel/febase.h>
 #include <omalloc/omalloc.h>
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
 #include <polys/monomials/ring.h>
 #include <kernel/ideals.h>
-#include <kernel/timer.h>
 //#include "cntrlc.h"
 #include <kernel/GBEngine/stairc.h>
 #include <kernel/GBEngine/kstd1.h>
@@ -6715,6 +6713,10 @@ void updateS(BOOLEAN toT,kStrategy strat)
       while (i<=strat->sl)
       {
         change=FALSE;
+        #ifdef HAVE_RINGS
+        if(rField_is_Ring(currRing))
+            any_change = FALSE;
+        #endif
         if (((strat->fromQ==NULL) || (strat->fromQ[i]==0)) && (i>0))
         {
           redSi = pHead(strat->S[i]);
@@ -7970,7 +7972,7 @@ void completeReduce (kStrategy strat, BOOLEAN withT)
   if (TEST_OPT_PROT)
   {
     PrintLn();
-    if (timerv) writeTime("standard base computed:");
+//    if (timerv) writeTime("standard base computed:");
   }
   if (TEST_OPT_PROT)
   {
