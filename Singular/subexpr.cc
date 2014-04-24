@@ -25,10 +25,9 @@
 #include <libpolys/coeffs/longrat.h>
 // #include <coeffs/longrat.h>
 
-#include <Singular/febase.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <Singular/timer.h>
+#include <kernel/oswrapper/timer.h>
 #include <kernel/GBEngine/syz.h>
 
 #include <Singular/tok.h>

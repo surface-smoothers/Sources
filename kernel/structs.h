@@ -28,6 +28,7 @@
 #include <kernel/polys.h>
 #include <polys/coeffrings.h>
 
+class Voice;
 class sleftv;
 class procinfo;
 class skStrategy;
@@ -43,6 +44,18 @@ enum tHomog
   isNotHomog = FALSE,
   isHomog    = TRUE,
   testHomog
+};
+
+enum   feBufferTypes
+{
+  BT_none  = 0,  // entry level
+  BT_break = 1,  // while, for
+  BT_proc,       // proc
+  BT_example,    // example
+  BT_file,       // <"file"
+  BT_execute,    // execute
+  BT_if,         // if
+  BT_else        // else
 };
 
 
@@ -91,15 +104,6 @@ extern "C" {
 void  m2_end(int i);
 #ifdef __cplusplus
 }
-#endif
-
-/* 7.2 C++-routines : */
-
-#ifdef __cplusplus
-int   inits(void);
-//int   IsPrime(int i);
-extern int siSeed;
-int siRand();
 #endif
 
 #define loop for(;;)

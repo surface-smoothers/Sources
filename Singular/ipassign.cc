@@ -37,11 +37,10 @@
 #include <polys/nc/sca.h>
 #include <polys/prCopy.h>
 
-#include <Singular/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <Singular/timer.h>
+#include <kernel/oswrapper/timer.h>
 #include <kernel/GBEngine/stairc.h>
 #include <kernel/GBEngine/syz.h>
 
@@ -196,10 +195,12 @@ static BOOLEAN jjMINPOLY(leftv, leftv a)
 
   if ( !nCoeff_is_transExt(currRing->cf) )
   {
-//    return TRUE;
-#ifndef SING_NDEBUG
     WarnS("Trying to set minpoly over non-transcendental ground field...");
-#endif
+    if(!nCoeff_is_algExt(currRing->cf) )
+    {
+      WerrorS("cannot set minpoly for these coeffients");
+      return TRUE;
+    }
   }
 
   if ( currRing->idroot != NULL )

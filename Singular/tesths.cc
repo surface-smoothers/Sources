@@ -17,8 +17,9 @@
 
 #include <factory/factory.h>
 
-#include <Singular/febase.h>
-#include <Singular/timer.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
+#include <kernel/oswrapper/timer.h>
 
 // #ifdef HAVE_FANS
 // #include <callgfanlib/bbcone.h>

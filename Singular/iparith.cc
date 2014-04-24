@@ -25,6 +25,7 @@
 
 #include <misc/options.h>
 #include <misc/intvec.h>
+#include <misc/sirandom.h>
 
 #include <polys/prCopy.h>
 #include <polys/matpol.h>
@@ -38,10 +39,10 @@
 
 #include <kernel/GBEngine/stairc.h>
 #include <kernel/polys.h>
-#include <Singular/febase.h>
+#include <Singular/fevoices.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <Singular/timer.h>
+#include <kernel/oswrapper/timer.h>
 #include <kernel/preimage.h>
 #include <kernel/GBEngine/units.h>
 #include <kernel/spectrum/GMPrat.h>
@@ -49,7 +50,6 @@
 #include <kernel/groebner_walk/walkProc.h>
 #include <kernel/linear_algebra/linearAlgebra.h>
 #include <kernel/GBEngine/syz.h>
-#include <Singular/timer.h>
 
 #include <kernel/linear_algebra/interpolation.h>
 #  include <kernel/GBEngine/kstdfac.h>
