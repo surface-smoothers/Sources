@@ -33,14 +33,12 @@
 #include <kernel/polys.h>
 
 #include <kernel/GBEngine/kutil.h>
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/khstd.h>
 #include <kernel/GBEngine/stairc.h>
 //#include "cntrlc.h"
 #include <kernel/ideals.h>
 //#include "../Singular/ipid.h"
-#include <kernel/timer.h>
 
 //#include "ipprint.h"
 
@@ -3107,8 +3105,11 @@ ideal kInterRed (ideal F, ideal Q)
 #ifdef HAVE_PLURAL
   if(rIsPluralRing(currRing)) return kInterRedOld(F,Q);
 #endif
-  if ((currRing->OrdSgn==-1)
-  || (rField_is_numeric(currRing)))
+  if ((currRing->OrdSgn==-1)|| (rField_is_numeric(currRing))
+  #ifdef HAVE_RINGS
+  ||(rField_is_Ring(currRing))
+  #endif
+  )
     return kInterRedOld(F,Q);
 
     //return kInterRedOld(F,Q);

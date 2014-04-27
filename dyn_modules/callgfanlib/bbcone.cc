@@ -7,6 +7,7 @@
 #include <Singular/ipshell.h>
 #include <Singular/blackbox.h>
 #include <libpolys/misc/intvec.h>
+#include <libpolys/misc/sirandom.h>
 #include <libpolys/coeffs/longrat.h>
 #include <libpolys/coeffs/bigintmat.h>
 
@@ -17,7 +18,6 @@
 #include "Singular/ipid.h"
 
 // #include <omalloc/omalloc.h>
-// #include <kernel/febase.h>
 // #include <kernel/intvec.h>
 // #include <kernel/longrat.h>
 // #include <Singular/lists.h>

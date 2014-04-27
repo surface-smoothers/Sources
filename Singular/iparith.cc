@@ -25,6 +25,7 @@
 
 #include <misc/options.h>
 #include <misc/intvec.h>
+#include <misc/sirandom.h>
 
 #include <polys/prCopy.h>
 #include <polys/matpol.h>
@@ -38,10 +39,10 @@
 
 #include <kernel/GBEngine/stairc.h>
 #include <kernel/polys.h>
-#include <kernel/febase.h>
+#include <Singular/fevoices.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <kernel/timer.h>
+#include <kernel/oswrapper/timer.h>
 #include <kernel/preimage.h>
 #include <kernel/GBEngine/units.h>
 #include <kernel/spectrum/GMPrat.h>
@@ -49,7 +50,6 @@
 #include <kernel/groebner_walk/walkProc.h>
 #include <kernel/linear_algebra/linearAlgebra.h>
 #include <kernel/GBEngine/syz.h>
-#include <kernel/timer.h>
 
 #include <kernel/linear_algebra/interpolation.h>
 #  include <kernel/GBEngine/kstdfac.h>
@@ -4310,6 +4310,10 @@ static BOOLEAN jjINDEPSET(leftv res, leftv v)
 static BOOLEAN jjINTERRED(leftv res, leftv v)
 {
   ideal result=kInterRed((ideal)(v->Data()), currQuotient);
+  #ifdef HAVE_RINGS
+  if(rField_is_Ring(currRing))
+    Warn("interred: this command is experimental over the integers");
+  #endif
   if (TEST_OPT_PROT) { PrintLn(); mflush(); }
   res->data = result;
   return FALSE;
@@ -8564,7 +8568,8 @@ static int iiTabIndex(const jjValCmdTab dArithTab, const int len, const int op)
   while ( a <= e);
 
   // catch missing a cmd:
-  assume(0);
+  // may be missing as a op for blackbox, if the first operand is "undef" instead of bb
+  // Print("op %d (%c) unknown",op,op);
   return 0;
 }
 

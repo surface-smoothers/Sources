@@ -61,6 +61,7 @@ Short/bug_538_s.tst
 Short/bug_540.tst
 Short/bug_5.tst
 Short/bug_6.tst
+Short/bug_609.tst
 Short/bug_7.tst
 Short/bug_8.tst
 Short/bug_9.tst
@@ -219,6 +220,7 @@ Short/primitiv_s.tst
 ;;;;;;;;;;;;;;;;;;;; Short/pyobject.tst
 Short/qhw_s.tst
 Short/quotient_s.tst
+Short/randomIdeal.tst
 Short/rcyclic_13_32003_lp.tst
 Short/rcyclic_14_32003_lp.tst
 Short/rcyclic_15_32003_lp.tst

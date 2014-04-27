@@ -14,14 +14,6 @@ extern "C" int libfac_interruptflag;
 #define libfac_name  "Factorization and characteristic sets library"
 #define libfac_author "M. Messollen"
 
-//// Note: second argument for Factorize is for internal use only.
-CFFList Factorize( const CanonicalForm & F, int is_SqrFree=0 ) ;
-CFFList Factorize( const CanonicalForm & F, const CanonicalForm & mi, int is_SqrFree=0 ) ;
-
-//// Note: InternalSqrFree does only the work needed for factorization.
-// CFFList SqrFree( const CanonicalForm & f ) ;
-CFFList SqrFreeMV( const CanonicalForm & f , const CanonicalForm & mipo=0) ;
-
 typedef List<CFList> ListCFList;
 typedef List<int> IntList ;
 typedef ListIterator<int> IntListIterator ;
