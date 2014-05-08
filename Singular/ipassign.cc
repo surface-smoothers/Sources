@@ -737,115 +737,55 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     WerrorS("qring_id expected");
     return TRUE;
   }
+  assume(res->Data()==NULL);
 
-  ring qr,origr;
+  coeffs newcf = currRing->cf;
+#ifdef HAVE_RINGS
+  ideal id = (ideal)a->Data(); //?
+  const int cpos = idPosConstant(id);  
+  if(rField_is_Ring(currRing))
+    if (cpos >= 0)
+    {
+        newcf = n_CoeffRingQuot1(p_GetCoeff(id->m[cpos], currRing), currRing->cf);
+        if(newcf == NULL)
+          return TRUE;
+    }
+#endif
   //qr=(ring)res->Data();
   //if (qr!=NULL) omFreeBin((ADDRESS)qr, ip_sring_bin);
-  assume(res->Data()==NULL);
-  origr = rCopy(currRing);
-
-#ifdef HAVE_RINGS
-  ideal id=(ideal)a->CopyD(IDEAL_CMD);
-  if((rField_is_Ring(currRing)) && (idPosConstant(id) != -1))
+  ring qr = rCopy(currRing);
+  assume(qr->cf == currRing->cf);
+  
+  if ( qr->cf != newcf )
   {
-// computing over Rings: handle constant generators of id properly
-      if(nCoeff_is_Ring_ModN(currRing->cf) || 
-         nCoeff_is_Ring_PtoM(currRing->cf) || 
-         nCoeff_is_Ring_2toM(currRing->cf))
-      {
-      // already computing mod modNumber: use gcd(modNumber,constant entry of id)
-        mpz_t gcd;
-        mpz_t newConst;
-        mpz_init(newConst);
-        mpz_set_ui(newConst, currRing->cf->cfInt(p_GetCoeff(id->m[idPosConstant(id)], currRing),currRing->cf));
-        mpz_init(gcd);
-        mpz_gcd(gcd, currRing->cf->modNumber, newConst);
-        if(mpz_cmp_ui(gcd, 1) == 0)
-        {
-            WerrorS("constant in q-ideal is coprime to modulus in ground ring");
-            WerrorS("Unable to create qring!");
-            return TRUE;
-        }
-        if(nCoeff_is_Ring_PtoM(currRing->cf) || 
-           nCoeff_is_Ring_2toM(currRing->cf))
-        {
-        // modNumber is prime power: set modExponent appropriately
-          int kNew = 1;
-          mpz_t baseTokNew;
-          mpz_init(baseTokNew);
-          mpz_set(baseTokNew, currRing->cf->modBase);
-          while(mpz_cmp(gcd, baseTokNew) > 0)
-          {
-            kNew++;
-            mpz_mul(baseTokNew, baseTokNew, currRing->cf->modBase);
-          }
-          //To Do: currently we stay in case Z/p^n even for n=1
-          //       for performance reasons passing to groundfield Z/p 
-          //       would be more suitable
-          qr = rCopyNewCoeff(currRing, currRing->cf->modBase, kNew, currRing->cf->type);
-          mpz_clear(baseTokNew);
-        }
-        else
-        {
-        // previously over modNumber, now over new modNumber
-          qr = rCopyNewCoeff(currRing, gcd, 1, currRing->cf->type);
-          //printf("\nAfter rCopyNewCoeff: \n");
-          //rWrite(qr);
-        }
-        mpz_clear(gcd);
-        //printf("\nAfter mpz_clear: \n");
-        //rWrite(qr);
-        mpz_clear(newConst);
-      }
-      else
-      {
-      // previously over Z, now over Z/m
-        mpz_t newConst;
-        mpz_init(newConst);
-        mpz_set_ui(newConst, currRing->cf->cfInt(p_GetCoeff(id->m[idPosConstant(id)], currRing),currRing->cf));
-        qr= rCopyNewCoeff( currRing, newConst, 1, n_Zn);
-        mpz_clear(newConst);
-      }
-  }    
-  else
-#endif
-    qr=rCopy(currRing);
-    
+    nKillChar ( qr->cf ); // ???
+    qr->cf = newcf;
+  }  
                  // we have to fill it, but the copy also allocates space
   idhdl h=(idhdl)res->data; // we have res->rtyp==IDHDL
   IDRING(h)=qr;
+  
   ideal qid;
-  //rWrite(qr);
-  //printf("\norigr\n");
-  //rWrite(origr);
-  //  printf("\nqr\n");
-  //rWrite(qr);
-  //  printf("\ncurrRing\n");
-  //rWrite(currRing);
+
 #ifdef HAVE_RINGS
-  if((rField_is_Ring(currRing)) && (idPosConstant(id) != -1))
+  if((rField_is_Ring(currRing)) && (cpos != -1))
     {
-      //rChangeCurrRing(qr);
-      //rWrite(qr);
-      int *perm=NULL;
-      int i;
-      perm=(int *)omAlloc0((qr->N+1)*sizeof(int));
+      int i, j;
+      int *perm = (int *)omAlloc0((qr->N+1)*sizeof(int));
+      
       for(i=qr->N;i>0;i--) 
-      {
         perm[i]=i;
-      }
-      nMapFunc nMap = NULL;
-      nMap = n_SetMap(origr->cf, qr->cf);
-      qid = idInit(IDELEMS(id),1);
-      for(i = 0; i<IDELEMS(id); i++)
-      {
-        qid->m[i] = p_PermPoly(id->m[i], perm, origr, qr, nMap, NULL, 0);
-        
-      }
+
+      nMapFunc nMap = n_SetMap(currRing->cf, newcf);
+      qid = idInit(IDELEMS(id)-1,1);
+      for(i = 0, j = 0; i<IDELEMS(id); i++)
+        if( i != cpos )
+          qid->m[j++] = p_PermPoly(id->m[i], perm, currRing, qr, nMap, NULL, 0);
     }
     else
 #endif
       qid = idrCopyR(id,currRing,qr);
+      
   idSkipZeroes(qid);
   //idPrint(qid);
   if ((idElem(qid)>1) || rIsSCA(currRing) || (currRing->qideal!=NULL))
@@ -957,7 +897,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
   }
   if(rt==NONE)
   {
-    Werror("assignment: right side is not a datum or index out of bounds!");
+    WarnS("right side is not a datum, assignment ignored");
     // if (!errorreported)
     //   WerrorS("right side is not a datum");
     //return TRUE;
