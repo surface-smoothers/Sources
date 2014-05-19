@@ -1647,13 +1647,13 @@ ring rCopyNewCoeff(ring r, mpz_t Base, int Exp, n_coeffType typ)
 
 BOOLEAN rEqual(ring r1, ring r2, BOOLEAN qr)
 {
+  if (r1 == r2) return TRUE;
+  if (r1 == NULL || r2 == NULL) return FALSE;
+
   if( !rSamePolyRep(r1, r2) )
     return FALSE;
 
   int i/*, j*/;
-
-  if (r1 == r2) return TRUE;
-  if (r1 == NULL || r2 == NULL) return FALSE;
 
   assume( r1->cf == r2->cf );
   assume( rVar(r1) == rVar(r2) );
@@ -4690,7 +4690,6 @@ ring rAssure_SyzComp_CompLastBlock(const ring r, BOOLEAN)
    if (old_r->qideal != NULL)
    {
       new_r->qideal = idrCopyR(old_r->qideal, old_r, new_r);
-      //currQuotient = new_r->qideal;
    }
 
 #ifdef HAVE_PLURAL

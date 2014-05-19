@@ -41,7 +41,7 @@
 #include <polys/monomials/maps.h>
 #include <kernel/GBEngine/syz.h>
 #include <Singular/lists.h>
-#include <libpolys/coeffs/longrat.h>
+#include <coeffs/longrat.h>
 #include <Singular/libparse.h>
 #include <coeffs/bigintmat.h>
 
@@ -170,9 +170,6 @@ void yyerror(const char * fmt)
   {
     Werror("leaving %s",VoiceName());
   }
-  // libfac:
-  extern int libfac_interruptflag;
-  libfac_interruptflag=0;
 }
 
 %}
