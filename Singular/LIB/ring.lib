@@ -953,7 +953,6 @@ static proc testIsQuotientRing()
    qring qrng3=1;
    ASSUME(0, isQuotientRing(qrng3) ) ;
 }
-
 proc hasFieldCoefficient( rng )
 "USAGE: hasFieldCoefficient ( rng );
 RETURN:  1 if the coeffcients form a field, 0 otherwise.
@@ -961,55 +960,18 @@ KEYWORDS: ring coefficients
 EXAMPLE: example hasFieldCoefficient; shows an example
 "
 {
-  def rl = ringlist(rng);
-  if ( not (typeof(rl[1][1])=="string")    ) { return (0); }
-  return ( (rl[1][1]=="integer") and ( npars(rng)==0 ) and (char(basering)==0) );
+  return (attrib(rng,"ring_cf")==0);
 }
 example
 {
   ring rng = integer,x,dp;
-  hasFieldCoefficientRing(rng); //no
+  hasFieldCoefficient(rng); //no
   // if a certain method supports only rings with integer coefficients,
   // then a parameter test could be performed:
   ring rng2 = 0, x, dp;
   hasFieldCoefficient(rng2);  // yes
 }
 
-
-proc testHasIntegerCoefficientRing()
-{
-   ring rng1 = integer,x,dp;
-   ASSUME(0, hasIntegerCoefficientRing( rng1 ) );
-
-   qring q = ideal(x);
-   ASSUME(0, hasIntegerCoefficientRing( q ) );
-
-   ring rng2 = (integer,7),x,dp;
-   ASSUME(0, not hasIntegerCoefficientRing( rng2 ) );
-
-   ring rng3 = (integer,49),x,dp;
-   ASSUME(0, not hasIntegerCoefficientRing( rng3 ) );
-
-   ring rng4 = (integer,7,a),x,dp;
-   ASSUME(0, not hasIntegerCoefficientRing( rng4 ) );
-
-   ring rng5 = 7,x,dp;
-   ASSUME(0, not hasIntegerCoefficientRing( rng5 ) );
-
-
-
-   ring rng6 = 0,x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng6 ) );
-
-   ring rng7 = (0,a),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng7 ) );
-
-   ring rng8 = (real,a),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng8 ) );
-
-   ring rng9 = (real),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng9 ) );
-}
 
 
 proc hasGlobalOrdering (rng)
