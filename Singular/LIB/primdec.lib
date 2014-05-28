@@ -55,7 +55,7 @@ LIB "matrix.lib";
 LIB "triang.lib";
 LIB "absfact.lib";
 LIB "ring.lib";
-LIB "wrappers.lib";
+//LIB "wrappers.lib";
 ///////////////////////////////////////////////////////////////////////////////
 //
 //                      Gianni/Trager/Zacharias
