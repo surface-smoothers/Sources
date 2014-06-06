@@ -1366,6 +1366,62 @@ example
 //                                                                 //
 /////////////////////////////////////////////////////////////////////
 
+proc minAssPrimesAreEquivalent(list L, list K)
+"USAGE:   minAssAreEquivalent(L,K); L,K list of ideals
+RETURN:  integer, 1 if the lists are the same up to ordering and 0 otherwise
+EXAMPLE: example minAssPrimesAreEquivalent; shows an example"
+{
+  int s1 = size(L);
+  int s2 = size(K);
+  if(s1!=s2)
+    {
+      return(0);
+    }
+  list L1, K1;
+  int i,j,t;
+  list N;
+  for(i=1; i<=s1; i++)
+    {
+      L1[i]=std(L[i]);
+      K1[i]=std(K[i]);
+    }
+  for(i=1; i<=s1; i++)
+    {
+      for(j=1; j<=s1; j++)
+        {
+          if(isSubset(L1[i],K1[j]))
+            {
+              if(isSubset(K1[j],L1[i]))
+                {
+                  for(t=1; t<=size(N); t++)
+                    {
+                      if(N[t]==j)
+                        {
+                          return(0);
+                        }
+                    }
+                  N[size(N)+1]=j;
+                }
+
+            }
+        }
+    }
+  if ( size(N) != s1 )
+  {
+     return(0);
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:";
+  echo = 2;
+  ring  r = 0,(x,y),dp;
+  ideal i = x2,xy;
+  list L1 = minAssGTZ(i);
+  list L2 = minAssChar(i);
+  minAssPrimesAreEquivalent(L1,L2);
+}
 
 /////////////////////////////////////////////////////////////////////
 proc primDecsAreEquivalent(list L, list K)
