@@ -598,56 +598,32 @@ Trager (const CanonicalForm & F, const CFList & Astar,
   return L;
 }
 
-/// algorithm of A. Steel described in "Conquering Inseparability: Primary
-/// decomposition and multivariate factorization over algebraic function fields
-/// of positive characteristic" with the following modifications: we use
-/// characteristic sets in IdealOverSubfield and Trager's primitive element
-/// algorithm instead of FGLM
-CFFList
-SteelTrager (const CanonicalForm & f, const CFList & AS)
+
+/// map elements in @a AS into a PIE \f$ L \f$ and record where the variables
+/// are mapped to in @a varsMapLevel, i.e @a varsMapLevel contains a list of
+/// pairs of variables \f$ v_i \f$ and integers \f$ e_i \f$ such that
+/// \f$ L=K(\sqrt[p^{e_1}]{v_1}, \ldots, \sqrt[p^{e_n}]{v_n}) \f$
+CFList
+mapIntoPIE (CFFList& varsMapLevel, CanonicalForm& lcmVars, const CFList & AS)
 {
-  CanonicalForm F= f, lcmVars= 1;
+  CanonicalForm varsG;
+  int j, exp= 0, tmpExp;
+  bool recurse= false;
   CFList asnew, as= AS;
-  CFListIterator i, ii;
-
-  bool derivZeroF= false;
-  int j, exp=0, expF= 0, tmpExp;
-  CFFList varsMapLevel;
+  CFListIterator i= as, ii;
+  CFFList varsGMapLevel, tmp;
   CFFListIterator iter;
-
-  // check if F is separable
-  if (F.deriv().isZero())
-  {
-    derivZeroF= true;
-    deflateDegree (F, expF, F.level());
-  }
-
-  CanonicalForm varsF= getVars (F);
-  varsF /= F.mvar();
-
-  lcmVars= lcm (varsF, lcmVars);
-
-  if (derivZeroF)
-    as.append (F);
-
-  CFFList varsGMapLevel;
-  CFFList tmp;
   CFFList * varsGMap= new CFFList [as.length()];
   for (j= 0; j < as.length(); j++)
     varsGMap[j]= CFFList();
-
-  CanonicalForm varsG;
   j= 0;
-  bool recurse= false;
-  i= as;
-  // make minimal polys and F separable
   while (i.hasItem())
   {
     if (i.getItem().deriv() == 0)
     {
       deflateDegree (i.getItem(), exp, i.getItem().level());
       i.getItem()= deflatePoly (i.getItem(), exp, i.getItem().level());
-     
+
       varsG= getVars (i.getItem());
       varsG /= i.getItem().mvar();
 
@@ -749,7 +725,6 @@ SteelTrager (const CanonicalForm & f, const CFList & AS)
     lcmVars /= lcmVars.mvar();
   }
 
-  // compute how to map variables in F
   for (j= 0; j < as.length(); j++)
   {
     if (varsGMap[j].isEmpty())
@@ -770,9 +745,45 @@ SteelTrager (const CanonicalForm & f, const CFList & AS)
 
   delete [] varsGMap;
 
+  return asnew;
+}
+
+/// algorithm of A. Steel described in "Conquering Inseparability: Primary
+/// decomposition and multivariate factorization over algebraic function fields
+/// of positive characteristic" with the following modifications: we use
+/// characteristic sets in IdealOverSubfield and Trager's primitive element
+/// algorithm instead of FGLM
+CFFList
+SteelTrager (const CanonicalForm & f, const CFList & AS)
+{
+  CanonicalForm F= f, lcmVars= 1;
+  CFList asnew, as= AS;
+  CFListIterator i, ii;
+
+  bool derivZeroF= false;
+  int j, expF= 0, tmpExp;
+  CFFList varsMapLevel, tmp;
+  CFFListIterator iter;
+
+  // check if F is separable
+  if (F.deriv().isZero())
+  {
+    derivZeroF= true;
+    deflateDegree (F, expF, F.level());
+  }
+
+  CanonicalForm varsF= getVars (F);
+  varsF /= F.mvar();
+
+  lcmVars= lcm (varsF, lcmVars);
+
+  if (derivZeroF)
+    as.append (F);
+
+  asnew= mapIntoPIE (varsMapLevel, lcmVars, as);
+
   if (derivZeroF)
   {
-    as.removeLast();
     asnew.removeLast();
     F= deflatePoly (F, expF, F.level());
   }
@@ -832,20 +843,40 @@ SteelTrager (const CanonicalForm & f, const CFList & AS)
   CFFList result;
   CFList transform;
 
+  bool found;
   for (iter= tmp; iter.hasItem(); iter++)
   {
+    found= false;
     transform= transBack;
     CanonicalForm factor= iter.getItem().factor();
     factor= M (factor);
     transform.append (factor);
     transform= modCharSet (transform, false);
+
+retry:
+    if (transform.isEmpty())
+    {
+      transform= transBack;
+      transform.append (factor);
+      transform= charSetViaCharSetN (transform);
+    }
     for (i= transform; i.hasItem(); i++)
     {
       if (degree (i.getItem(), f.mvar()) > 0)
       {
+        if (i.getItem().level() > f.level())
+          break;
+        found= true;
         factor= i.getItem();
         break;
       }
+    }
+
+    if (!found)
+    {
+      found= false;
+      transform= CFList();
+      goto retry;
     }
 
     factor /= content (factor);
