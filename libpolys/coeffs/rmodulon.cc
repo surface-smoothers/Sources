@@ -103,6 +103,7 @@ coeffs nrnQuot1(number c, const coeffs r)
     return(rr);
 }
 
+static number nrnAnn(number b, const coeffs r);
 /* for initializing function pointers */
 BOOLEAN nrnInitChar (coeffs r, void* p)
 {
@@ -116,6 +117,10 @@ BOOLEAN nrnInitChar (coeffs r, void* p)
      is a GMP number */
   r->ch = mpz_get_ui(r->modNumber);
 
+  r->is_field=FALSE;
+  r->is_domain=FALSE;
+
+
   r->cfCoeffString = nrnCoeffString;
 
   r->cfInit        = nrnInit;
@@ -127,10 +132,10 @@ BOOLEAN nrnInitChar (coeffs r, void* p)
   r->cfSub         = nrnSub;
   r->cfMult        = nrnMult;
   r->cfDiv         = nrnDiv;
-  r->cfIntDiv      = nrnIntDiv;
+  r->cfAnn         = nrnAnn;
   r->cfIntMod      = nrnMod;
   r->cfExactDiv    = nrnDiv;
-  r->cfNeg         = nrnNeg;
+  r->cfInpNeg         = nrnNeg;
   r->cfInvers      = nrnInvers;
   r->cfDivBy       = nrnDivBy;
   r->cfDivComp     = nrnDivComp;
@@ -499,6 +504,14 @@ number nrnIntDiv(number a, number b, const coeffs r)
   mpz_init(erg);
   if (a == NULL) a = (number)r->modNumber;
   mpz_tdiv_q(erg, (int_number)a, (int_number)b);
+  return (number)erg;
+}
+
+static number nrnAnn(number b, const coeffs r)
+{
+  int_number erg = (int_number)omAllocBin(gmp_nrz_bin);
+  mpz_init(erg);
+  mpz_tdiv_q(erg, (int_number)r->modNumber, (int_number)b);
   return (number)erg;
 }
 

@@ -410,6 +410,9 @@ BOOLEAN ngfInitChar(coeffs n, void *parameter)
 {
   assume( getCoeffType(n) == ID );
 
+  n->is_field=TRUE;
+  n->is_domain=TRUE;
+
   n->cfKillChar = ndKillChar; /* dummy */
 
   n->cfSetChar = ngfSetChar;
@@ -425,7 +428,7 @@ BOOLEAN ngfInitChar(coeffs n, void *parameter)
   n->cfMult    = ngfMult;
   n->cfDiv     = ngfDiv;
   n->cfExactDiv= ngfDiv;
-  n->cfNeg     = ngfNeg;
+  n->cfInpNeg     = ngfNeg;
   n->cfInvers  = ngfInvers;
   n->cfCopy   = ngfCopy;
   n->cfGreater = ngfGreater;

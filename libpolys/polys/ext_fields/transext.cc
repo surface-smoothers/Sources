@@ -129,7 +129,6 @@ number   ntLcm(number a, number b, const coeffs cf);
 int      ntSize(number a, const coeffs cf);
 void     ntDelete(number * a, const coeffs cf);
 void     ntCoeffWrite(const coeffs cf, BOOLEAN details);
-number   ntIntDiv(number a, number b, const coeffs cf);
 const char * ntRead(const char *s, number *a, const coeffs cf);
 static BOOLEAN ntCoeffIsEqual(const coeffs cf, n_coeffType n, void * param);
 
@@ -392,7 +391,7 @@ number ntGetNumerator(number &a, const coeffs cf)
     if( !n_GreaterZero(g, ntCoeffs) )
     {
       NUM (f) = p_Neg(NUM (f), ntRing); // Ugly :(((
-      g = n_Neg(g, ntCoeffs);
+      g = n_InpNeg(g, ntCoeffs);
     }
 
     // g should be a positive integer now!
@@ -489,9 +488,9 @@ number ntGetDenom(number &a, const coeffs cf)
   if( !n_GreaterZero(g, ntCoeffs) )
   {
 //     NUM (f) = p_Neg(NUM (f), ntRing); // Ugly :(((
-//     g = n_Neg(g, ntCoeffs);
+//     g = n_InpNeg(g, ntCoeffs);
     NUM (f) = p_Neg(NUM (f), ntRing); // Ugly :(((
-    g = n_Neg(g, ntCoeffs);
+    g = n_InpNeg(g, ntCoeffs);
   }
 
   // g should be a positive integer now!
@@ -653,7 +652,7 @@ number ntInit(poly p, const coeffs cf)
     if( !n_GreaterZero(g, ntCoeffs) )
     {
       p = p_Neg(p, ntRing);
-      g = n_Neg(g, ntCoeffs);
+      g = n_InpNeg(g, ntCoeffs);
     }
 
     // g should be a positive integer now!
@@ -1196,7 +1195,7 @@ void handleNestedFractionsOverQ(fraction f, const coeffs cf)
       while ((p != NULL) && (!n_IsOne(gcdOfCoefficients, ntCoeffs)))
       {
         c = p_GetCoeff(p, ntRing);
-        tmp = n_Gcd(c, gcdOfCoefficients, ntCoeffs);
+        tmp = nlGcd(c, gcdOfCoefficients, ntCoeffs);
         n_Delete(&gcdOfCoefficients, ntCoeffs);
         gcdOfCoefficients = tmp;
         pIter(p);
@@ -1205,7 +1204,7 @@ void handleNestedFractionsOverQ(fraction f, const coeffs cf)
       while ((p != NULL) && (!n_IsOne(gcdOfCoefficients, ntCoeffs)))
       {
         c = p_GetCoeff(p, ntRing);
-        tmp = n_Gcd(c, gcdOfCoefficients, ntCoeffs);
+        tmp = nlGcd(c, gcdOfCoefficients, ntCoeffs);
         n_Delete(&gcdOfCoefficients, ntCoeffs);
         gcdOfCoefficients = tmp;
         pIter(p);
@@ -2422,6 +2421,10 @@ BOOLEAN ntInitChar(coeffs cf, void * infoStruct)
   /* propagate characteristic up so that it becomes
      directly accessible in cf: */
   cf->ch = R->cf->ch;
+
+  cf->is_field=TRUE;
+  cf->is_domain=TRUE;
+
   cf->factoryVarOffset = R->cf->factoryVarOffset + rVar(R);
   extern char* naCoeffString(const coeffs r);
   cf->cfCoeffString = naCoeffString;
@@ -2437,7 +2440,7 @@ BOOLEAN ntInitChar(coeffs cf, void * infoStruct)
   cf->cfFarey        = ntFarey;
   cf->cfChineseRemainder = ntChineseRemainder;
   cf->cfInt          = ntInt;
-  cf->cfNeg          = ntNeg;
+  cf->cfInpNeg          = ntNeg;
   cf->cfAdd          = ntAdd;
   cf->cfSub          = ntSub;
   cf->cfMult         = ntMult;
@@ -2463,7 +2466,6 @@ BOOLEAN ntInitChar(coeffs cf, void * infoStruct)
   cf->cfSize         = ntSize;
   cf->nCoeffIsEqual  = ntCoeffIsEqual;
   cf->cfInvers       = ntInvers;
-  cf->cfIntDiv       = ntDiv;
   cf->cfKillChar     = ntKillChar;
 
   if( rCanShortOut(ntRing) )

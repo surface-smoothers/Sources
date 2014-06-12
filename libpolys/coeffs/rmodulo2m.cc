@@ -95,11 +95,16 @@ coeffs nr2mQuot1(number c, const coeffs r)
     return(rr);
 }
 
+static number nr2mAnn(number b, const coeffs r);
 /* for initializing function pointers */
 BOOLEAN nr2mInitChar (coeffs r, void* p)
 {
   assume( getCoeffType(r) == ID );
   nr2mInitExp((int)(long)(p), r);
+
+  r->is_field=FALSE;
+  r->is_domain=FALSE;
+
   r->cfKillChar    = ndKillChar; /* dummy*/
   r->nCoeffIsEqual = nr2mCoeffIsEqual;
   r->cfCoeffString = nr2mCoeffString;
@@ -120,10 +125,10 @@ BOOLEAN nr2mInitChar (coeffs r, void* p)
   r->cfSub         = nr2mSub;
   r->cfMult        = nr2mMult;
   r->cfDiv         = nr2mDiv;
-  r->cfIntDiv      = nr2mIntDiv;
+  r->cfAnn         = nr2mAnn;
   r->cfIntMod      = nr2mMod;
   r->cfExactDiv    = nr2mDiv;
-  r->cfNeg         = nr2mNeg;
+  r->cfInpNeg         = nr2mNeg;
   r->cfInvers      = nr2mInvers;
   r->cfDivBy       = nr2mDivBy;
   r->cfDivComp     = nr2mDivComp;
@@ -580,6 +585,27 @@ number nr2mIntDiv(number a, number b, const coeffs r)
     if ((NATNUMBER)b == 0)
       return (number)0;
     return (number)((NATNUMBER) a / (NATNUMBER) b);
+  }
+}
+
+static number nr2mAnn(number b, const coeffs r)
+{
+  if ((NATNUMBER)b == 0)
+    return NULL;
+  if ((NATNUMBER)b == 1)
+    return NULL;
+  NATNUMBER c = r->mod2mMask + 1;
+  if (c != 0) /* i.e., if no overflow */
+    return (number)(c / (NATNUMBER)b);
+  else
+  {
+    /* overflow: c = 2^32 resp. 2^64, depending on platform */
+    int_number cc = (int_number)omAlloc(sizeof(mpz_t));
+    mpz_init_set_ui(cc, r->mod2mMask); mpz_add_ui(cc, cc, 1);
+    mpz_div_ui(cc, cc, (unsigned long)(NATNUMBER)b);
+    unsigned long s = mpz_get_ui(cc);
+    mpz_clear(cc); omFree((ADDRESS)cc);
+    return (number)(NATNUMBER)s;
   }
 }
 
