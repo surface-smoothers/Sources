@@ -976,7 +976,7 @@ static proc modp(ideal J, int p, int nu)
 //=== of I
    number h=1;
    int i;
-   I = delZeroGens(I);
+   I = simplify(I,2);
    for(i=1; i<=ncols(I); i++)  // no difference, since primefactors(0)=primefactors(1)={}
    {
       h=h*leadcoef(I[i]);  // besser machen (gleich zerlegen,
@@ -1179,7 +1179,7 @@ static proc normalizeZ(ideal I)
 //=== if I[1]=q in Z, it replaces all other coeffs of polys in I by there value
 //=== mod q, std should do this automatically and then this procedure should be
 //=== removed
-   I = delZeroGens(I);     // required, otherwise routine may fail
+   I =  simplify(I,2);     // required, otherwise routine may fail
 
    if ( deg(I[1])>0 ) { return(I); }
    int i,j;
@@ -1249,8 +1249,8 @@ static proc quotientOneZ(ideal I, poly f)
 //=== this is needed because quotient(I,J) does not work properly, should be
 //=== replaced by quotient later
    if ( size(J)==0 ) { return( ideal(1) ); }
-   I = delZeroGens(I);
-   J = delZeroGens(J);
+   I =  simplify(I,2);
+   J =  simplify(J,2);
    int i;
    ideal K = quotientOneZ( I, J[1] );
    for(i=2; i<=ncols(J); i++) //no difference
@@ -1277,7 +1277,7 @@ static proc quotientOneZ(ideal I, poly f)
    int i,j;
    poly m;
    number n;
-   I = delZeroGens(I);
+   I =  simplify(I,2);
    while(!i)
    {
       i=1;
@@ -1316,7 +1316,7 @@ static proc quotientOneZ(ideal I, poly f)
 {
 //=== this is needed because we want the leading coefficients to be positive
 //=== otherwhise reduce gives wrong results! should be replaced later by std
-   I = delZeroGens(I);
+   I =  simplify(I,2);
    I = normalizeZ(I);
    ideal J = std(I);
    int i;
@@ -1326,9 +1326,9 @@ static proc quotientOneZ(ideal I, poly f)
       ASSUME(1 , leadcoef(J[i]) >= 0 ); 
    }
    J = normalizeZ(J);
-   ASSUME( 0, isZNormalized(J) );
+   //ASSUME( 0, isZNormalized(J) );
    attrib( J, "isSB",1);
-   ASSUME( 0, isReducedSB(J) );
+   //ASSUME( 0, isReducedSB(J) );
    return(J);
 }
 
