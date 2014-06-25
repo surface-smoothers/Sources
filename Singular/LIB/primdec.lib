@@ -5404,7 +5404,7 @@ EXAMPLE: example primdecGTZ; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       ideal i=imap(r,i);
-      if (idealsAreEqual(i,ideal(1))) {return(list());}
+      if (idealsEqual(i,ideal(1))) {return(list());}
 // decompose and go back
       list li=primdecGTZ(i);
       int sizeli = size(li);
@@ -5433,7 +5433,7 @@ EXAMPLE: example primdecGTZ; shows an example
       "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
       );
    }
-  if (idealsAreEqual(i,ideal(1))) {return(list());}
+  if (idealsEqual(i,ideal(1))) {return(list());}
   return(convList(decomp(i)));
 }
 example
@@ -5493,7 +5493,7 @@ EXAMPLE: example absPrimdecGTZ; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       def I=imap(r,I);
-      if (idealsAreEqual(I,ideal(1)) ) {return(list());}
+      if (idealsEqual(I,ideal(1)) ) {return(list());}
       def S=absPrimdecGTZ(I);
       setring S;
       ring r1=char(basering),var(nvars(r)+1),dp;
@@ -5531,7 +5531,7 @@ EXAMPLE: example absPrimdecGTZ; shows an example
       export(absolute_primes);
       return(rS);
   }
-  if (idealsAreEqual(I,ideal(1)) ) {return(list());}
+  if (idealsEqual(I,ideal(1)) ) {return(list());}
   if(minpoly!=0)
   {
     //return(algeDeco(i,0));
@@ -5656,7 +5656,7 @@ EXAMPLE: example primdecSY; shows an example
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       ideal i=imap(r,i);
-      if (idealsAreEqual(i,ideal(1))) { return( list() ); }
+      if (idealsEqual(i,ideal(1))) { return( list() ); }
 // decompose and go back
       list li=primdecSY(i);
       int sizeli = size(li);
