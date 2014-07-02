@@ -1512,8 +1512,18 @@ proc zeroSepClos(ideal I,ideal F)
   return(list(J,v));
 }
 ///////////////////////////////////////////////////////////////////////////////
+proc insepDecompE(ideal I)
+{
+   return(insepDecomp_i(int(1),I));
+}
 
-proc insepDecomp(ideal i)
+
+proc insepDecomp(ideal I)
+{
+   return(insepDecomp_i(int(0),I));
+}
+
+proc insepDecomp_i(patchPrimaryDecomposition, ideal i)
 {
 //decomposes i into special ideals
 //computes the prime decomposition of the special ideals
@@ -1537,7 +1547,7 @@ proc insepDecomp(ideal i)
       m[k]=var(k)^(p^wo[2][k]);
     }
     phi=R,m;
-    qr=decomp_i(patchPrimaryDecomposition,wo[1],2);
+    qr = decomp_i(patchPrimaryDecomposition,wo[1],2);
 
     option(redSB);
     for(k=1;k<=size(qr) div 2;k++)
@@ -2434,32 +2444,6 @@ static proc union(list li)
 }
 
 
-proc equidimE(ideal I,list #)
-"USAGE:  equidimE(I) or equidimE(I,1) ; i ideal
-RETURN: list of equidimensional ideals a[1],...,a[s] with:
-        - a[s] the equidimensional locus of I, i.e. the intersection
-          of the primary ideals of dimension of I.  In case I is unit ideal,empty list will be returned.
-        - a[1],...,a[s-1] the lower dimensional equidimensional loci.
-NOTE:    An embedded component q (primary ideal) of I can be replaced in the
-         decomposition by a primary ideal q1 with the same radical as q. @*
-         @code{equidim(I,1)} uses the algorithm of Eisenbud/Huneke/Vasconcelos.
-
-EXAMPLE:example equidim; shows an example
-"
-{
-    list result = equidim_i(int(1),I,#);
-    return(result);
-     
-}
-example
-{ "EXAMPLE:"; echo = 2;
-   ring  r = 32003,(x,y,z),dp;
-   short = 0;
-   ideal I = intersect(ideal(z),ideal(x,y),ideal(x^2,z^2),ideal(x^5,y^5,z^5));
-   equidimE(I);
-   ideal J = x;
-   equidimE(J);
-}
 
 
 proc equidim(ideal I,list #)
@@ -2468,29 +2452,13 @@ RETURN: list of equidimensional ideals a[1],...,a[s] with:
         - a[s] the equidimensional locus of I, i.e. the intersection
           of the primary ideals of dimension of I, except I is unit ideal. 
         - a[1],...,a[s-1] the lower dimensional equidimensional loci.
-        If I is the unit ideal, a list containing the unit ideal as a[1] is returned.
+         If I is the unit ideal, a list containing the unit ideal as a[1] is returned.
 NOTE:    An embedded component q (primary ideal) of I can be replaced in the
          decomposition by a primary ideal q1 with the same radical as q. @*
          @code{equidim(I,1)} uses the algorithm of Eisenbud/Huneke/Vasconcelos.
 
 EXAMPLE:example equidim; shows an example
 "
-{
-    list result = equidim_i(int(0),I,#);
-    return(result);
-     
-}
-example
-{ "EXAMPLE:"; echo = 2;
-   ring  r = 32003,(x,y,z),dp;
-   short = 0;
-   ideal I = intersect(ideal(z),ideal(x,y),ideal(x^2,z^2),ideal(x^5,y^5,z^5));
-   equidim(I);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-static proc equidim_i(ideal i,list #)
 {
   if(attrib(basering,"global")!=1)
   {
@@ -2581,7 +2549,7 @@ static proc equidim_i(ideal i,list #)
   j=quotient(j,k);
   option(set,op);
 
-  list equi=equidim_i(j);
+  list equi=equidim(j);
   if(deg(equi[size(equi)][1])<=0)
   {
       equi[size(equi)]=k;
@@ -2854,9 +2822,9 @@ proc algeDeco_i(int patchPrimaryDecomposition, ideal i, int w)
       gnir="ring RS="+string(char(R))+",("+varstr(RH)
                 +"),(dp("+string(n)+"),lp);";
       execute(gnir);
-      if (sizepr>0) {    list  pr=imap(RH,pr); }
+      if (sizepr>0) {    list  pr=imap(RH,pr); sizepr = size(pr); }
       ideal K;
-      for(j=1;j<=size(pr);j++)
+      for(j=1;j<=sizepr;j++)
       {
          K=groebner(pr[j]);
          if (ncols(K)>1)
@@ -2913,6 +2881,7 @@ static proc decompE(ideal I,list #)
 RETURN:  list = list of primary ideals and their associated primes
          (at even positions in the list)
          (resp. a list of the minimal associated primes)
+         if I is unit ideal, returns emtpy list
 NOTE:    Algorithm of Gianni/Trager/Zacharias
 EXAMPLE: example decompE; shows an example
 "
@@ -3179,6 +3148,13 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       @j=std(@j);
 
       list pr=decomp_i(patchPrimaryDecomposition,@j);
+      if (size(pr)==0)
+      {      
+            setring @P;
+            if (abspri) { return(prepare_absprimdec(list()));}
+            return(list());
+      }
+      
       setring gnir;
       list pr=imap(@deirf,pr);
       for(@k=1;@k<=size(pr);@k++)
@@ -6882,7 +6858,7 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
 ///////////////////////////////////////////////////////////////////////////////
 // Given an ideal I and an ideal P (intersection of some minimal prime ideals
 // associated to I), it calculates the intersection of new minimal prime ideals
-// associated to I which where not used to calculate P.
+// associated to I which where not used to calculate P. P = 1 represents empty intersection.
 // This version uses ZD Radical in the zerodimensional case.
 static proc radicalSLIteration (ideal I, ideal P);
 // Input: I, ideal. The ideal from which new prime components will be obtained.
@@ -7357,8 +7333,19 @@ example
    list pr = zerodec(i);
    pr;
 }
+
+static proc newDecompStepE(ideal I, list #)
+{
+   return(newDecompStep_i(int(1),I,#));
+}
+
+static proc newDecompStep(ideal I, list #)
+{
+    return(newDecompStep_i(int(0),I,#));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
-static proc newDecompStep(ideal i, list #)
+static proc newDecompStep_i(int patchPrimaryDecomposition, ideal i, list #)
 "USAGE:  newDecompStep(i); i ideal  (for primary decomposition)
          newDecompStep(i,1);        (for the associated primes of dimension of i)
          newDecompStep(i,2);        (for the minimal associated primes)
@@ -7602,7 +7589,7 @@ EXAMPLE: example newDecompStep; shows an example
       ideal @j= @kappa(@j);
       @j=simplify(@j, 2);
       attrib(@j,"isSB",1);
-      result = newDecompStep(@j, indepOption, intersectOption, @wr);
+      result = newDecompStep_i(patchPrimaryDecomposition, @j, indepOption, intersectOption, @wr);
       if (intersectOption == "intersect")
       {
        list pr = result[1];
@@ -8206,13 +8193,13 @@ EXAMPLE: example newDecompStep; shows an example
            if(@wr>0)
            {
               // The following line was dropped to avoid the recursion step:
-              //htprimary=newDecompStep(@j,@wr,peek,ser);
+              //htprimary=newDecompStep_i(patchPrimaryDecomposition, @j,@wr,peek,ser);
               htprimary = list();
            }
            else
            {
               // The following line was dropped to avoid the recursion step:
-              //htprimary=newDecompStep(@j,peek,ser);
+              //htprimary=newDecompStep_i(patchPrimaryDecomposition,@j,peek,ser);
               htprimary = list();
            }
            // here we collect now both results primary(sat(j,gh))
@@ -8642,7 +8629,7 @@ static proc minAssSL(ideal I)
 ///////////////////////////////////////////////////////////////////////////////
 // Given an ideal I and an ideal P (intersection of some minimal prime ideals
 // associated to I), it calculates new minimal prime ideals associated to I
-// which were not used to calculate P.
+// which were not used to calculate P. P = 1 represents empty intersetion.
 // This version uses Primary Decomposition in the zerodimensional case.
 static proc minAssSLIteration(ideal I, ideal P);
 {
@@ -8672,7 +8659,7 @@ static proc minAssSLIteration(ideal I, ideal P);
   // Debug
   dbprint(printlevel - voice, "// We do the reduction to the zerodimensional case, via decomp.");
 
-  primaryDec = newDecompStep(J, "oneIndep", "intersect", 2);
+  primaryDec = newDecompStepE(J, "oneIndep", "intersect", 2);
   // Debug
   dbprint(printlevel - voice, "// Proc decomp has found", size(primaryDec) div 2, "new primary components.");
 
@@ -8814,6 +8801,7 @@ EXAMPLE: example newZero_decomp; shows an example
 
   if (dim(j)>0)
   {
+    ERROR("dim(j)>0");
     primary[1]=ideal(1);
     primary[2]=ideal(1);
     return(primary);
@@ -8869,12 +8857,14 @@ EXAMPLE: example newZero_decomp; shows an example
     primary[1]=j;
     if((size(ser)>0)&&(size(reduce(ser,j,1))==0))
     {
+       ERROR("dim(j)==-1");
       primary[1]=ideal(1);
       primary[2]=ideal(1);
       return(primary);
     }
     if(dim(j)==-1)
     {
+      ERROR("dim(j)==-1");
       primary[1]=ideal(1);
       primary[2]=ideal(1);
     }
@@ -8893,6 +8883,7 @@ EXAMPLE: example newZero_decomp; shows an example
   }
   else
   {
+    ERROR("some error happened");
     primary[1]=ideal(1);
     primary[2]=ideal(1);
     return(primary);
@@ -8904,6 +8895,7 @@ EXAMPLE: example newZero_decomp; shows an example
   {
     if(size(#)>1)
     {
+      ERROR("some error happened 2 ");
       primary[1]=ideal(1);
       primary[2]=ideal(1);
       primary[3]=ideal(1);
@@ -8972,7 +8964,7 @@ EXAMPLE: example newZero_decomp; shows an example
       @k++;
       if(size(primary[2*@k])==0)
       {
-        ek=insepDecomp(primary[2*@k-1]);
+        ek=insepDecompE( primary[2*@k-1]);
         primary=delete(primary,2*@k);
         primary=delete(primary,2*@k-1);
         @k--;
