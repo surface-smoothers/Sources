@@ -2466,8 +2466,9 @@ proc equidim(ideal I,list #)
 "USAGE:  equidim(I) or equidim(I,1) ; I ideal
 RETURN: list of equidimensional ideals a[1],...,a[s] with:
         - a[s] the equidimensional locus of I, i.e. the intersection
-          of the primary ideals of dimension of I, except I is unit ideal. In that case a unit ideal may be returned.
+          of the primary ideals of dimension of I, except I is unit ideal. 
         - a[1],...,a[s-1] the lower dimensional equidimensional loci.
+        If I is the unit ideal, a list containing the unit ideal as a[1] is returned.
 NOTE:    An embedded component q (primary ideal) of I can be replaced in the
          decomposition by a primary ideal q1 with the same radical as q. @*
          @code{equidim(I,1)} uses the algorithm of Eisenbud/Huneke/Vasconcelos.
