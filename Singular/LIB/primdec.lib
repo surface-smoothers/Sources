@@ -2217,7 +2217,7 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
           else
           {
                setring P0; 
-               return( list(list(ideal(1),ideal(1))) ); 
+               return( list(ideal(1)) ); 
           }
       }
   }
@@ -2446,7 +2446,7 @@ static proc union(list li)
 
 
 
-proc equidim(ideal I,list #)
+proc equidim(ideal i,list #)
 "USAGE:  equidim(I) or equidim(I,1) ; I ideal
 RETURN: list of equidimensional ideals a[1],...,a[s] with:
         - a[s] the equidimensional locus of I, i.e. the intersection
@@ -2501,16 +2501,6 @@ EXAMPLE:example equidim; shows an example
      execute("ring gnir = ("+charstr(basering)+"),("+varstr(basering)+"),dp;");
      ideal i=imap(P,i);
      ideal j=groebner(i);
-  }
-  if(size(j)>0)
-  {
-     if ( j[1]==1 ) // how to check for unit ideal?
-     { 
-        if (patchPrimaryDecomposition==1)
-        {
-            return( list() ); 
-        }
-     }
   }
   if(homo==1)
   {
@@ -4946,7 +4936,7 @@ static proc prim_dec_i(int patchPrimaryDecomposition, ideal I, int choose)
 // calls  proc pseudo_prim_dec_i
 //////////////////////////////////////////////////////////////////////////
 
-static proc pseudo_prim_dec_charsets(ideal I, ideal SI, int choo)
+static proc pseudo_prim_dec_charsetsE(ideal I, ideal SI, int choo)
 {
     return(static proc pseudo_prim_dec_charsets_i(int(1),I,SI,choo));
 }
@@ -7206,7 +7196,6 @@ static proc testPrimary_i(int patchPrimaryDecomposition,list pr, ideal k)
           return( size(pr)==0 ); //list expected to be empty.
        }
    }
-   pr;
    ideal j=pr[1];
   
 
