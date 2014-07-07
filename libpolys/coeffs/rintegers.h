@@ -29,7 +29,7 @@ BOOLEAN nrzIsMOne      (number a, const coeffs r);
 BOOLEAN nrzIsUnit      (number a, const coeffs r);
 number  nrzGetUnit     (number a, const coeffs r);
 number  nrzDiv         (number a, number b, const coeffs r);
-number  nrzIntDiv      (number a, number b, const coeffs r);
+number  nrzExactDiv    (number a, number b, const coeffs r);
 number  nrzIntMod      (number a, number b, const coeffs r);
 number  nrzNeg         (number c, const coeffs r);
 number  nrzInvers      (number c, const coeffs r);
@@ -51,6 +51,7 @@ BOOLEAN nrzDBTest      (number a, const char *f, const int l, const coeffs r);
 void    nrzSetExp(int c, coeffs r);
 void    nrzInitExp(int c, coeffs r);
 void    nrzDelete(number *a, const coeffs r);
+coeffs  nrzQuot1(number c, const coeffs r);
 
 number nrzMapQ(number from, const coeffs src, const coeffs dst);
 #endif

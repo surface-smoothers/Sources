@@ -156,7 +156,7 @@ AH_TEMPLATE([FACTORY_INT64], [Defenition for FACTORY_INT64])
 # Always long long int???!
 AC_DEFINE([FACTORY_INT64], [long long int]) 
 
-DX_INIT_DOXYGEN($PACKAGE_NAME, MYDOXYGENCONFIG)
+DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.cfg, $srcdir/docu)
 
 # do not use `MKINSTALLDIRS' and `MAKEHEADER' since there may be
 # name clashes with other peoples configure scripts via
@@ -390,9 +390,6 @@ AC_SUBST(factory_version)
 AH_TEMPLATE([FACTORYVERSION], [factory version])
 AC_DEFINE_UNQUOTED([FACTORYVERSION], "$factory_version")
 
-AH_TEMPLATE([HAVE_LIBFAC], [have libfac])
-AC_DEFINE_UNQUOTED([HAVE_LIBFAC], 1)
-
 AH_TEMPLATE([FACTORYCONFIGURATION], [factory configuration])
 AC_DEFINE_UNQUOTED([FACTORYCONFIGURATION], "$factory_configuration")
 
@@ -401,6 +398,6 @@ AC_DEFINE_UNQUOTED([FACTORYCONFIGURATION], "$factory_configuration")
 
 
 
-AC_CONFIG_FILES([Makefile include/factory/Makefile libfac/Makefile factory.pc]) #  ftest/GNUmakefile
+AC_CONFIG_FILES([Makefile include/factory/Makefile factory.pc]) #  ftest/GNUmakefile
 AC_OUTPUT
 

@@ -13,6 +13,7 @@
 
 #include <misc/auxiliary.h>
 #include <misc/mylimits.h>
+#include <misc/sirandom.h>
 
 #include <reporter/reporter.h>
 
@@ -828,6 +829,8 @@ static char* nfCoeffString(const coeffs r)
 
 BOOLEAN nfInitChar(coeffs r,  void * parameter)
 {
+  r->is_field=TRUE;
+  r->is_domain=TRUE;
   //r->cfInitChar=npInitChar;
   r->cfKillChar=nfKillChar;
   r->nCoeffIsEqual=nfCoeffIsEqual;
@@ -837,7 +840,6 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   r->cfSub   = nfSub;
   r->cfAdd   = nfAdd;
   r->cfDiv   = nfDiv;
-  r->cfIntDiv= nfDiv;
   //r->cfIntMod= ndIntMod;
   r->cfExactDiv= nfDiv;
   r->cfInit = nfInit;
@@ -850,7 +852,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   //r->cfExtGcd = NULL; // only for ring stuff
   // r->cfDivBy = NULL; // only for ring stuff
   #endif
-  r->cfNeg   = nfNeg;
+  r->cfInpNeg   = nfNeg;
   r->cfInvers= nfInvers;
   //r->cfCopy  = ndCopy;
   //r->cfRePart = ndCopy;

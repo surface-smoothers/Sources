@@ -1,11 +1,9 @@
+/*! \file kernel/polys.h KernelCommon: compatiblity layer for all operations with polys
+ 
+*/
+
 #ifndef POLYS_H
 #define POLYS_H
-/****************************************
-*  Computer Algebra System SINGULAR     *
-****************************************/
-/*
-* ABSTRACT - compatiblity layer for all operations with polys
-*/
 
 #include <polys/monomials/ring.h>
 #include <polys/monomials/p_polys.h>
@@ -222,8 +220,6 @@ static inline void pLmFree(poly *p)   {p_LmFree(p, currRing);}
  ***************************************************************/
 
 typedef poly*   polyset;
-// // // extern poly     ppNoether; // use currRing -> ppNoether!!!
-extern BOOLEAN  pVectorOut;
 
 /*-------------predicate on polys ----------------------*/
 #define  pHasNotCF(p1,p2)   p_HasNotCF(p1,p2,currRing)

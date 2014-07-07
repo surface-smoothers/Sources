@@ -14,7 +14,6 @@
 #include <misc/intvec.h>
 #include <misc/options.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <Singular/subexpr.h>
@@ -330,13 +329,6 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
           {
             output->name=ndName(pGetCoeff((poly)input->data), currRing->cf);
           }
-#ifdef TEST
-          else
-          {
-            WerrorS("wrong name, should not happen");
-            output->name=omStrDup("?");
-          }
-#endif
         }
       }
       else if ((input->rtyp==NUMBER_CMD) && (input->name==NULL))

@@ -48,13 +48,11 @@
 
 #include <kernel/GBEngine/kutil.h>
 #include <polys/kbuckets.h>
-#include <kernel/febase.h>
 #include <omalloc/omalloc.h>
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
 #include <polys/monomials/ring.h>
 #include <kernel/ideals.h>
-#include <kernel/timer.h>
 //#include "cntrlc.h"
 #include <kernel/GBEngine/stairc.h>
 #include <kernel/GBEngine/kstd1.h>
@@ -390,7 +388,7 @@ void cancelunit (LObject* L,BOOLEAN inNF)
       i++;
       if (p_GetExp(p,i,r) > p_GetExp(h,i,r)) return ; // does not divide
       #ifdef HAVE_RINGS
-      // Note: As long as qring j forbidden if j contains integer (i.e. ground rings are 
+      // Note: As long as qring j forbidden if j contains integer (i.e. ground rings are
       //       domains), no zerodivisor test needed  CAUTION
       if (rField_is_Ring(currRing) && currRing->OrdSgn == -1)
               if(n_DivBy(p_GetCoeff(h,r->cf),lc,r->cf) == 0)
@@ -3475,7 +3473,7 @@ void enterExtendedSpoly(poly h,kStrategy strat)
   bool go = false;
   if (n_DivBy((number) 0, pGetCoeff(h), currRing->cf))
   {
-    gcd = nIntDiv((number) 0, pGetCoeff(h));
+    gcd = n_Ann(pGetCoeff(h),currRing->cf);
     go = true;
   }
   else
@@ -3486,7 +3484,7 @@ void enterExtendedSpoly(poly h,kStrategy strat)
     if (!go)
     {
       number tmp = gcd;
-      gcd = nIntDiv(0, gcd);
+      gcd = n_Ann(gcd,currRing->cf);
       nDelete(&tmp);
     }
     p_Test(p,strat->tailRing);
@@ -7613,7 +7611,7 @@ void initBuchMora (ideal F,ideal Q,kStrategy strat)
         }
         idDelete(&P);
     }
-  
+
     else
     {
       /*Shdl=*/initSL(F, Q,strat); /*sets also S, ecartS, fromQ */
@@ -7914,9 +7912,12 @@ void updateResult(ideal r,ideal Q, kStrategy strat)
       {
         for(q=IDELEMS(Q)-1; q>=0;q--)
         {
-          if ((Q->m[q]!=NULL)
-          &&(pLmEqual(r->m[l],Q->m[q])))
+          if ((Q->m[q]!=NULL)&&(pLmEqual(Q->m[q],r->m[l])))
           {
+            #ifdef HAVE_RINGS
+            //Also need divisibility of the leading coefficients
+            if((!rField_is_Ring(currRing)) || (pDivisibleBy(Q->m[q],r->m[l])))
+            #endif
             if (TEST_OPT_REDSB)
             {
               p=r->m[l];
@@ -7971,7 +7972,7 @@ void completeReduce (kStrategy strat, BOOLEAN withT)
   if (TEST_OPT_PROT)
   {
     PrintLn();
-    if (timerv) writeTime("standard base computed:");
+//    if (timerv) writeTime("standard base computed:");
   }
   if (TEST_OPT_PROT)
   {
@@ -8754,7 +8755,6 @@ void kDebugPrint(kStrategy strat)
     else  Print("%p\n",(void*)strat->red);
   PrintS("posInT: ");
     if (strat->posInT==posInT0) PrintS("posInT0\n");
-    else if (strat->posInT==posInT0) PrintS("posInT0\n");
     else if (strat->posInT==posInT1) PrintS("posInT1\n");
     else if (strat->posInT==posInT11) PrintS("posInT11\n");
     else if (strat->posInT==posInT110) PrintS("posInT110\n");
