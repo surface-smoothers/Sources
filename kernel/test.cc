@@ -1,7 +1,4 @@
-
 #include <kernel/mod2.h>
-
-#include "mod2.h"
 
 #include <omalloc/omalloc.h>
 #include <misc/auxiliary.h>
@@ -380,7 +377,7 @@ void TestGBEngine()
   rChangeCurrRing(R);
 
   {
-    ideal G = kStd(I, currQuotient, testHomog, NULL);
+    ideal G = kStd(I, currRing->qideal, testHomog, NULL);
 
 #ifdef PDEBUG
     PrintS("GB: ");

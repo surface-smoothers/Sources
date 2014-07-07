@@ -21,6 +21,7 @@
 
 #include <coeffs/numbers.h>
 #include <coeffs/coeffs.h>
+#include <coeffs/rmodulon.h>
 
 #include <polys/monomials/p_polys.h>
 #include <polys/simpleideals.h>
@@ -1604,20 +1605,19 @@ ring rCopy(ring r)
 
 BOOLEAN rEqual(ring r1, ring r2, BOOLEAN qr)
 {
+  if (r1 == r2) return TRUE;
+  if (r1 == NULL || r2 == NULL) return FALSE;
+  if (r1->cf!=r2->cf) return FALSE;
+  if (rVar(r1)!=rVar(r2)) return FALSE;
+
   if( !rSamePolyRep(r1, r2) )
     return FALSE;
 
   int i/*, j*/;
 
-  if (r1 == r2) return TRUE;
-  if (r1 == NULL || r2 == NULL) return FALSE;
-
-  assume( r1->cf == r2->cf );
-  assume( rVar(r1) == rVar(r2) );
-
   for (i=0; i<rVar(r1); i++)
   {
-    if (r1->names[i] != NULL && r2->names[i] != NULL)
+    if ((r1->names[i] != NULL) && (r2->names[i] != NULL))
     {
       if (strcmp(r1->names[i], r2->names[i])) return FALSE;
     }
@@ -2562,7 +2562,7 @@ static unsigned long rGetExpSize(unsigned long bitmask, int & bits, int N)
  * DOES CALL rComplete
  */
 ring rModifyRing(ring r, BOOLEAN omit_degree,
-                         BOOLEAN omit_comp,
+                         BOOLEAN try_omit_comp,
                          unsigned long exp_limit)
 {
   assume (r != NULL );
@@ -2621,7 +2621,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
       }
       case ringorder_C:
       case ringorder_c:
-        if (!omit_comp)
+        if (!try_omit_comp)
         {
           order[j]=r_ord; /*r->order[i]*/;
         }
@@ -2629,7 +2629,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         {
           j--;
           need_other_ring=TRUE;
-          omit_comp=FALSE;
+          try_omit_comp=FALSE;
           copy_block_index=FALSE;
         }
         break;
@@ -2667,12 +2667,10 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         break;
       case ringorder_IS:
       {
-        if (omit_comp)
+        if (try_omit_comp)
         {
-#ifndef SING_NDEBUG
-          Warn("Error: WRONG USAGE of rModifyRing: cannot omit component due to the ordering block [%d]: %d (ringorder_IS)", i, r_ord);
-#endif
-          omit_comp = FALSE;
+          // tried, but cannot omit component due to the ordering block [%d]: %d (ringorder_IS)", i, r_ord
+          try_omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
         iNeedInducedOrderingSetup++;
@@ -2681,12 +2679,12 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
       case ringorder_s:
       {
         assume((i == 0) && (j == 0));
-        if (omit_comp)
+        if (try_omit_comp)
         {
 #ifndef SING_NDEBUG
           Warn("WRONG USAGE? of rModifyRing: omitting component due to the ordering block [%d]: %d (ringorder_s)", i, r_ord);
 #endif
-          omit_comp = FALSE;
+          try_omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
         break;
@@ -3765,6 +3763,7 @@ static void rCheckOrdSgn(ring r,int i/*current block*/)
 { // set r->OrdSgn
   int jj;
   int oo=-1;
+  int notfound=1;
   for(jj=i-1;jj>=0;jj--)
   {
     if(((r->order[jj]==ringorder_a)
@@ -3782,9 +3781,19 @@ static void rCheckOrdSgn(ring r,int i/*current block*/)
         }
       }
       oo=res;
+      notfound=0;
     }
     r->OrdSgn=oo;
   }
+  if (notfound
+  && (r->order[i]==ringorder_ls)
+     || (r->order[i]==ringorder_ds)
+     || (r->order[i]==ringorder_Ds)
+     || (r->order[i]==ringorder_ws)
+     || (r->order[i]==ringorder_Ws)
+     || (r->order[i]==ringorder_rs)
+  )
+    r->OrdSgn=-1;
 }
 
 
@@ -4647,7 +4656,6 @@ ring rAssure_SyzComp_CompLastBlock(const ring r, BOOLEAN)
    if (old_r->qideal != NULL)
    {
       new_r->qideal = idrCopyR(old_r->qideal, old_r, new_r);
-      //currQuotient = new_r->qideal;
    }
 
 #ifdef HAVE_PLURAL

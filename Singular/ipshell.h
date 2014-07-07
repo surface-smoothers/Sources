@@ -10,6 +10,7 @@
 //#include <kernel/structs.h>
 #include <kernel/ideals.h>
 #include <Singular/lists.h>
+#include <Singular/fevoices.h>
 
 struct _ssubexpr;
 typedef struct _ssubexpr *Subexpr;
@@ -20,6 +21,8 @@ BOOLEAN    spaddProc    ( leftv,leftv,leftv );
 BOOLEAN    spmulProc    ( leftv,leftv,leftv );
 BOOLEAN    semicProc   ( leftv,leftv,leftv );
 BOOLEAN    semicProc3   ( leftv,leftv,leftv,leftv );
+
+BOOLEAN iiARROW (leftv, char*,char *);
 
 extern leftv iiCurrArgs;
 extern idhdl iiCurrProc;
@@ -117,13 +120,6 @@ BOOLEAN iiExprArithM(leftv res, sleftv* a, int op);
 BOOLEAN iiApply(leftv res,leftv a, int op, leftv proc);
 
 typedef BOOLEAN (*proc1)(leftv,leftv);
-
-#ifdef __GNUC__
-#if (__GNUC__ < 3)
-#define INIT_BUG 1
-void    jjInitTab1();
-#endif
-#endif
 
 #ifdef GENTABLE
 typedef char * (*Proc1)(char *);

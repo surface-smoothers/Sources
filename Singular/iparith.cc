@@ -1176,7 +1176,7 @@ static BOOLEAN jjDIV_BI(leftv res, leftv u, leftv v)
     WerrorS(ii_div_by_0);
     return TRUE;
   }
-  q = n_IntDiv((number)u->Data(),q,coeffs_BIGINT);
+  q = n_Div((number)u->Data(),q,coeffs_BIGINT);
   n_Normalize(q,coeffs_BIGINT);
   res->data = (char *)q;
   return FALSE;
@@ -1980,11 +1980,11 @@ static BOOLEAN jjDIM2(leftv res, leftv v, leftv w)
     return FALSE;
   }
 #endif
-  if(currQuotient==NULL)
+  if(currRing->qideal==NULL)
     res->data = (char *)((long)scDimInt((ideal)(v->Data()),(ideal)w->Data()));
   else
   {
-    ideal q=idSimpleAdd(currQuotient,(ideal)w->Data());
+    ideal q=idSimpleAdd(currRing->qideal,(ideal)w->Data());
     res->data = (char *)((long)scDimInt((ideal)(v->Data()),q));
     idDelete(&q);
   }
@@ -2353,14 +2353,9 @@ static BOOLEAN jjGCD_I(leftv res, leftv u, leftv v)
 }
 static BOOLEAN jjGCD_BI(leftv res, leftv u, leftv v)
 {
-  number n1 = (number) u->CopyD();
-  number n2 = (number) v->CopyD();
-  CanonicalForm C1, C2;
-  C1 = coeffs_BIGINT->convSingNFactoryN (n1,TRUE,coeffs_BIGINT);
-  C2 = coeffs_BIGINT->convSingNFactoryN (n2,TRUE,coeffs_BIGINT);
-  CanonicalForm G = gcd (C1,C2);
-  number g = coeffs_BIGINT->convFactoryNSingN (G,coeffs_BIGINT);
-  res->data = g;
+  number n1 = (number) u->Data();
+  number n2 = (number) v->Data();
+  res->data = n_Gcd(n1,n2,coeffs_BIGINT);
   return FALSE;
 }
 static BOOLEAN jjGCD_N(leftv res, leftv u, leftv v)
@@ -2375,7 +2370,8 @@ static BOOLEAN jjGCD_N(leftv res, leftv u, leftv v)
   else
   {
     if (nIsZero(b))  res->data=(char *)nCopy(a);
-    else res->data=(char *)n_Gcd(a, b, currRing->cf);
+    //else res->data=(char *)n_Gcd(a, b, currRing->cf);
+    else res->data=(char *)n_SubringGcd(a, b, currRing->cf);
   }
   return FALSE;
 }
@@ -2407,7 +2403,7 @@ static BOOLEAN jjHILBERT2(leftv res, leftv u, leftv v)
     Print("// NOTE: computation of Hilbert series etc. is being\n");
     Print("//       performed for generic fibre, that is, over Q\n");
     intvec *module_w=(intvec*)atGet(&uuAsLeftv,"isHomog",INTVEC_CMD);
-    intvec *iv=hFirstSeries(uu,module_w,currQuotient);
+    intvec *iv=hFirstSeries(uu,module_w,currRing->qideal);
     int returnWithTrue = 1;
     switch((int)(long)v->Data())
     {
@@ -2432,7 +2428,7 @@ static BOOLEAN jjHILBERT2(leftv res, leftv u, leftv v)
 #endif
   assumeStdFlag(u);
   intvec *module_w=(intvec*)atGet(u,"isHomog",INTVEC_CMD);
-  intvec *iv=hFirstSeries((ideal)u->Data(),module_w,currQuotient);
+  intvec *iv=hFirstSeries((ideal)u->Data(),module_w,currRing->qideal);
   switch((int)(long)v->Data())
   {
     case 1:
@@ -2498,7 +2494,7 @@ static BOOLEAN jjHOMOG1_W(leftv res, leftv v, leftv u)
   kHomW=vw;
   kModW=w;
   pSetDegProcs(currRing,kHomModDeg);
-  res->data=(void *)(long)idHomModule(v_id,currQuotient,&w);
+  res->data=(void *)(long)idHomModule(v_id,currRing->qideal,&w);
   currRing->pLexOrder=save_pLexOrder;
   kHomW=NULL;
   kModW=NULL;
@@ -2510,7 +2506,7 @@ static BOOLEAN jjINDEPSET2(leftv res, leftv u, leftv v)
 {
   assumeStdFlag(u);
   res->data=(void *)scIndIndset((ideal)(u->Data()),(int)(long)(v->Data()),
-                    currQuotient);
+                    currRing->qideal);
   return FALSE;
 }
 static BOOLEAN jjINTERSECT(leftv res, leftv u, leftv v)
@@ -2557,7 +2553,7 @@ static BOOLEAN jjKBASE2(leftv res, leftv u, leftv v)
   assumeStdFlag(u);
   intvec *w_u=(intvec *)atGet(u,"isHomog",INTVEC_CMD);
   res->data = (char *)scKBase((int)(long)v->Data(),
-                              (ideal)(u->Data()),currQuotient, w_u);
+                              (ideal)(u->Data()),currRing->qideal, w_u);
   if (w_u!=NULL)
   {
     atSet(res,omStrDup("isHomog"),ivCopy(w_u),INTVEC_CMD);
@@ -2645,8 +2641,8 @@ static BOOLEAN jjMODULO(leftv res, leftv u, leftv v)
      }
      else
      {
-       if ((!idTestHomModule(u_id,currQuotient,w_v))
-       || (!idTestHomModule(v_id,currQuotient,w_v)))
+       if ((!idTestHomModule(u_id,currRing->qideal,w_v))
+       || (!idTestHomModule(v_id,currRing->qideal,w_v)))
        {
          WarnS("wrong weights");
          delete w_u; w_u=NULL;
@@ -2999,7 +2995,7 @@ static BOOLEAN jjREAD2(leftv res, leftv u, leftv v)
 static BOOLEAN jjREDUCE_P(leftv res, leftv u, leftv v)
 {
   assumeStdFlag(v);
-  res->data = (char *)kNF((ideal)v->Data(),currQuotient,(poly)u->Data());
+  res->data = (char *)kNF((ideal)v->Data(),currRing->qideal,(poly)u->Data());
   return FALSE;
 }
 static BOOLEAN jjREDUCE_ID(leftv res, leftv u, leftv v)
@@ -3007,7 +3003,7 @@ static BOOLEAN jjREDUCE_ID(leftv res, leftv u, leftv v)
   assumeStdFlag(v);
   ideal ui=(ideal)u->Data();
   ideal vi=(ideal)v->Data();
-  res->data = (char *)kNF(vi,currQuotient,ui);
+  res->data = (char *)kNF(vi,currRing->qideal,ui);
   return FALSE;
 }
 #if 0
@@ -3030,7 +3026,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   if (/*(*/ maxl==-1 /*)*/) /*&& (iiOp!=MRES_CMD)*/
   {
     maxl = currRing->N-1+2*(iiOp==MRES_CMD);
-    if (currQuotient!=NULL)
+    if (currRing->qideal!=NULL)
     {
       Warn(
       "full resolution in a qring may be infinite, setting max length to %d",
@@ -3040,7 +3036,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   weights=(intvec*)atGet(u,"isHomog",INTVEC_CMD);
   if (weights!=NULL)
   {
-    if (!idTestHomModule(u_id,currQuotient,weights))
+    if (!idTestHomModule(u_id,currRing->qideal,weights))
     {
       WarnS("wrong weights given:");weights->show();PrintLn();
       weights=NULL;
@@ -3055,7 +3051,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
      (*ww) -= add_row_shift;
   }
   else
-    idHomModule(u_id,currQuotient,&ww);
+    idHomModule(u_id,currRing->qideal,&ww);
   weights=ww;
 
   if ((iiOp == RES_CMD) || (iiOp == MRES_CMD))
@@ -3068,7 +3064,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else if (iiOp == LRES_CMD)
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3080,7 +3076,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else if (iiOp == KRES_CMD)
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3092,7 +3088,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3145,7 +3141,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   if (/*(*/ maxl==-1 /*)*/) /*&& (iiOp!=MRES_CMD)*/
   {
     maxl = currRing->N-1+2*(iiOp==MRES_CMD);
-    if (currQuotient!=NULL)
+    if (currRing->qideal!=NULL)
     {
       Warn(
       "full resolution in a qring may be infinite, setting max length to %d",
@@ -3155,7 +3151,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   weights=(intvec*)atGet(u,"isHomog",INTVEC_CMD);
   if (weights!=NULL)
   {
-    if (!idTestHomModule(u_id,currQuotient,weights))
+    if (!idTestHomModule(u_id,currRing->qideal,weights))
     {
       WarnS("wrong weights given:");weights->show();PrintLn();
       weights=NULL;
@@ -3179,7 +3175,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else if (iiOp == LRES_CMD)
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3193,7 +3189,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else if (iiOp == KRES_CMD)
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3205,7 +3201,7 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
   else
   {
     int dummy;
-    if((currQuotient!=NULL)||
+    if((currRing->qideal!=NULL)||
     (!idHomIdeal (u_id,NULL)))
     {
        WerrorS
@@ -3398,7 +3394,7 @@ static BOOLEAN jjSTD_HILB(leftv res, leftv u, leftv v)
   ideal u_id=(ideal)(u->Data());
   if (w!=NULL)
   {
-    if (!idTestHomModule(u_id,currQuotient,w))
+    if (!idTestHomModule(u_id,currRing->qideal,w))
     {
       WarnS("wrong weights:");w->show();PrintLn();
       w=NULL;
@@ -3409,7 +3405,7 @@ static BOOLEAN jjSTD_HILB(leftv res, leftv u, leftv v)
       hom=isHomog;
     }
   }
-  result=kStd(u_id,currQuotient,hom,&w,(intvec *)v->Data());
+  result=kStd(u_id,currRing->qideal,hom,&w,(intvec *)v->Data());
   idSkipZeroes(result);
   res->data = (char *)result;
   setFlag(res,FLAG_STD);
@@ -3478,7 +3474,7 @@ static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
 
     if (w!=NULL)
     {
-      if (!idTestHomModule(i1,currQuotient,w))
+      if (!idTestHomModule(i1,currRing->qideal,w))
       {
         // no warnung: this is legal, if i in std(i,p)
         // is homogeneous, but p not
@@ -3495,7 +3491,7 @@ static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
     si_opt_1|=Sy_bit(OPT_SB_1);
     /* ii0 appears to be the position of the first element of il that
        does not belong to the old SB ideal */
-    result=kStd(i1,currQuotient,hom,&w,NULL,0,ii0);
+    result=kStd(i1,currRing->qideal,hom,&w,NULL,0,ii0);
     SI_RESTORE_OPT1(save1);
     idDelete(&i1);
     idSkipZeroes(result);
@@ -3647,7 +3643,7 @@ static BOOLEAN jjPLUSPLUS(leftv, leftv u)
 static BOOLEAN jjUMINUS_BI(leftv res, leftv u)
 {
   number n=(number)u->CopyD(BIGINT_CMD);
-  n=n_Neg(n,coeffs_BIGINT);
+  n=n_InpNeg(n,coeffs_BIGINT);
   res->data = (char *)n;
   return FALSE;
 }
@@ -3659,7 +3655,7 @@ static BOOLEAN jjUMINUS_I(leftv res, leftv u)
 static BOOLEAN jjUMINUS_N(leftv res, leftv u)
 {
   number n=(number)u->CopyD(NUMBER_CMD);
-  n=nNeg(n);
+  n=nInpNeg(n);
   res->data = (char *)n;
   return FALSE;
 }
@@ -3859,7 +3855,7 @@ static BOOLEAN jjDEGREE(leftv res, leftv v)
     Print("// NOTE: computation of degree is being performed for\n");
     Print("//       generic fibre, that is, over Q\n");
     intvec *module_w=(intvec*)atGet(&vvAsLeftv,"isHomog",INTVEC_CMD);
-    scDegree(vv,module_w,currQuotient);
+    scDegree(vv,module_w,currRing->qideal);
     idDelete(&vv);
     rChangeCurrRing(origR);
     rDelete(tempR);
@@ -3867,7 +3863,7 @@ static BOOLEAN jjDEGREE(leftv res, leftv v)
 #endif
   assumeStdFlag(v);
   intvec *module_w=(intvec*)atGet(v,"isHomog",INTVEC_CMD);
-  scDegree((ideal)v->Data(),module_w,currQuotient);
+  scDegree((ideal)v->Data(),module_w,currRing->qideal);
   char *s=SPrintEnd();
   int l=strlen(s)-1;
   s[l]='\0';
@@ -3986,7 +3982,7 @@ static BOOLEAN jjDIM(leftv res, leftv v)
     ideal vv = id_Head(vid,currRing);
     /* drop degree zero generator from vv (if any) */
     if (i != -1) pDelete(&vv->m[i]);
-    long d = (long)scDimInt(vv, currQuotient);
+    long d = (long)scDimInt(vv, currRing->qideal);
     if (rField_is_Ring_Z(currRing) && (i == -1)) d++;
     res->data = (char *)d;
     idDelete(&vv);
@@ -3995,7 +3991,7 @@ static BOOLEAN jjDIM(leftv res, leftv v)
     return FALSE;
   }
 #endif
-  res->data = (char *)(long)scDimInt((ideal)(v->Data()),currQuotient);
+  res->data = (char *)(long)scDimInt((ideal)(v->Data()),currRing->qideal);
   return FALSE;
 }
 static BOOLEAN jjDUMP(leftv, leftv v)
@@ -4179,8 +4175,8 @@ static BOOLEAN jjHILBERT(leftv, leftv v)
     Print("// NOTE: computation of Hilbert series etc. is being\n");
     Print("//       performed for generic fibre, that is, over Q\n");
     intvec *module_w=(intvec*)atGet(&vvAsLeftv,"isHomog",INTVEC_CMD);
-    //scHilbertPoly(vv,currQuotient);
-    hLookSeries(vv,module_w,currQuotient);
+    //scHilbertPoly(vv,currRing->qideal);
+    hLookSeries(vv,module_w,currRing->qideal);
     idDelete(&vv);
     rChangeCurrRing(origR);
     rDelete(tempR);
@@ -4189,8 +4185,8 @@ static BOOLEAN jjHILBERT(leftv, leftv v)
 #endif
   assumeStdFlag(v);
   intvec *module_w=(intvec*)atGet(v,"isHomog",INTVEC_CMD);
-  //scHilbertPoly((ideal)v->Data(),currQuotient);
-  hLookSeries((ideal)v->Data(),module_w,currQuotient);
+  //scHilbertPoly((ideal)v->Data(),currRing->qideal);
+  hLookSeries((ideal)v->Data(),module_w,currRing->qideal);
   return FALSE;
 }
 static BOOLEAN jjHILBERT_IV(leftv res, leftv v)
@@ -4211,7 +4207,7 @@ static BOOLEAN jjHOMOG1(leftv res, leftv v)
   ideal v_id=(ideal)v->Data();
   if (w==NULL)
   {
-    res->data=(void *)(long)idHomModule(v_id,currQuotient,&w);
+    res->data=(void *)(long)idHomModule(v_id,currRing->qideal,&w);
     if (res->data!=NULL)
     {
       if (v->rtyp==IDHDL)
@@ -4227,7 +4223,7 @@ static BOOLEAN jjHOMOG1(leftv res, leftv v)
   }
   else
   {
-    res->data=(void *)(long)idTestHomModule(v_id,currQuotient,w);
+    res->data=(void *)(long)idTestHomModule(v_id,currRing->qideal,w);
     if((res->data==NULL) && (v->rtyp==IDHDL))
     {
       if (v->e==NULL)
@@ -4304,12 +4300,12 @@ static BOOLEAN jjIMPART(leftv res, leftv v)
 static BOOLEAN jjINDEPSET(leftv res, leftv v)
 {
   assumeStdFlag(v);
-  res->data=(void *)scIndIntvec((ideal)(v->Data()),currQuotient);
+  res->data=(void *)scIndIntvec((ideal)(v->Data()),currRing->qideal);
   return FALSE;
 }
 static BOOLEAN jjINTERRED(leftv res, leftv v)
 {
-  ideal result=kInterRed((ideal)(v->Data()), currQuotient);
+  ideal result=kInterRed((ideal)(v->Data()), currRing->qideal);
   #ifdef HAVE_RINGS
   if(rField_is_Ring(currRing))
     Warn("interred: this command is experimental over the integers");
@@ -4390,16 +4386,9 @@ static BOOLEAN jjJACOB_M(leftv res, leftv a)
 static BOOLEAN jjKBASE(leftv res, leftv v)
 {
   assumeStdFlag(v);
-  res->data = (char *)scKBase(-1,(ideal)(v->Data()),currQuotient);
+  res->data = (char *)scKBase(-1,(ideal)(v->Data()),currRing->qideal);
   return FALSE;
 }
-#ifdef MDEBUG
-static BOOLEAN jjpHead(leftv res, leftv v)
-{
-  res->data=(char *)pHead((poly)v->Data());
-  return FALSE;
-}
-#endif
 static BOOLEAN jjL2R(leftv res, leftv v)
 {
   res->data=(char *)syConvList((lists)v->Data(),FALSE);
@@ -4466,39 +4455,6 @@ static BOOLEAN jjLISTRING(leftv res, leftv v)
   res->data=(char *)r;
   return FALSE;
 }
-#if SIZEOF_LONG == 8
-static number jjLONG2N(long d)
-{
-  int i=(int)d;
-  if ((long)i == d)
-  {
-    return n_Init(i, coeffs_BIGINT);
-  }
-  else
-  {
-     struct snumber_dummy
-     {
-      mpz_t z;
-      mpz_t n;
-      #if defined(LDEBUG)
-      int debug;
-      #endif
-      BOOLEAN s;
-    };
-    typedef struct snumber_dummy  *number_dummy;
-
-    number_dummy z=(number_dummy)omAlloc(sizeof(snumber_dummy));
-    #if defined(LDEBUG)
-    z->debug=123456;
-    #endif
-    z->s=3;
-    mpz_init_set_si(z->z,d);
-    return (number)z;
-  }
-}
-#else
-#define jjLONG2N(D) n_Init((int)D, coeffs_BIGINT)
-#endif
 static BOOLEAN jjPFAC1(leftv res, leftv v)
 {
   /* call method jjPFAC2 with second argument = 0 (meaning that no
@@ -4544,13 +4500,13 @@ static BOOLEAN jjMEMORY(leftv res, leftv v)
   switch(((int)(long)v->Data()))
   {
   case 0:
-    res->data=(char *)jjLONG2N(om_Info.UsedBytes);
+    res->data=(char *)n_Init(om_Info.UsedBytes,coeffs_BIGINT);
     break;
   case 1:
-    res->data = (char *)jjLONG2N(om_Info.CurrentBytesSystem);
+    res->data = (char *)n_Init(om_Info.CurrentBytesSystem,coeffs_BIGINT);
     break;
   case 2:
-    res->data = (char *)jjLONG2N(om_Info.MaxBytesSystem);
+    res->data = (char *)n_Init(om_Info.MaxBytesSystem,coeffs_BIGINT);
     break;
   default:
     omPrintStats(stdout);
@@ -4571,7 +4527,7 @@ static BOOLEAN jjMSTD(leftv res, leftv v)
 {
   int t=v->Typ();
   ideal r,m;
-  r=kMin_std((ideal)v->Data(),currQuotient,testHomog,NULL,m);
+  r=kMin_std((ideal)v->Data(),currRing->qideal,testHomog,NULL,m);
   lists l=(lists)omAllocBin(slists_bin);
   l->Init(2);
   l->m[0].rtyp=t;
@@ -4585,7 +4541,7 @@ static BOOLEAN jjMSTD(leftv res, leftv v)
 static BOOLEAN jjMULT(leftv res, leftv v)
 {
   assumeStdFlag(v);
-  res->data = (char *)(long)scMultInt((ideal)(v->Data()),currQuotient);
+  res->data = (char *)(long)scMultInt((ideal)(v->Data()),currRing->qideal);
   return FALSE;
 }
 static BOOLEAN jjMINRES_R(leftv res, leftv v)
@@ -4743,7 +4699,7 @@ static BOOLEAN jjPRUNE(leftv res, leftv v)
   ideal v_id=(ideal)v->Data();
   if (w!=NULL)
   {
-    if (!idTestHomModule(v_id,currQuotient,w))
+    if (!idTestHomModule(v_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4850,7 +4806,7 @@ static BOOLEAN jjSLIM_GB(leftv res, leftv u)
   const bool bIsSCA = false;
 #endif
 
-  if ((currQuotient!=NULL) && !bIsSCA)
+  if ((currRing->qideal!=NULL) && !bIsSCA)
   {
     WerrorS("qring not supported by slimgb at the moment");
     return TRUE;
@@ -4865,7 +4821,7 @@ static BOOLEAN jjSLIM_GB(leftv res, leftv u)
   ideal u_id=(ideal)u->Data();
   if (w!=NULL)
   {
-    if (!idTestHomModule(u_id,currQuotient,w))
+    if (!idTestHomModule(u_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4894,7 +4850,7 @@ static BOOLEAN jjSBA(leftv res, leftv v)
   tHomog hom=testHomog;
   if (w!=NULL)
   {
-    if (!idTestHomModule(v_id,currQuotient,w))
+    if (!idTestHomModule(v_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4905,7 +4861,7 @@ static BOOLEAN jjSBA(leftv res, leftv v)
       w=ivCopy(w);
     }
   }
-  result=kSba(v_id,currQuotient,hom,&w,1,0);
+  result=kSba(v_id,currRing->qideal,hom,&w,1,0);
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
@@ -4920,7 +4876,7 @@ static BOOLEAN jjSBA_1(leftv res, leftv v, leftv u)
   tHomog hom=testHomog;
   if (w!=NULL)
   {
-    if (!idTestHomModule(v_id,currQuotient,w))
+    if (!idTestHomModule(v_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4931,7 +4887,7 @@ static BOOLEAN jjSBA_1(leftv res, leftv v, leftv u)
       w=ivCopy(w);
     }
   }
-  result=kSba(v_id,currQuotient,hom,&w,(int)(long)u->Data(),0);
+  result=kSba(v_id,currRing->qideal,hom,&w,(int)(long)u->Data(),0);
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
@@ -4946,7 +4902,7 @@ static BOOLEAN jjSBA_2(leftv res, leftv v, leftv u, leftv t)
   tHomog hom=testHomog;
   if (w!=NULL)
   {
-    if (!idTestHomModule(v_id,currQuotient,w))
+    if (!idTestHomModule(v_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4957,7 +4913,7 @@ static BOOLEAN jjSBA_2(leftv res, leftv v, leftv u, leftv t)
       w=ivCopy(w);
     }
   }
-  result=kSba(v_id,currQuotient,hom,&w,(int)(long)u->Data(),(int)(long)t->Data());
+  result=kSba(v_id,currRing->qideal,hom,&w,(int)(long)u->Data(),(int)(long)t->Data());
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
@@ -4972,7 +4928,7 @@ static BOOLEAN jjSTD(leftv res, leftv v)
   tHomog hom=testHomog;
   if (w!=NULL)
   {
-    if (!idTestHomModule(v_id,currQuotient,w))
+    if (!idTestHomModule(v_id,currRing->qideal,w))
     {
       WarnS("wrong weights");
       w=NULL;
@@ -4983,7 +4939,7 @@ static BOOLEAN jjSTD(leftv res, leftv v)
       w=ivCopy(w);
     }
   }
-  result=kStd(v_id,currQuotient,hom,&w);
+  result=kStd(v_id,currRing->qideal,hom,&w);
   idSkipZeroes(result);
   res->data = (char *)result;
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
@@ -5033,7 +4989,7 @@ static BOOLEAN jjSYZYGY(leftv res, leftv v)
     w=ivCopy(w);
     add_row_shift=w->min_in();
     (*w)-=add_row_shift;
-    if (idTestHomModule(v_id,currQuotient,w))
+    if (idTestHomModule(v_id,currRing->qideal,w))
       hom=isHomog;
     else
     {
@@ -5195,7 +5151,7 @@ static BOOLEAN jjVARSTR1(leftv res, leftv v)
 static BOOLEAN jjVDIM(leftv res, leftv v)
 {
   assumeStdFlag(v);
-  res->data = (char *)(long)scMult0Int((ideal)v->Data(),currQuotient);
+  res->data = (char *)(long)scMult0Int((ideal)v->Data(),currRing->qideal);
   return FALSE;
 }
 BOOLEAN jjWAIT1ST1(leftv res, leftv u)
@@ -5304,67 +5260,6 @@ BOOLEAN jjLOAD(const char *s, BOOLEAN autoexport)
   return TRUE;
 }
 
-#ifdef INIT_BUG
-#define XS(A) -((short)A)
-#define jjstrlen       (proc1)1
-#define jjpLength      (proc1)2
-#define jjidElem       (proc1)3
-#define jjidFreeModule (proc1)5
-#define jjidVec2Ideal  (proc1)6
-#define jjrCharStr     (proc1)7
-#ifndef MDEBUG
-#define jjpHead        (proc1)8
-#endif
-#define jjidMinBase    (proc1)11
-#define jjsyMinBase    (proc1)12
-#define jjpMaxComp     (proc1)13
-#define jjmpTrace      (proc1)14
-#define jjmpTransp     (proc1)15
-#define jjrOrdStr      (proc1)16
-#define jjrVarStr      (proc1)18
-#define jjrParStr      (proc1)19
-#define jjCOUNT_RES    (proc1)22
-#define jjDIM_R        (proc1)23
-#define jjidTransp     (proc1)24
-
-extern struct sValCmd1 dArith1[];
-void jjInitTab1()
-{
-  int i=0;
-  for (;dArith1[i].cmd!=0;i++)
-  {
-    if (dArith1[i].res<0)
-    {
-      switch ((int)dArith1[i].p)
-      {
-        case (int)jjstrlen:       dArith1[i].p=(proc1)strlen; break;
-        case (int)jjpLength:      dArith1[i].p=(proc1)pLength; break;
-        case (int)jjidElem:       dArith1[i].p=(proc1)idElem; break;
-        case (int)jjidVec2Ideal:  dArith1[i].p=(proc1)idVec2Ideal; break;
-        case (int)jjidFreeModule: dArith1[i].p=(proc1)idFreeModule; break;
-        case (int)jjrCharStr:     dArith1[i].p=(proc1)rCharStr; break;
-#ifndef MDEBUG
-        case (int)jjpHead:        dArith1[i].p=(proc1)pHeadProc; break;
-#endif
-        case (int)jjidMinBase:    dArith1[i].p=(proc1)idMinBase; break;
-        case (int)jjsyMinBase:    dArith1[i].p=(proc1)syMinBase; break;
-        case (int)jjpMaxComp:     dArith1[i].p=(proc1)pMaxCompProc; break;
-        case (int)jjmpTrace:      dArith1[i].p=(proc1)mpTrace; break;
-        case (int)jjmpTransp:     dArith1[i].p=(proc1)mpTransp; break;
-        case (int)jjrOrdStr:      dArith1[i].p=(proc1)rOrdStr; break;
-        case (int)jjrVarStr:      dArith1[i].p=(proc1)rVarStr; break;
-        case (int)jjrParStr:      dArith1[i].p=(proc1)rParStr; break;
-        case (int)jjCOUNT_RES:    dArith1[i].p=(proc1)sySize; break;
-        case (int)jjDIM_R:        dArith1[i].p=(proc1)syDim; break;
-        case (int)jjidTransp:     dArith1[i].p=(proc1)idTransp; break;
-        default: Werror("missing proc1-definition for %d",(int)(long)dArith1[i].p);
-      }
-    }
-  }
-}
-#else
-#if defined(PROC_BUG)
-#define XS(A) A
 static BOOLEAN jjstrlen(leftv res, leftv v)
 {
   res->data = (char *)strlen((char *)v->Data());
@@ -5395,13 +5290,11 @@ static BOOLEAN jjrCharStr(leftv res, leftv v)
   res->data = rCharStr((ring)v->Data());
   return FALSE;
 }
-#ifndef MDEBUG
 static BOOLEAN jjpHead(leftv res, leftv v)
 {
   res->data = (char *)pHead((poly)v->Data());
   return FALSE;
 }
-#endif
 static BOOLEAN jjidHead(leftv res, leftv v)
 {
   res->data = (char *)id_Head((ideal)v->Data(),currRing);
@@ -5462,29 +5355,6 @@ static BOOLEAN jjidTransp(leftv res, leftv v)
   res->data = (char *)idTransp((ideal)v->Data());
   return FALSE;
 }
-#else
-#define XS(A)          -((short)A)
-#define jjstrlen       (proc1)strlen
-#define jjpLength      (proc1)pLength
-#define jjidElem       (proc1)idElem
-#define jjidFreeModule (proc1)idFreeModule
-#define jjidVec2Ideal  (proc1)idVec2Ideal
-#define jjrCharStr     (proc1)rCharStr
-#ifndef MDEBUG
-#define jjpHead        (proc1)pHeadProc
-#endif
-#define jjidHead       (proc1)idHead
-#define jjidMinBase    (proc1)idMinBase
-#define jjsyMinBase    (proc1)syMinBase
-#define jjpMaxComp     (proc1)pMaxCompProc
-#define jjrOrdStr      (proc1)rOrdStr
-#define jjrVarStr      (proc1)rVarStr
-#define jjrParStr      (proc1)rParStr
-#define jjCOUNT_RES    (proc1)sySize
-#define jjDIM_R        (proc1)syDim
-#define jjidTransp     (proc1)idTransp
-#endif
-#endif
 static BOOLEAN jjnInt(leftv res, leftv u)
 {
   number n=(number)u->CopyD(); // n_Int may call n_Normalize
@@ -5907,7 +5777,7 @@ static BOOLEAN jjHILBERT3(leftv res, leftv u, leftv v, leftv w)
     Print("// NOTE: computation of Hilbert series etc. is being\n");
     Print("//       performed for generic fibre, that is, over Q\n");
     intvec *module_w=(intvec*)atGet(&uuAsLeftv,"isHomog",INTVEC_CMD);
-    intvec *iv=hFirstSeries(uu,module_w,currQuotient,wdegree);
+    intvec *iv=hFirstSeries(uu,module_w,currRing->qideal,wdegree);
     int returnWithTrue = 1;
     switch((int)(long)v->Data())
     {
@@ -5932,7 +5802,7 @@ static BOOLEAN jjHILBERT3(leftv res, leftv u, leftv v, leftv w)
 #endif
   assumeStdFlag(u);
   intvec *module_w=(intvec *)atGet(u,"isHomog",INTVEC_CMD);
-  intvec *iv=hFirstSeries((ideal)u->Data(),module_w,currQuotient,wdegree);
+  intvec *iv=hFirstSeries((ideal)u->Data(),module_w,currRing->qideal,wdegree);
   switch((int)(long)v->Data())
   {
     case 1:
@@ -6552,14 +6422,14 @@ static BOOLEAN jjREDUCE3_CID(leftv res, leftv u, leftv v, leftv w)
 static BOOLEAN jjREDUCE3_P(leftv res, leftv u, leftv v, leftv w)
 {
   assumeStdFlag(v);
-  res->data = (char *)kNF((ideal)v->Data(),currQuotient,(poly)u->Data(),
+  res->data = (char *)kNF((ideal)v->Data(),currRing->qideal,(poly)u->Data(),
     0,(int)(long)w->Data());
   return FALSE;
 }
 static BOOLEAN jjREDUCE3_ID(leftv res, leftv u, leftv v, leftv w)
 {
   assumeStdFlag(v);
-  res->data = (char *)kNF((ideal)v->Data(),currQuotient,(ideal)u->Data(),
+  res->data = (char *)kNF((ideal)v->Data(),currRing->qideal,(ideal)u->Data(),
     0,(int)(long)w->Data());
   return FALSE;
 }
@@ -6581,7 +6451,7 @@ static BOOLEAN jjRES3(leftv res, leftv u, leftv v, leftv w)
     if (iv!=NULL)
     {
       l=1;
-      if (!idTestHomModule(u_id,currQuotient,iv))
+      if (!idTestHomModule(u_id,currRing->qideal,iv))
       {
         WarnS("wrong weights");
         iv=NULL;
@@ -6630,7 +6500,7 @@ static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
   ideal u_id=(ideal)(u->Data());
   if (ww!=NULL)
   {
-    if (!idTestHomModule(u_id,currQuotient,ww))
+    if (!idTestHomModule(u_id,currRing->qideal,ww))
     {
       WarnS("wrong weights");
       ww=NULL;
@@ -6642,7 +6512,7 @@ static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
     }
   }
   result=kStd(u_id,
-              currQuotient,
+              currRing->qideal,
               hom,
               &ww,                  // module weights
               (intvec *)v->Data(),  // hilbert series
@@ -7758,7 +7628,7 @@ static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
   /* u_id from jjSTD_W is now i1 as in jjSTD_1 */
   if (ww!=NULL)
   {
-    if (!idTestHomModule(i1,currQuotient,ww))
+    if (!idTestHomModule(i1,currRing->qideal,ww))
     {
       WarnS("wrong weights");
       ww=NULL;
@@ -7773,7 +7643,7 @@ static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
   SI_SAVE_OPT1(save1);
   si_opt_1|=Sy_bit(OPT_SB_1);
   result=kStd(i1,
-              currQuotient,
+              currRing->qideal,
               hom,
               &ww,                  // module weights
               (intvec *)h->Data(),  // hilbert series
@@ -7833,16 +7703,27 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
 #endif
     int at=a->Typ();
     int bt=b->Typ();
+    // handling bb-objects ----------------------------------------------------
     if (at>MAX_TOK)
     {
       blackbox *bb=getBlackboxStuff(at);
-      if (bb!=NULL) return bb->blackbox_Op2(op,res,a,b);
+      if (bb!=NULL)
+      {
+        if (!bb->blackbox_Op2(op,res,a,b)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
       else          return TRUE;
     }
     else if ((bt>MAX_TOK)&&(op!='('))
     {
       blackbox *bb=getBlackboxStuff(bt);
-      if (bb!=NULL) return bb->blackbox_Op2(op,res,a,b);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_Op2(op,res,a,b)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
       else          return TRUE;
     }
     int i=iiTabIndex(dArithTab2,JJTAB2LEN,op);
@@ -7895,7 +7776,7 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
             }
             if (traceit&TRACE_CALL)
               Print("call %s(%s,%s)\n",iiTwoOps(op),
-              Tok2Cmdname(an->rtyp),Tok2Cmdname(bn->rtyp));
+              Tok2Cmdname(dArith2[i].arg1),Tok2Cmdname(dArith2[i].arg2));
             failed= ((iiConvert(at,dArith2[i].arg1,ai,a,an))
             || (iiConvert(bt,dArith2[i].arg2,bi,b,bn))
             || (call_failed=dArith2[i].p(res,an,bn)));
@@ -8006,10 +7887,16 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
     }
 #endif
     int at=a->Typ();
+    // handling bb-objects ----------------------------------------------------
     if (at>MAX_TOK)
     {
       blackbox *bb=getBlackboxStuff(at);
-      if (bb!=NULL) return bb->blackbox_Op1(op,res,a);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_Op1(op,res,a)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
       else          return TRUE;
     }
 
@@ -8021,23 +7908,14 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
     {
       if (at==dArith1[i].arg)
       {
-        int r=res->rtyp=dArith1[i].res;
         if (currRing!=NULL)
         {
           if (check_valid(dArith1[i].valid_for,op)) break;
         }
         if (traceit&TRACE_CALL)
           Print("call %s(%s)\n",iiTwoOps(op),Tok2Cmdname(at));
-        if (r<0)
-        {
-          res->rtyp=-r;
-          #ifdef PROC_BUG
-          dArith1[i].p(res,a);
-          #else
-          res->data=(char *)((Proc1)dArith1[i].p)((char *)a->Data());
-          #endif
-        }
-        else if ((call_failed=dArith1[i].p(res,a)))
+        res->rtyp=dArith1[i].res;
+        if ((call_failed=dArith1[i].p(res,a)))
         {
           break;// leave loop, goto error handling
         }
@@ -8063,29 +7941,15 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
         //Print("test %s\n",Tok2Cmdname(dArith1[i].arg));
         if ((ai=iiTestConvert(at,dArith1[i].arg))!=0)
         {
-          int r=res->rtyp=dArith1[i].res;
           if (currRing!=NULL)
           {
             if (check_valid(dArith1[i].valid_for,op)) break;
           }
-          if (r<0)
-          {
-            res->rtyp=-r;
-            failed= iiConvert(at,dArith1[i].arg,ai,a,an);
-            if (!failed)
-            {
-              #ifdef PROC_BUG
-              dArith1[i].p(res,a);
-              #else
-              res->data=(char *)((Proc1)dArith1[i].p)((char *)an->Data());
-              #endif
-            }
-          }
-          else
-          {
-            failed= ((iiConvert(at,dArith1[i].arg,ai,a,an))
-            || (call_failed=dArith1[i].p(res,an)));
-          }
+          if (traceit&TRACE_CALL)
+            Print("call %s(%s)\n",iiTwoOps(op),Tok2Cmdname(dArith1[i].arg));
+          res->rtyp=dArith1[i].res;
+          failed= ((iiConvert(at,dArith1[i].arg,ai,a,an))
+          || (call_failed=dArith1[i].p(res,an)));
           // everything done, clean up temp. variables
           if (failed)
           {
@@ -8094,8 +7958,6 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
           }
           else
           {
-            if (traceit&TRACE_CALL)
-              Print("call %s(%s)\n",iiTwoOps(op),Tok2Cmdname(an->rtyp));
             if (an->Next() != NULL)
             {
               res->next = (leftv)omAllocBin(sleftv_bin);
@@ -8175,11 +8037,18 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
     }
 #endif
     int at=a->Typ();
+    // handling bb-objects ----------------------------------------------
     if (at>MAX_TOK)
     {
       blackbox *bb=getBlackboxStuff(at);
-      if (bb!=NULL) return bb->blackbox_Op3(op,res,a,b,c);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_Op3(op,res,a,b,c)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
       else          return TRUE;
+      if (errorreported) return TRUE;
     }
     int bt=b->Typ();
     int ct=c->Typ();
@@ -8237,8 +8106,8 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
               }
               if (traceit&TRACE_CALL)
                 Print("call %s(%s,%s,%s)\n",
-                  iiTwoOps(op),Tok2Cmdname(an->rtyp),
-                  Tok2Cmdname(bn->rtyp),Tok2Cmdname(cn->rtyp));
+                  iiTwoOps(op),Tok2Cmdname(dArith3[i].arg1),
+                  Tok2Cmdname(dArith3[i].arg2),Tok2Cmdname(dArith3[i].arg3));
               failed= ((iiConvert(at,dArith3[i].arg1,ai,a,an))
                 || (iiConvert(bt,dArith3[i].arg2,bi,b,bn))
                 || (iiConvert(ct,dArith3[i].arg3,ci,c,cn))
@@ -8397,7 +8266,12 @@ BOOLEAN iiExprArithM(leftv res, leftv a, int op)
     if ((a!=NULL) && (a->Typ()>MAX_TOK))
     {
       blackbox *bb=getBlackboxStuff(a->Typ());
-      if (bb!=NULL) return bb->blackbox_OpM(op,res,a);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_OpM(op,res,a)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
       else          return TRUE;
     }
     BOOLEAN failed=FALSE;
