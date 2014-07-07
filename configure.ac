@@ -41,8 +41,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h iostream.h sys/time.h sys/times.h asm/sigcontext.h)
 
-AC_CHECK_FUNCS(readlink getcwd getwd setenv putenv)
-
+AC_CHECK_FUNCS(readlink getcwd getwd setenv putenv qsort_r)
 
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN";
@@ -120,6 +119,8 @@ SING_CHECK_GFANLIB
 SING_CHECK_POLYMAKE
 
 SING_CHECK_PLURAL
+
+SING_BUILTIN_MODULES
 
 ### the following is needed due to the use of om_sing_opt_show_mem in misc_ip.cc...
 #ac_configure_args="$ac_configure_args --with-external-config_h=../Singular/omSingularConfig.h"
@@ -205,7 +206,8 @@ AC_SUBST(DOC_DIR)
 SING_SHOW_FLAGS([Compiler/linker flags: ])
 
 
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([dox/Doxyfile])])
+## AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([dox/Doxyfile])])
+
 AC_CONFIG_FILES([dox/Makefile])
 
 AC_CONFIG_SUBDIRS([resources])
@@ -235,8 +237,11 @@ AC_CONFIG_SUBDIRS([gfanlib])
 AC_CONFIG_FILES([Singular/dyn_modules/Makefile])
 AC_CONFIG_FILES([Singular/dyn_modules/bigintm/Makefile])
 AC_CONFIG_FILES([Singular/dyn_modules/syzextra/Makefile])
-AC_CONFIG_FILES([Singular/dyn_modules/callgfanlib/Makefile])
-AC_CONFIG_FILES([Singular/dyn_modules/callpolymake/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/gfanlib/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/polymake/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/pyobject/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/singmathic/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/staticdemo/Makefile])
 
 AC_CONFIG_FILES([Singular/Makefile])
 

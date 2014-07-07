@@ -5823,7 +5823,7 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
   // assume a: level
   if ((a->Typ()==INT_CMD)&&((long)a->Data()>=0))
   {
-    if ((TEST_V_ALLWARN) && (myynest==0)) WarnS("ASSUME at top level");
+    if ((TEST_V_ALLWARN) && (myynest==0)) WarnS("ASSUME at top level is of no use: see documentation");
     char       assume_yylinebuf[80];
     strncpy(assume_yylinebuf,my_yylinebuf,79);
     int lev=(long)a->Data();
@@ -5841,5 +5841,41 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
   else
      b->CleanUp();
   a->CleanUp();
+  return FALSE;
+}
+
+#include "libparse.h"
+
+BOOLEAN iiARROW(leftv r, char* a, char *s)
+{
+  char *ss=(char*)omAlloc(strlen(a)+strlen(s)+30); /* max. 27 currently */
+  // find end of s:
+  int end_s=strlen(s);
+  while ((end_s>0) && ((s[end_s]<=' ')||(s[end_s]==';'))) end_s--;
+  s[end_s+1]='\0';
+  char *name=(char *)omAlloc(strlen(a)+strlen(s)+30);
+  sprintf(name,"%s->%s",a,s);
+  // find start of last expression
+  int start_s=end_s-1;
+  while ((start_s>=0) && (s[start_s]!=';')) start_s--;
+  if (start_s<0) // ';' not found
+  {
+    sprintf(ss,"parameter def %s;return(%s);\n",a,s);
+  }
+  else // s[start_s] is ';'
+  {
+    s[start_s]='\0';
+    sprintf(ss,"parameter def %s;%s;return(%s);\n",a,s,s+start_s+1);
+  }
+  memset(r,0,sizeof(*r));
+  // now produce procinfo for PROC_CMD:
+  r->data = (void *)omAlloc0Bin(procinfo_bin);
+  ((procinfo *)(r->data))->language=LANG_NONE;
+  iiInitSingularProcinfo((procinfo *)r->data,"",name,0,0);
+  ((procinfo *)r->data)->data.s.body=ss;
+  omFree(name);
+  r->rtyp=PROC_CMD;
+  //r->rtyp=STRING_CMD;
+  //r->data=ss;
   return FALSE;
 }

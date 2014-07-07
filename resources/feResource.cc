@@ -65,6 +65,9 @@ feResourceConfig_s feResourceConfigs[] =
    "%b/../factory;"
    // path for dynamic modules, should match ProcDir:
    "%b/MOD;"
+   "%r/lib/singular/MOD;"
+   "%r/libexec/singular/MOD;"
+   LIB_DIR "/singular/MOD;"
    LIBEXEC_DIR "/singular/MOD;"
    "%b",
    (char *)""},
@@ -73,9 +76,10 @@ feResourceConfig_s feResourceConfigs[] =
   // should be changed to %b/../lib/singular/pProcs/:
   {"ProcDir",   'P',    feResPath,  "SINGULAR_PROCS_DIR",
      "%b/MOD;"
-     LIBEXEC_DIR "/singular/MOD;"
+     "%r/lib/singular/MOD;"
+     "%r/libexec/singular/MOD;"
      LIB_DIR "/singular/MOD;"   /*debian: -> /usr/lib/singular/MOD */
-     "%r/libexec/singular/MOD",                  (char *)""},
+     LIBEXEC_DIR "/singular/MOD" ,                  (char *)""},
   {"RootDir",   'r',    feResDir,   "SINGULAR_ROOT_DIR",    "%b/..",                (char *)""},
   {"DataDir",   'D',    feResDir,   "SINGULAR_DATA_DIR",    "%b/../share/",          (char *)""},
   {"DefaultDir",'d',    feResDir,   "SINGULAR_DEFAULT_DIR",  SINGULAR_DEFAULT_DIR,  (char *)""},
@@ -85,7 +89,7 @@ feResourceConfig_s feResourceConfigs[] =
 #ifdef ix86_Win
   {"HtmlHelpFile",'C',  feResFile,  "SINGULAR_CHM_FILE",    "%r/doc/Manual.chm",    (char *)""},
 #endif
-  {"ManualUrl", 'u',    feResUrl,   "SINGULAR_URL",         "http://www.singular.uni-kl.de/index.php/singular-manual.html",    (char *)""},
+  {"ManualUrl", 'u',    feResUrl,   "SINGULAR_URL",         "http://www.singular.uni-kl.de/Manual/",    (char *)""},
   {"ExDir",     'm',    feResDir,   "SINGULAR_EXAMPLES_DIR","%r/examples",          (char *)""},
   {"Path",      'p',    feResPath,  NULL,                   "%b;%P;$PATH",             (char *)""},
 
