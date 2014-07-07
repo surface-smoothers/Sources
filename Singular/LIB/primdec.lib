@@ -745,7 +745,7 @@ static proc splitCharp(list l)
   def P=basering;
   int i,j,k,m,q,d,o;
   int n = nvars(basering);
-  ASSUME(0, n>1); //otherwise code while(va[j]!=","){j--;} will fail!
+  ASSUME(0, nvars(basering) >= 2); //otherwise code while(va[j]!=","){j--;} will fail!
   ideal s,t,u,sact;
   poly ni;
   string minp,gnir,va;
@@ -852,7 +852,6 @@ static proc splitCharp(list l)
   option(set,op);
   return(l);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 proc zero_decomp (ideal j,ideal ser,int @wr,list #)
@@ -4106,7 +4105,7 @@ example
 "USAGE:  zeroRad(I) , I a zero-dimensional ideal
  RETURN: the radical of I
  NOTE:  Algorithm of Kemper
- EXAMPLE: example zeroRad; shows an example
+ EXAMPLE: example zeroRad; shows an example"
 {
    ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
@@ -4229,6 +4228,7 @@ example
    ideal I=x^5-t,y^5-t;
    zeroRad(I);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -7518,16 +7518,22 @@ EXAMPLE: example zerodec; shows an example
 //Hence it is better to simultaneously reduce with I. For this we need a new
 //ring.
     execute("ring P=("+charstr(R)+"),(X(1.."+string(nvars(R))+"),T),(dp,dp(1));");
-    list rfac = imap(P1,fac);
     intvec ov=option(get);;
     option(redSB);
+    ideal p = fetch(R,p);
+    ideal J = fetch(R,J);
+    execute("ring PP=("+charstr(R)+"),(T,X(1.."+string(nvars(R))+")),(dp(1),dp);");
+    option(redSB);
     list re1;
-    ideal new = T-fetch(R,p),fetch(R,J);
+    list rfac = imap(P1,fac);
+    ideal new = T-imap(P,p),imap(P,J); 
     attrib(new, "isSB",1);    //we know that new is a standard basis
     for(j=1;j<=f;j++)
     {
       re1[j]=reduce(rfac[1][j]^rfac[2][j],new);
     }
+    setring P;
+    def re1 = imap(PP,re1);
     setring R;
     re = fetch(P,re1);
     for(j=1;j<=f;j++)
