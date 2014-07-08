@@ -322,15 +322,15 @@
 
 /*******************************************************************
  * DEBUG OPTIONS
- * -- only significant for for compiling without -DNDEBUG
+ * -- only significant for for compiling without -DSING_NDEBUG
  * -- you better know what your are doing, if you touch this
  ******************************************************************/
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 
 /* undefine to enable inline */
 #define NO_INLINE
 
-/* undefine to disable assume -- should normally be defined for NDEBUG */
+/* undefine to disable assume -- should normally be defined for SING_NDEBUG */
 #define HAVE_ASSUME
 
 /* undef PDEBUG to disable checks of polys
@@ -345,7 +345,7 @@
        including mod2.h, provided ! PDEBUG is defined in mod2.h E.g.:
 
        #define PDEBUG 2
-       #include <kernel/mod2.h>
+
        ...
 
        makes sure that all poly operations in your file are done with 
@@ -390,7 +390,7 @@
      #define OM_CHECK 3
      #define OM_TRACK 5
      #define OM_KEEP  1
-     #include <kernel/mod2.h>
+
      #include <omalloc/omalloc.h>
    ensures that all memory allocs/free in this file are done with 
    OM_CHECK==3 and OM_TRACK==5, and that all addresses allocated/freed 
@@ -418,7 +418,7 @@
        #define OM_CHECK 3
        #define OM_TRACK 5
        #define OM_KEEP  1
-       #include <kernel/mod2.h>
+
        #include <omalloc/omalloc.h>
      Under dynamic scope, do (e.g., from within the debugger):
        om_Opts.MinCheck = 3; om_Opts.MinTrack = 5; omOpts.Keep = LONG_MAX;
@@ -543,14 +543,14 @@
 #endif
 
 
-#else /* not NDEBUG **************************************************** */
+#else /* not SING_NDEBUG **************************************************** */
 
 #define NO_PDEBUG
 
 /* define YYDEBUG 1 for debugging bison texts, 0 otherwise */
 #define YYDEBUG 0
 
-#endif /* not NDEBUG */
+#endif /* not SING_NDEBUG */
 
 /*******************************************************************
  *
@@ -963,15 +963,15 @@ int hpux9_system(const char* system);
 
 /*******************************************************************
  * DEBUG OPTIONS
- * -- only significant for for compiling without -DNDEBUG
+ * -- only significant for for compiling without -DSING_NDEBUG
  * -- you better know what your are doing, if you touch this
  ******************************************************************/
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 
 /* undefine to enable inline */
 #define NO_INLINE
 
-/* undefine to disable assume -- should normally be defined for NDEBUG */
+/* undefine to disable assume -- should normally be defined for SING_NDEBUG */
 #define HAVE_ASSUME
 
 /* undef PDEBUG to disable checks of polys
@@ -986,7 +986,7 @@ int hpux9_system(const char* system);
        including mod2.h, provided ! PDEBUG is defined in mod2.h E.g.:
 
        #define PDEBUG 2
-       #include <kernel/mod2.h>
+
        ...
 
        makes sure that all poly operations in your file are done with 
@@ -1031,7 +1031,7 @@ int hpux9_system(const char* system);
      #define OM_CHECK 3
      #define OM_TRACK 5
      #define OM_KEEP  1
-     #include <kernel/mod2.h>
+
      #include <omalloc/omalloc.h>
    ensures that all memory allocs/free in this file are done with 
    OM_CHECK==3 and OM_TRACK==5, and that all addresses allocated/freed 
@@ -1184,14 +1184,14 @@ int hpux9_system(const char* system);
 #endif
 
 
-#else /* not NDEBUG **************************************************** */
+#else /* not SING_NDEBUG **************************************************** */
 
 #define NO_PDEBUG
 
 /* define YYDEBUG 1 for debugging bison texts, 0 otherwise */
 #define YYDEBUG 0
 
-#endif /* not NDEBUG */
+#endif /* not SING_NDEBUG */
 
 /*******************************************************************
  *

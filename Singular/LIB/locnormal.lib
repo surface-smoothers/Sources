@@ -95,8 +95,7 @@ REMARKS: We use the local-to-global algorithm given in [1] to compute the normal
          where U is an ideal of A and d is an element of A such that U/d is the normalization of A.
          In fact, U and d are returned as an ideal and a polynomial of the base ring R.
 
-         References:
-
+REFERENCES:
          [1] Janko Boehm, Wolfram Decker, Santiago Laplagne, Gerhard Pfister, Stefan Steidel,
              Andreas Steenpass: Parallel algorithms for normalization, http://arxiv.org/abs/1110.4299, 2011.@*
          [2] Gert-Martin Greuel, Santiago Laplagne, Frank Seelisch: Normalization of Rings,
@@ -141,8 +140,9 @@ EXAMPLE: example locNormal; shows an example
   dbprint(dbg, "Computing the jacobian ideal...");
   ideal J = minor(jacob(IMin), nvars(basering) - d, I);
   t=timer;
-  J = modStd(J);
-  if (printTimings==1) {"Time for modStd Jacobian "+string(timer-t);}
+  int ch = char(basering);
+  if (ch==0) {J = modStd(J);} else {J = std(J);}
+  if (printTimings==1) {"Time for modStd/std Jacobian "+string(timer-t);}
 
   setring R;
   ideal J = fetch(Q, J);
@@ -197,9 +197,9 @@ EXAMPLE: example locNormal; shows an example
   }
 
   t=timer;
-  resu = modStd(resu);
+  if (ch==0) {resu = modStd(resu);} else {resu = std(resu);}
   if (printTimings==1) {
-     "Time for combining the local results, modStd "+string(timer-t);
+     "Time for combining the local results, modStd/std "+string(timer-t);
   }
 
   totalTime = timer - totalTime;

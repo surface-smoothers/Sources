@@ -4,11 +4,27 @@
 /*
 * ABSTRACT - interupt handling
 */
+#include <kernel/mod2.h>
 
 /* includes */
 #ifdef DecAlpha_OSF1
 #define _XOPEN_SOURCE_EXTENDED
 #endif /* MP3-Y2 0.022UF */
+
+#include <omalloc/omalloc.h>
+
+#include <reporter/si_signals.h>
+#include <Singular/fevoices.h>
+
+#include <Singular/tok.h>
+#include <Singular/ipshell.h>
+void sig_chld_hdl(int sig); /*#include <Singular/links/ssiLink.h>*/
+#include <Singular/cntrlc.h>
+#include <Singular/feOpt.h>
+#include <Singular/misc_ip.h>
+#include <Singular/links/silink.h>
+#include <Singular/links/ssiLink.h>
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -16,22 +32,6 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-
-#include <kernel/mod2.h>
-#include <omalloc/omalloc.h>
-#include <Singular/tok.h>
-#include <Singular/ipshell.h>
-#include <kernel/febase.h>
-void sig_chld_hdl(int sig); /*#include <Singular/links/ssiLink.h>*/
-#include <Singular/cntrlc.h>
-#include <Singular/feOpt.h>
-#include <Singular/si_signals.h>
-#include <Singular/links/silink.h>
-#include <Singular/links/ssiLink.h>
 
 /* undef, if you don't want GDB to come up on error */
 
@@ -87,20 +87,16 @@ void sig_pipe_hdl(int /*sig*/)
  }
 }
 
+volatile BOOLEAN do_shutdown = FALSE;
+volatile int defer_shutdown = 0;
+
 void sig_term_hdl(int /*sig*/)
 {
-  if (ssiToBeClosed_inactive)
+  do_shutdown = TRUE;
+  if (!defer_shutdown)
   {
-    ssiToBeClosed_inactive=FALSE;
-    while (ssiToBeClosed!=NULL)
-    {
-      slClose(ssiToBeClosed->l);
-      if (ssiToBeClosed==NULL) break;
-      ssiToBeClosed=(link_list)ssiToBeClosed->next;
-    }
-    exit(1);
+    m2_end(1);
   }
-  //else: we already shutting down: let's do m2_end ist work
 }
 
 /*---------------------------------------------------------------------*
@@ -150,6 +146,7 @@ si_hdl_typ si_set_signal ( int sig, si_hdl_typ signal_handler)
    */
 #else
   struct sigaction new_action,old_action;
+  memset(&new_action, 0, sizeof(struct sigaction));
 
   /* Set up the structure to specify the new action. */
   new_action.sa_handler = signal_handler;
@@ -171,7 +168,7 @@ si_hdl_typ si_set_signal ( int sig, si_hdl_typ signal_handler)
 
 
 /*---------------------------------------------------------------------*/
-#if defined(ix86_Linux)
+#if defined(__linux__) && defined(__i386)
   #if !defined(HAVE_SIGCONTEXT) && !defined(HAVE_ASM_SIGCONTEXT_H)
 // we need the following structure sigcontext_struct.
 // if configure finds asm/singcontext.h we assume
@@ -206,7 +203,7 @@ struct sigcontext_struct {
 typedef struct sigcontext_struct sigcontext;
 #endif
 
-#if defined(x86_64_Linux)
+#if defined(__linux__) && defined(__amd64)
 #define HAVE_SIGSTRUCT
 #endif
 
@@ -352,7 +349,7 @@ void sigint_handler(int /*sig*/)
     {
       fprintf(stderr,"// ** Interrupt at cmd:`%s` in line:'%s'\n",
         Tok2Cmdname(iiOp),my_yylinebuf);
-      if (feGetOptValue(FE_OPT_EMACS) == NULL)
+      if (feOptValue(FE_OPT_EMACS) == NULL)
       {
         fputs("abort after this command(a), abort immediately(r), print backtrace(b), continue(c) or quit Singular(q) ?",stderr);fflush(stderr);
         c = fgetc(stdin);
@@ -387,7 +384,7 @@ void sigint_handler(int /*sig*/)
       case 'a':
                 siCntrlc++;
       case 'c':
-                if ((feGetOptValue(FE_OPT_EMACS) == NULL) && (default_opt!=' '))
+                if ((feOptValue(FE_OPT_EMACS) == NULL) && (default_opt!=' '))
                 {
                   /* Read until a newline or EOF */
                   while (c != EOF && c != '\n') c = fgetc(stdin);
@@ -428,7 +425,7 @@ static void debug (int method)
   }
   int pid;
   char buf[16];
-  char * args[4] = { (char*)"gdb", (char*)"Singularg", NULL, NULL };
+  char * args[4] = { (char*)"gdb", (char*)"Singular", NULL, NULL };
 
   #ifdef HAVE_FEREAD
   if (fe_is_raw_tty) fe_temp_reset();

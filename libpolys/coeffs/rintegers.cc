@@ -4,9 +4,9 @@
 /*
 * ABSTRACT: numbers modulo n
 */
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #ifdef HAVE_RINGS
@@ -20,6 +20,7 @@
 #include <coeffs/longrat.h>
 #include <coeffs/mpr_complex.h>
 #include <coeffs/rintegers.h>
+#include <coeffs/rmodulon.h>
 #include "si_gmp.h"
 
 /// Our Type!
@@ -222,7 +223,7 @@ number nrzDiv (number a,number b, const coeffs R)
   return (number) erg;
 }
 
-number nrzIntDiv (number a,number b, const coeffs)
+number nrzExactDiv (number a,number b, const coeffs)
 {
   int_number erg = (int_number) omAllocBin(gmp_nrz_bin);
   mpz_init(erg);
@@ -382,19 +383,40 @@ void    nrzCoeffWrite  (const coeffs, BOOLEAN /*details*/)
   PrintS("//   coeff. ring is : Integers\n");
 }
 
+static char* nrzCoeffString(const coeffs)
+{
+  return omStrDup("integer");
+}
+
+coeffs nrzQuot1(number c, const coeffs r)
+{
+    int ch = r->cfInt(c, r);
+    int_number dummy;
+    dummy = (int_number) omAlloc(sizeof(mpz_t));
+    mpz_init_set_ui(dummy, ch);
+    ZnmInfo info;
+    info.base = dummy;
+    info.exp = (unsigned long) 1;
+    coeffs rr = nInitChar(n_Zn, (void*)&info);
+    return(rr);
+}
 
 BOOLEAN nrzInitChar(coeffs r,  void *)
 {
   assume( getCoeffType(r) == ID );
+
+  r->is_field=FALSE;
+  r->is_domain=TRUE;
+
   r->nCoeffIsEqual = ndCoeffIsEqual;
+  r->cfCoeffString = nrzCoeffString;
   r->cfKillChar = ndKillChar;
   r->cfMult  = nrzMult;
   r->cfSub   = nrzSub;
   r->cfAdd   = nrzAdd;
   r->cfDiv   = nrzDiv;
-  r->cfIntDiv= nrzDiv;
   r->cfIntMod= nrzIntMod;
-  r->cfExactDiv= nrzDiv;
+  r->cfExactDiv= nrzExactDiv;
   r->cfInit = nrzInit;
   r->cfSize  = nrzSize;
   r->cfInt  = nrzInt;
@@ -406,7 +428,7 @@ BOOLEAN nrzInitChar(coeffs r,  void *)
   r->cfDivBy = nrzDivBy; // only for ring stuff
   r->cfInit_bigint = nrzMapQ;
   //#endif
-  r->cfNeg   = nrzNeg;
+  r->cfInpNeg   = nrzNeg;
   r->cfInvers= nrzInvers;
   r->cfCopy  = nrzCopy;
   r->cfWriteLong = nrzWrite;
@@ -423,6 +445,7 @@ BOOLEAN nrzInitChar(coeffs r,  void *)
   r->cfDelete= nrzDelete;
   r->cfSetMap = nrzSetMap;
   r->cfCoeffWrite = nrzCoeffWrite;
+  r->cfQuot1 = nrzQuot1;
   // debug stuff
 
 #ifdef LDEBUG

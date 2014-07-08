@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -19,7 +19,7 @@
 
 
 // #include <kernel/structs.h>
-// #include <kernel/kstd1.h>
+// #include <kernel/GBEngine/kstd1.h>
 // #include <kernel/polys.h>
 
 #include <misc/intvec.h>
@@ -609,17 +609,6 @@ BOOLEAN mp_Equal(matrix a, matrix b, const ring R)
   return TRUE;
 }
 
-static poly minuscopy (poly p, const ring R)
-{
-  poly w;
-  number  e;
-  e = n_Init(-1, R);
-  w = p_Copy(p, R);
-  p_Mult_nn(w, e, R);
-  n_Delete(&e, R);
-  return w;
-}
-
 /*2
 * insert a monomial into a list, avoid duplicates
 * arguments are destroyed
@@ -728,12 +717,6 @@ static void mp_PartClean(matrix a, int lr, int lc, const ring R)
   }
 }
 
-static void mp_FinalClean(matrix a, const ring)
-{
-  omFreeSize((ADDRESS)a->m,a->nrows*a->ncols*sizeof(poly));
-  omFreeBin((ADDRESS)a, sip_sideal_bin);
-}
-
 BOOLEAN mp_IsDiagUnit(matrix U, const ring R)
 {
   if(MATROWS(U)!=MATCOLS(U))
@@ -778,6 +761,10 @@ char * iiStringMatrix(matrix im, int dim, const ring r, char ch)
   int i,ii = MATROWS(im);
   int j,jj = MATCOLS(im);
   poly *pp = im->m;
+  char ch_s[2];
+  ch_s[0]=ch;
+  ch_s[1]='\0';
+
   StringSetS("");
 
   for (i=0; i<ii; i++)
@@ -785,7 +772,7 @@ char * iiStringMatrix(matrix im, int dim, const ring r, char ch)
     for (j=0; j<jj; j++)
     {
       p_String0(*pp++, r);
-      StringAppend("%c",ch);
+      StringAppendS(ch_s);
       if (dim > 1) StringAppendS("\n");
     }
   }
@@ -1363,42 +1350,6 @@ static int mp_PreparePiv (matrix a, int lr, int lc,const ring r)
   return 1;
 }
 
-static inline BOOLEAN smSmaller(poly a, poly b)
-{
-  loop
-  {
-    pIter(b);
-    if (b == NULL) return TRUE;
-    pIter(a);
-    if (a == NULL) return FALSE;
-  }
-}
-
-static BOOLEAN sm_IsNegQuot(poly a, const poly b, const poly c, const ring R)
-{
-  if (p_LmDivisibleByNoComp(c, b, R))
-  {
-    p_ExpVectorDiff(a, b, c, R);
-    // Hmm: here used to be a pSetm(a): but it is unnecessary,
-    // if b and c are correct
-    return FALSE;
-  }
-  else
-  {
-    int i;
-    for (i=rVar(R); i>0; i--)
-    {
-      if(p_GetExp(c,i,R) > p_GetExp(b,i,R))
-        p_SetExp(a,i,p_GetExp(c,i,R)-p_GetExp(b,i,R),R);
-      else
-        p_SetExp(a,i,0,R);
-    }
-    // here we actually might need a pSetm, if a is to be used in
-    // comparisons
-    return TRUE;
-  }
-}
-
 static void mp_ElimBar(matrix a0, matrix re, poly div, int lr, int lc, const ring R)
 {
   int r=lr-1, c=lc-1;
@@ -1471,7 +1422,7 @@ void mp_MinorToResult(ideal result, int &elems, matrix a, int r, int c,
       q1 = &(a->m)[i*a->ncols];
       //for (j=c-1;j>=0;j--)
       //{
-      //  if (q1[j]!=NULL) q1[j] = kNF(R,currQuotient,q1[j]);
+      //  if (q1[j]!=NULL) q1[j] = kNF(R,currRing->qideal,q1[j]);
       //}
     }
   }
@@ -1511,7 +1462,7 @@ void mp_MinorToResult(ideal result, int &elems, matrix a, int r, int c,
       q1 = &(a->m)[i*a->ncols];
       for (j=c-1;j>=0;j--)
       {
-        if (q1[j]!=NULL) q1[j] = kNF(R,currQuotient,q1[j]);
+        if (q1[j]!=NULL) q1[j] = kNF(R,currRing->qideal,q1[j]);
       }
     }
   }

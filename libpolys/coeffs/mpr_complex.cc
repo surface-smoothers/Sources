@@ -10,9 +10,9 @@
 
 // WARNING! ALWAYS use omAlloc and FreeL when alloc. memory for some char* !!
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+#include <misc/auxiliary.h>
+
 //#ifdef HAVE_MPR
 #include <coeffs/coeffs.h>
 #include <reporter/reporter.h>
@@ -71,11 +71,6 @@ void setGMPFloatDigits( size_t digits, size_t rest )
   mpf_pow_ui(*gmpRel->_mpfp(),*gmpRel->_mpfp(),digits);
 }
 
-size_t getGMPFloatDigits()
-{
-  return gmp_output_digits;
-}
-
 #if 1
 void gmp_float::setFromStr(const char * in )
 {
@@ -96,12 +91,12 @@ void gmp_float::setFromStr(const char * in )
     *c_in = '0';
     strcpy(&(c_in[1]), in);
 
-    mpf_set_str( t, c_in, 10 );
+    if(mpf_set_str( t, c_in, 10 )!=0) WerrorS("syntax error in GMP float");
     omFreeSize((void*)c_in, len);
   }
   else
   {
-    mpf_set_str( t, in, 10 );
+    if(mpf_set_str( t, in, 10 )!=0) WerrorS("syntax error in GMP float");
   }
   if (neg)  mpf_neg( t, t );
 }
@@ -381,7 +376,15 @@ gmp_float numberToFloat( number num, const coeffs src)
     {
       if (SR_HDL(num) & SR_INT)
       {
-        r= SR_TO_INT(num);
+        //n_Print(num, src);printf("\n");
+        int nn = SR_TO_INT(num);
+        if((long)nn == SR_TO_INT(num))
+            r = SR_TO_INT(num);
+        else
+            r = gmp_float(SR_TO_INT(num));
+        //int dd = 20;
+        //gmp_printf("\nr = %.*Ff\n",dd,*r.mpfp());
+        //getchar();
       }
       else
       {
@@ -440,7 +443,11 @@ gmp_float numberFieldToFloat( number num, int k, const coeffs src)
     {
       if (SR_HDL(num) & SR_INT)
       {
-        r= SR_TO_INT(num);
+        int nn = SR_TO_INT(num);
+        if((long)nn == SR_TO_INT(num))
+            r = SR_TO_INT(num);
+        else
+            r = gmp_float(SR_TO_INT(num));
       }
       else
       {
@@ -450,7 +457,11 @@ gmp_float numberFieldToFloat( number num, int k, const coeffs src)
         }
         if (SR_HDL(num) & SR_INT)
         {
-          r= SR_TO_INT(num);
+          int nn = SR_TO_INT(num);
+          if((long)nn == SR_TO_INT(num))
+            r = SR_TO_INT(num);
+          else
+            r = gmp_float(SR_TO_INT(num));
         }
         else
         {

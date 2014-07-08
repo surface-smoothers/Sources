@@ -1,15 +1,13 @@
-#include <ctype.h>
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
 #include <kernel/mod2.h>
+
 #include <Singular/ipid.h>
 #include <Singular/blackbox.h>
 #include <Singular/lists.h>
 #include <Singular/ipid.h>
 #include <Singular/ipshell.h>
 #include <Singular/newstruct.h>
+
+#include <ctype.h>
 
 struct newstruct_member_s;
 typedef struct newstruct_member_s *newstruct_member;
@@ -102,7 +100,9 @@ char * newstruct_String(blackbox *b, void *d)
           char *tmp2=omStrDup(l->m[a->pos].String());
           if ((strlen(tmp2)>80)||(strchr(tmp2,'\n')!=NULL))
           {
-            StringAppend("<%s>",Tok2Cmdname(l->m[a->pos].rtyp));
+            StringAppendS("<");
+            StringAppendS(Tok2Cmdname(l->m[a->pos].rtyp));
+            StringAppendS(">");
           }
           else StringAppendS(tmp2);
           omFree(tmp2);
@@ -125,7 +125,8 @@ lists lCopy_newstruct(lists L)
   N->Init(n+1);
   for(;n>=0;n--)
   {
-    if (RingDependend(L->m[n].rtyp))
+    if (RingDependend(L->m[n].rtyp)
+    ||((L->m[n].rtyp==LIST_CMD)&&lRingDependend((lists)L->m[n].data)))
     {
       assume((L->m[n-1].rtyp==RING_CMD) || (L->m[n-1].data==NULL));
       if(L->m[n-1].data!=NULL)
@@ -276,7 +277,6 @@ BOOLEAN newstruct_Assign(leftv l, leftv r)
       return FALSE;
     }
   }
-
   else
   {
     assume(l->Typ() > MAX_TOK);
@@ -351,7 +351,7 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
           }
           if (nm==NULL)
           {
-            Werror("member %s nor found", a2->name);
+            Werror("member %s not found", a2->name);
             return TRUE;
           }
           if (search_ring)
@@ -365,7 +365,8 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
             else Werror("ring of this member is not set and no basering found");
             return r==NULL;
           }
-          else if (RingDependend(nm->typ))
+          else if (RingDependend(nm->typ)
+          || (al->m[nm->pos].RingDependend()))
           {
             if (al->m[nm->pos].data==NULL)
             {
@@ -386,6 +387,14 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
               {
                 Werror("different ring %lx(data) - %lx(basering)",
                   (long unsigned)(al->m[nm->pos-1].data),(long unsigned)currRing);
+                Werror("name of basering: %s",IDID(currRingHdl));
+                rWrite(currRing,TRUE);PrintLn();
+                idhdl hh=rFindHdl((ring)(al->m[nm->pos-1].data),NULL);
+                const char *nn="??";
+                if (hh!=NULL) nn=IDID(hh);
+                Werror("(possible) name of ring of data: %s",nn);
+                rWrite((ring)(al->m[nm->pos-1].data),TRUE);PrintLn();
+
                 return TRUE;
               }
             }
@@ -395,6 +404,14 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
               al->m[nm->pos-1].data=(void *)currRing;
               al->m[nm->pos-1].rtyp=RING_CMD;
               currRing->ref++;
+            }
+          }
+          else if ((nm->typ==DEF_CMD)||(nm->typ==LIST_CMD))
+          {
+            if (al->m[nm->pos-1].data==NULL)
+            {
+              al->m[nm->pos-1].data=(void*)currRing;
+              if (currRing!=NULL) currRing->ref++;
             }
           }
           Subexpr r=(Subexpr)omAlloc0Bin(sSubexpr_bin);
@@ -492,7 +509,7 @@ BOOLEAN newstruct_OpM(int op, leftv res, leftv args)
       return FALSE;
     }
   }
-  return blackbox_default_OpM(op,res,args);
+  return blackboxDefaultOpM(op,res,args);
 }
 
 void newstruct_destroy(blackbox */*b*/, void *d)
@@ -513,6 +530,8 @@ void *newstruct_Init(blackbox *b)
   while (nm!=NULL)
   {
     l->m[nm->pos].rtyp=nm->typ;
+    if (RingDependend(nm->typ) ||(nm->typ==DEF_CMD)||(nm->typ==LIST_CMD))
+      l->m[nm->pos-1].rtyp=RING_CMD;
     l->m[nm->pos].data=idrecDataInit(nm->typ);
     nm=nm->next;
   }
@@ -564,23 +583,58 @@ BOOLEAN newstruct_serialize(blackbox *b, void *d, si_link f)
   l.data=(void*)getBlackboxName(dd->id);
   f->m->Write(f, &l);
   lists ll=(lists)d;
-  memset(&l,0,sizeof(l));
-  l.rtyp=LIST_CMD;
-  l.data=ll;
+  int Ll=lSize(ll);
+  l.rtyp=INT_CMD;
+  l.data=(void*)(long)Ll;
   f->m->Write(f, &l);
+  // set all entries corresponding to "real" mebers to 1 in rings
+  char *rings=(char*)omAlloc0(Ll+1);
+  newstruct_member elem=dd->member;
+  while (elem!=NULL)
+  {
+    rings[elem->pos]='\1';
+    elem=elem->next;
+  }
+  int i;
+  BOOLEAN ring_changed=FALSE;
+  ring save_ring=currRing;
+  for(i=0;i<=Ll;i++)
+  {
+    if (rings[i]=='\0') // ring entry for pos i+1
+    {
+      if (ll->m[i].data!=NULL)
+      {
+        ring_changed=TRUE;
+        f->m->SetRing(f,(ring)ll->m[i].data,TRUE);
+      }
+    }
+    f->m->Write(f,&(ll->m[i]));
+  }
+  if (ring_changed)
+    f->m->SetRing(f,save_ring,FALSE);
   return FALSE;
 }
 
-BOOLEAN newstruct_deserialize(blackbox **/*b*/, void **d, si_link f)
+BOOLEAN newstruct_deserialize(blackbox **b, void **d, si_link f)
 {
-  // newstruct is serialiazed as a list,
+  // newstruct is serialiazed as analog to a list,
   // just read a list and take data,
   // rtyp must be set correctly (to the blackbox id) by routine calling
   // newstruct_deserialize
-  leftv l=f->m->Read(f);
+  leftv l=f->m->Read(f); // int: length of list
+  int Ll=(int)(long)(l->data);
+  omFree(l);
+  lists L=(lists)omAllocBin(slists_bin);
+  L->Init(Ll+1);
+  for(int i=0;i<=Ll;i++)
+  {
+    l=f->m->Read(f);
+    memcpy(&(L->m[i]),l,sizeof(sleftv));
+    omFree(l);
+  }
   //newstruct_desc n=(newstruct_desc)b->data;
   //TODO: check compatibility of list l->data with description in n
-  *d=l->data;
+  *d=L;
   return FALSE;
 }
 
@@ -603,7 +657,11 @@ void newstruct_Print(blackbox *b,void *d)
     hh.typ=PROC_CMD;
     hh.data.pinf=p->p;
     sl=iiMake_proc(&hh,NULL,&tmp);
-    if (!sl) iiRETURNEXPR.CleanUp();
+    if (!sl)
+    {
+      if (iiRETURNEXPR.Typ()!=NONE) Warn("ignoring return value (%s)",Tok2Cmdname(iiRETURNEXPR.Typ()));
+      iiRETURNEXPR.CleanUp();
+    }
     iiRETURNEXPR.Init();
   }
   else
@@ -623,7 +681,7 @@ void newstruct_setup(const char *n, newstruct_desc d )
   b->blackbox_Assign=newstruct_Assign;
   b->blackbox_Op1=newstruct_Op1;
   b->blackbox_Op2=newstruct_Op2;
-  //b->blackbox_Op3=blackbox_default_Op3;
+  //b->blackbox_Op3=blackboxDefaultOp3;
   b->blackbox_OpM=newstruct_OpM;
   b->blackbox_CheckAssign=newstruct_CheckAssign;
   b->blackbox_serialize=newstruct_serialize;
@@ -649,9 +707,9 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
   loop
   {
     // read type:
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     *p='\0';
     IsCmd(start,t);
     if (t==0)
@@ -662,22 +720,22 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
       currRingHdl=save_ring;
       return NULL;
     }
-    if (RingDependend(t))
+    if (RingDependend(t) || (t==DEF_CMD)||(t==LIST_CMD))
       res->size++;    // one additional field for the ring (before the data)
     //Print("found type %s at real-pos %d",start,res->size);
     elem=(newstruct_member)omAlloc0(sizeof(*elem));
     // read name:
     p++;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     c=*p;
     *p='\0';
     elem->typ=t;
     elem->pos=res->size;
-    if (*start=='\0') /*empty name*/
+    if ((*start=='\0') /*empty name*/||(isdigit(*start)))
     {
-      WerrorS("empty name for element");
+      WerrorS("illegal/empty name for element");
       goto error_in_newstruct_def;
     }
     elem->name=omStrDup(start);
@@ -688,7 +746,7 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
 
     // next ?
     *p=c;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     if (*p!=',')
     {
       if (*p!='\0')
@@ -703,6 +761,7 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
   omFree(ss);
   currRingHdl=save_ring;
   //Print("new type with %d elements\n",res->size);
+  //newstructShow(res);
   return res;
 error_in_newstruct_def:
    omFree(elem);
@@ -744,6 +803,7 @@ newstruct_desc newstructChildFromString(const char *parent, const char *s)
 
   return scanNewstructFromString(s,res);
 }
+
 void newstructShow(newstruct_desc d)
 {
   newstruct_member elem;
@@ -751,8 +811,16 @@ void newstructShow(newstruct_desc d)
   elem=d->member;
   while (elem!=NULL)
   {
-    Print(">>%s<< at pos %d, type %d\n",elem->name,elem->pos,elem->typ);
+    Print(">>%s<< at pos %d, type %d (%s)\n",elem->name,elem->pos,elem->typ,Tok2Cmdname(elem->typ));
+    if (RingDependend(elem->typ)|| (elem->typ==DEF_CMD) ||(elem->typ==LIST_CMD))
+      Print(">>r_%s<< at pos %d, shadow ring\n",elem->name,elem->pos-1);
     elem=elem->next;
+  }
+  newstruct_proc p=d->procs;
+  while (p!=NULL)
+  {
+    Print("op:%d(%s) with %d args -> %s\n",p->t,iiTwoOps(p->t),p->args,p->p->procname);
+    p=p->next;
   }
 }
 
@@ -760,6 +828,11 @@ BOOLEAN newstruct_set_proc(const char *bbname,const char *func, int args,procinf
 {
   int id=0;
   blackboxIsCmd(bbname,id);
+  if (id<MAX_TOK)
+  {
+    Werror(">>%s<< is not a newstruct type",bbname);
+    return TRUE;
+  }
   blackbox *bb=getBlackboxStuff(id);
   newstruct_desc desc=(newstruct_desc)bb->data;
   newstruct_proc p=(newstruct_proc)omAlloc(sizeof(*p));

@@ -46,13 +46,9 @@ struct sValCmd1 dArith1[]=
 ,{D(jjDUMMY),      BIGINTMAT_CMD,   BIGINTMAT_CMD,  BIGINTMAT_CMD , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCHAR),       CHARACTERISTIC_CMD, INT_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCHAR),       CHARACTERISTIC_CMD, INT_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjCHARSERIES), CHAR_SERIES_CMD, MATRIX_CMD,     IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      CHAR_SERIES_CMD, MATRIX_CMD,     IDEAL_CMD     , NO_PLURAL |NO_RING}
-#endif
-,{D(jjrCharStr),   CHARSTR_CMD,     XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrCharStr),   CHARSTR_CMD,     XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrCharStr),   CHARSTR_CMD,     STRING_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrCharStr),   CHARSTR_CMD,     STRING_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjOpenClose),  CLOSE_CMD,       NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
 //,{  jjWRONG ,       COLS_CMD,        0,              VECTOR_CMD  , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOLS),       COLS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -65,12 +61,12 @@ struct sValCmd1 dArith1[]=
 ,{D(jjCONTENT),    CONTENT_CMD,     VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOUNT_BI),   COUNT_CMD,       INT_CMD,        BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOUNT_N),    COUNT_CMD,       INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjCOUNT_RES),  COUNT_CMD,       XS(INT_CMD),    RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{D(jjstrlen),     COUNT_CMD,       XS(INT_CMD),    STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjpLength),    COUNT_CMD,       XS(INT_CMD),    POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjpLength),    COUNT_CMD,       XS(INT_CMD),    VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjidElem),     COUNT_CMD,       XS(INT_CMD),    IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjidElem),     COUNT_CMD,       XS(INT_CMD),    MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjCOUNT_RES),  COUNT_CMD,       INT_CMD,        RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{D(jjstrlen),     COUNT_CMD,       INT_CMD,        STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjpLength),    COUNT_CMD,       INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjpLength),    COUNT_CMD,       INT_CMD,        VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjidElem),     COUNT_CMD,       INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjidElem),     COUNT_CMD,       INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOUNT_M),    COUNT_CMD,       INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOUNT_IV),   COUNT_CMD,       INT_CMD,        INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOUNT_IV),   COUNT_CMD,       INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -86,38 +82,21 @@ struct sValCmd1 dArith1[]=
 ,{D(jjDEFINED),    DEFINED_CMD,     INT_CMD,        DEF_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDENOMINATOR),DENOMINATOR_CMD, NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjNUMERATOR),  NUMERATOR_CMD,   NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjDET_BI),     DET_CMD,         BIGINT_CMD,     BIGINTMAT_CMD , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDET_I),      DET_CMD,         INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDET),        DET_CMD,         POLY_CMD,       MATRIX_CMD    , NO_PLURAL |ALLOW_RING}
 ,{D(jjDET_S),      DET_CMD,         POLY_CMD,       MODUL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      DET_CMD,         INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |NO_RING}
-,{D(jjmpDetBareiss),DET_CMD,        XS(POLY_CMD),   MATRIX_CMD    , NO_PLURAL |ALLOW_RING}
-#endif
 ,{D(jjDIM),        DIM_CMD,         INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDIM),        DIM_CMD,         INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjDIM_R),      DIM_CMD,         XS(INT_CMD),    RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{D(jjDIM_R),      DIM_CMD,         INT_CMD,        RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMP),       DUMP_CMD,        NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjE),          E_CMD,           VECTOR_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjEXECUTE),    EXECUTE_CMD,     NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjERROR),      ERROR_CMD,       NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjFAC_P),      FAC_CMD,         LIST_CMD,       POLY_CMD      , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      FAC_CMD,         LIST_CMD,       POLY_CMD      , NO_PLURAL |NO_RING}
-#endif
-#ifdef HAVE_FACTORY
 ,{D(findUniProc),  FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{D(jjidFreeModule),FREEMODULE_CMD, XS(MODUL_CMD),  INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
+,{D(jjidFreeModule),FREEMODULE_CMD, MODUL_CMD,      INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjFACSTD),     FACSTD_CMD,      LIST_CMD,       IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      FACSTD_CMD,      LIST_CMD,       IDEAL_CMD     , NO_PLURAL |NO_RING}
-#endif
 ,{D(jjGETDUMP),    GETDUMP_CMD,     NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjHIGHCORNER), HIGHCORNER_CMD,  POLY_CMD,       IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
 ,{D(jjHIGHCORNER_M), HIGHCORNER_CMD,VECTOR_CMD,     MODUL_CMD     , NO_PLURAL |ALLOW_RING}
@@ -127,7 +106,7 @@ struct sValCmd1 dArith1[]=
 ,{D(jjHOMOG1),     HOMOG_CMD,       INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjHOMOG1),     HOMOG_CMD,       INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      IDEAL_CMD,       IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjidVec2Ideal),IDEAL_CMD,       XS(IDEAL_CMD),  VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjidVec2Ideal),IDEAL_CMD,       IDEAL_CMD,      VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjIDEAL_Ma),   IDEAL_CMD,       IDEAL_CMD,      MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjIDEAL_R),    IDEAL_CMD,       IDEAL_CMD,      QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjIDEAL_R),    IDEAL_CMD,       IDEAL_CMD,      RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
@@ -138,8 +117,8 @@ struct sValCmd1 dArith1[]=
 ,{D(jjnlInt),      INT_CMD,         INT_CMD,        BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjnInt),       INT_CMD,         INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjP2I),        INT_CMD,         INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjINTERRED),   INTERRED_CMD,    IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjINTERRED),   INTERRED_CMD,    MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjINTERRED),   INTERRED_CMD,    IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |NO_RING}
+,{D(jjINTERRED),   INTERRED_CMD,    MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |NO_RING}
 ,{D(jjDUMMY),      INTMAT_CMD,      INTMAT_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjIm2Iv),      INTVEC_CMD,      INTVEC_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      INTVEC_CMD,      INTVEC_CMD,     INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -156,18 +135,10 @@ struct sValCmd1 dArith1[]=
 ,{D(jjPFAC1),      PFAC_CMD,        LIST_CMD,       BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjPFAC1),      PFAC_CMD,        LIST_CMD,       NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(atKILLATTR1),  KILLATTR_CMD,    NONE,           IDHDL         , ALLOW_PLURAL |ALLOW_RING}
-#ifdef MDEBUG
 ,{D(jjpHead),      LEAD_CMD,        POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-#else
-,{D(jjpHead),      LEAD_CMD,        XS(POLY_CMD),   POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{D(jjidHead),     LEAD_CMD,        XS(IDEAL_CMD),  IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef MDEBUG
+,{D(jjidHead),     LEAD_CMD,        IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjpHead),      LEAD_CMD,        VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#else
-,{D(jjpHead),      LEAD_CMD,        XS(VECTOR_CMD), VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{D(jjidHead),     LEAD_CMD,        XS(MODUL_CMD),  MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjidHead),     LEAD_CMD,        MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjLEADCOEF),   LEADCOEF_CMD,    NUMBER_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjLEADCOEF),   LEADCOEF_CMD,    NUMBER_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjLEADEXP),    LEADEXP_CMD,     INTVEC_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
@@ -180,8 +151,8 @@ struct sValCmd1 dArith1[]=
 ,{D(jjDUMMY),      MATRIX_CMD,      MATRIX_CMD,     MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjidMaxIdeal), MAXID_CMD,       IDEAL_CMD,      INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjMEMORY),     MEMORY_CMD,      BIGINT_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjidMinBase),  MINBASE_CMD,     XS(IDEAL_CMD),  IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{D(jjidMinBase),  MINBASE_CMD,     XS(MODUL_CMD),  MODUL_CMD     , NO_PLURAL |ALLOW_RING}
+,{D(jjidMinBase),  MINBASE_CMD,     IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |NO_RING}
+,{D(jjidMinBase),  MINBASE_CMD,     MODUL_CMD,      MODUL_CMD     , NO_PLURAL |NO_RING}
 ,{D(jjMINRES),     MINRES_CMD,      LIST_CMD,       LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjMINRES_R),   MINRES_CMD,      RESOLUTION_CMD, RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      MODUL_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
@@ -196,6 +167,7 @@ struct sValCmd1 dArith1[]=
 ,{D(jjNAMES),      NAMES_CMD,       LIST_CMD,       PACKAGE_CMD   , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjNAMES),      NAMES_CMD,       LIST_CMD,       RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjNAMES),      NAMES_CMD,       LIST_CMD,       QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjNOT),        NOT,             INT_CMD,        INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      NUMBER_CMD,      NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjP2N),        NUMBER_CMD,      NUMBER_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjBI2N),       NUMBER_CMD,      NUMBER_CMD,     BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -207,13 +179,13 @@ struct sValCmd1 dArith1[]=
 ,{D(jjCALL1MANY),  OPTION_CMD,      NONE,           DEF_CMD       , ALLOW_PLURAL |ALLOW_RING} /*libsing*/
 ,{D(jjORD),        ORD_CMD,         INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjORD),        ORD_CMD,         INT_CMD,        VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrOrdStr),    ORDSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrOrdStr),    ORDSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrOrdStr),    ORDSTR_CMD,      STRING_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrOrdStr),    ORDSTR_CMD,      STRING_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjPAR1),       PAR_CMD,         NUMBER_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjPARDEG),     PARDEG_CMD,      INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjPARSTR1),    PARSTR_CMD,      STRING_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrParStr),    PARSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrParStr),    PARSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrParStr),    PARSTR_CMD,      STRING_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrParStr),    PARSTR_CMD,      STRING_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      POLY_CMD,        POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjBI2P),       POLY_CMD,        POLY_CMD,       BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjPREIMAGE_R), PREIMAGE_CMD,    RING_CMD,       MAP_CMD       , NO_PLURAL |ALLOW_RING}
@@ -224,7 +196,8 @@ struct sValCmd1 dArith1[]=
 ,{D(jjPRUNE),      PRUNE_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(kQHWeight),    QHWEIGHT_CMD,    INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(kQHWeight),    QHWEIGHT_CMD,    INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{  jjWRONG ,      QRING_CMD,       0,              ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjDUMMY),      QRING_CMD,       QRING_CMD,      QRING_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjDUMMY),      QRING_CMD,       QRING_CMD,      RING_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjRANK1),      RANK_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjREAD),       READ_CMD,        STRING_CMD,     LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjREGULARITY), REGULARITY_CMD,  INT_CMD,        LIST_CMD      , NO_PLURAL |ALLOW_RING}
@@ -237,7 +210,7 @@ struct sValCmd1 dArith1[]=
 ,{D(jjDUMMY),      RING_CMD,        RING_CMD,       RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjLISTRING),   RING_CMD,        RING_CMD,       LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
 //,{  jjWRONG ,      ROWS_CMD,        0,              POLY_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjpMaxComp),   ROWS_CMD,        XS(INT_CMD),    VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjpMaxComp),   ROWS_CMD,        INT_CMD,        VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjROWS),       ROWS_CMD,        INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjROWS),       ROWS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjROWS_IV),    ROWS_CMD,        INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -249,11 +222,7 @@ struct sValCmd1 dArith1[]=
 ,{D(jjSLIM_GB),    SLIM_GB_CMD,     MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL }
 ,{D(jjSort_Id),    SORTVEC_CMD,     INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSort_Id),    SORTVEC_CMD,     INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjSQR_FREE),   SQR_FREE_CMD,    LIST_CMD,      POLY_CMD      , NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG ,      SQR_FREE_CMD,    LIST_CMD,      POLY_CMD      , NO_PLURAL |NO_RING}
-#endif
 ,{D(jjSTD),        STD_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSTD),        STD_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjDUMMY),      STRING_CMD,      STRING_CMD,     STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -269,12 +238,12 @@ struct sValCmd1 dArith1[]=
 ,{  jjWRONG ,      TRACE_CMD,       0,              INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{  jjWRONG ,      TRACE_CMD,       0,              IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjTRACE_IV),   TRACE_CMD,       INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjmpTrace),    TRACE_CMD,       XS(POLY_CMD),   MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjmpTrace),    TRACE_CMD,       POLY_CMD,       MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjTRANSP_IV),  TRANSPOSE_CMD,   INTMAT_CMD,     INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjTRANSP_IV),  TRANSPOSE_CMD,   INTMAT_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjTRANSP_BIM), TRANSPOSE_CMD,   BIGINTMAT_CMD,  BIGINTMAT_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjmpTransp),   TRANSPOSE_CMD,   XS(MATRIX_CMD), MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjidTransp),   TRANSPOSE_CMD,   XS(MODUL_CMD),  MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjmpTransp),   TRANSPOSE_CMD,   MATRIX_CMD,     MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjidTransp),   TRANSPOSE_CMD,   MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjTYPEOF),     TYPEOF_CMD,      STRING_CMD,     ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjUNIVARIATE), UNIVARIATE_CMD,  INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjVARIABLES_P),VARIABLES_CMD,   IDEAL_CMD,      POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
@@ -285,8 +254,8 @@ struct sValCmd1 dArith1[]=
 ,{D(jjVDIM),       VDIM_CMD,        INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING |WARN_RING} /*ring-cf: warning at top level*/
 ,{D(jjVAR1),       VAR_CMD,         POLY_CMD,       INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjVARSTR1),    VARSTR_CMD,      STRING_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrVarStr),    VARSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{D(jjrVarStr),    VARSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrVarStr),    VARSTR_CMD,      STRING_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{D(jjrVarStr),    VARSTR_CMD,      STRING_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(kWeight),      WEIGHT_CMD,      INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(kWeight),      WEIGHT_CMD,      INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjLOAD1),      LOAD_CMD,        NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -497,14 +466,10 @@ struct sValCmd2 dArith2[]=
 #ifdef HAVE_PLURAL
 ,{D(jjBRACKET),   BRACKET_CMD,    POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | NO_RING}
 #endif
-#ifdef HAVE_FACTORY
 ,{D(jjCHINREM_BI),CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
 //,{D(jjCHINREM_P), CHINREM_CMD,    POLY_CMD,       LIST_CMD,   INTVEC_CMD, ALLOW_PLURAL}
 ,{D(jjCHINREM_ID),CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,INTVEC_CMD, ALLOW_PLURAL |NO_RING}
 ,{D(jjCHINREM_ID),CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,LIST_CMD, ALLOW_PLURAL |NO_RING}
-#else
-,{  jjWRONG2 ,    CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-#endif
 ,{D(jjCOEF),      COEF_CMD,       MATRIX_CMD,     POLY_CMD,   POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOEFFS_Id), COEFFS_CMD,     MATRIX_CMD,     IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjCOEFFS_Id), COEFFS_CMD,     MATRIX_CMD,     MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -533,40 +498,24 @@ struct sValCmd2 dArith2[]=
 ,{D(jjEXPORTTO),  EXPORTTO_CMD,   NONE,           PACKAGE_CMD, IDHDL, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjEXTGCD_I),  EXTGCD_CMD,     LIST_CMD,       INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjEXTGCD_BI), EXTGCD_CMD,     LIST_CMD,       BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjEXTGCD_P),  EXTGCD_CMD,     LIST_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
 ,{D(jjFAC_P2),     FAC_CMD,        IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |NO_RING}
 ,{D(jjFACSTD2),   FACSTD_CMD,     LIST_CMD,       IDEAL_CMD,  IDEAL_CMD, NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG2 ,    EXTGCD_CMD,     LIST_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-,{  jjWRONG2 ,    FAC_CMD,        IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |NO_RING}
-,{  jjWRONG2 ,    FACSTD_CMD,     LIST_CMD,       IDEAL_CMD,  IDEAL_CMD, NO_PLURAL |NO_RING}
-#endif
 ,{D(jjFAREY_BI),  FAREY_CMD,      NUMBER_CMD,     BIGINT_CMD,  BIGINT_CMD, ALLOW_PLURAL |NO_RING}
 ,{D(jjFAREY_ID),   FAREY_CMD,     ANY_TYPE/*set by p*/,IDEAL_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
 ,{D(jjFAREY_ID),   FAREY_CMD,     ANY_TYPE/*set by p*/,MODUL_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
 ,{D(jjFAREY_ID),   FAREY_CMD,     ANY_TYPE/*set by p*/,MATRIX_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
 ,{D(jjFETCH),     FETCH_CMD,      ANY_TYPE/*set by p*/,RING_CMD,  ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjFETCH),     FETCH_CMD,      ANY_TYPE/*set by p*/,QRING_CMD, ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(fglmProc),    FGLM_CMD,       IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
 ,{D(fglmProc),    FGLM_CMD,       IDEAL_CMD,      QRING_CMD,  DEF_CMD, NO_PLURAL |NO_RING}
 ,{D(fglmQuotProc),FGLMQUOT_CMD,   IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG2 ,    FGLM_CMD,       IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
-,{  jjWRONG2 ,    FGLM_CMD,       IDEAL_CMD,      QRING_CMD,  DEF_CMD, NO_PLURAL |NO_RING}
-,{  jjWRONG2 ,    FGLMQUOT_CMD,   IDEAL_CMD,      POLY_CMD,   IDEAL_CMD, NO_PLURAL |NO_RING}
-#endif
 ,{D(jjFIND2),     FIND_CMD,       INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjFWALK),     FWALK_CMD,      IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
 ,{D(jjGCD_I),     GCD_CMD,        INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjGCD_N),     GCD_CMD,        NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjGCD_BI),    GCD_CMD,        BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
-#if defined(HAVE_FACTORY)
 ,{D(jjGCD_P),     GCD_CMD,        POLY_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-#else
-,{  jjWRONG2 ,    GCD_CMD,        POLY_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-#endif
 ,{D(jjHILBERT2),  HILBERT_CMD,    INTVEC_CMD,     IDEAL_CMD,  INT_CMD, NO_PLURAL | ALLOW_RING | NO_ZERODIVISOR}
 ,{D(jjHILBERT2),  HILBERT_CMD,    INTVEC_CMD,     MODUL_CMD,  INT_CMD, NO_PLURAL | ALLOW_RING | NO_ZERODIVISOR}
 ,{D(jjHOMOG1_W),  HOMOG_CMD,      INT_CMD,        IDEAL_CMD,  INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -649,11 +598,7 @@ struct sValCmd2 dArith2[]=
 //,{D(jjRES),       RES_CMD,        LIST_CMD,       MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
 ,{D(jjRES),       RES_CMD,        RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjRES),       RES_CMD,        RESOLUTION_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
 ,{D(jjSQR_FREE2), SQR_FREE_CMD,   IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |ALLOW_RING}
-#else
-,{  jjWRONG2 ,    SQR_FREE_CMD,   IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |ALLOW_RING}
-#endif
 ,{D(jjSTATUS2),   STATUS_CMD,     STRING_CMD,     LINK_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSTATUS2L),  STATUS_CMD,     INT_CMD,        LIST_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjSIMPL_P),   SIMPLIFY_CMD,   POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -757,11 +702,7 @@ struct sValCmd3 dArith3[]=
 ,{D(jjRES3),           RES_CMD,    NONE,       IDEAL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
 ,{D(jjRES3),           RES_CMD,    NONE,       MODUL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
 #endif
-#ifdef HAVE_FACTORY
 ,{D(jjRESULTANT),      RESULTANT_CMD, POLY_CMD,POLY_CMD,   POLY_CMD,   POLY_CMD, NO_PLURAL |ALLOW_RING}
-#else
-,{  jjWRONG3 ,         RESULTANT_CMD, POLY_CMD,POLY_CMD,   POLY_CMD,   POLY_CMD, NO_PLURAL |ALLOW_RING}
-#endif
 ,{D(jjRING3),          RING_CMD,   RING_CMD,   DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
 #ifdef OLD_RES
 ,{D(jjRES3),           SRES_CMD,   NONE,       IDEAL_CMD,  INT_CMD,    ANY_TYPE, NO_PLURAL |ALLOW_RING}
@@ -850,6 +791,7 @@ struct sValCmdM dArithM[]=
 cmdnames cmds[] =
 {  // name-string alias tokval          toktype
   { "$INVALID$",   0, -1,                 0},
+  { "ASSUME",      0, ASSUME_CMD,         ASSUME_CMD},
   { "LIB",         0, LIB_CMD ,           SYSVAR},
   { "alias",       0, ALIAS_CMD ,         PARAMETER},
   { "and",         0, '&' ,               LOGIC_OP},
@@ -900,6 +842,7 @@ cmdnames cmds[] =
   { "execute",     0, EXECUTE_CMD ,       CMD_1},
   { "export",      0, EXPORT_CMD ,        EXPORT_CMD},
   { "exportto",    0, EXPORTTO_CMD ,      CMD_2},
+  { "facstd",      0, FACSTD_CMD ,        CMD_12},
   { "factmodd",    0, FMD_CMD ,           CMD_M},
   { "factorize",   0, FAC_CMD ,           CMD_12},
   { "farey",       0, FAREY_CMD ,         CMD_2},
@@ -910,7 +853,6 @@ cmdnames cmds[] =
   { "finduni",     0, FINDUNI_CMD,        CMD_1},
   { "forif",       0, IF_CMD ,            IF_CMD},
   { "freemodule",  0, FREEMODULE_CMD ,    CMD_1},
-  { "facstd",      0, FACSTD_CMD ,        CMD_12},
   { "frwalk",      0, FWALK_CMD ,         CMD_23},
   { "gen",         0, E_CMD ,             CMD_1},
   { "getdump",     0, GETDUMP_CMD,        CMD_1},
@@ -1121,70 +1063,70 @@ struct sConvertTypes dConvertTypes[] =
 {
 //   input type       output type     convert procedure
 //  int -> bigint
-   { INT_CMD,         BIGINT_CMD,     D(iiI2BI) , NULL },
+   { INT_CMD,         BIGINT_CMD,     D(iiI2BI) , NULL_VAL },
 //  int -> number
-   { INT_CMD,         NUMBER_CMD,     D(iiI2N) , NULL },
-   { BIGINT_CMD,      NUMBER_CMD,     D(iiBI2N) , NULL },
+   { INT_CMD,         NUMBER_CMD,     D(iiI2N) , NULL_VAL },
+   { BIGINT_CMD,      NUMBER_CMD,     D(iiBI2N) , NULL_VAL },
 //  int -> poly
-   { INT_CMD,         POLY_CMD,       D(iiI2P) , NULL },
-   { BIGINT_CMD,      POLY_CMD,       D(iiBI2P) , NULL },
+   { INT_CMD,         POLY_CMD,       D(iiI2P) , NULL_VAL },
+   { BIGINT_CMD,      POLY_CMD,       D(iiBI2P) , NULL_VAL },
 //  int -> vector
-   { INT_CMD,         VECTOR_CMD,     D(iiI2V) , NULL },
-   { BIGINT_CMD,      VECTOR_CMD,     D(iiBI2V) , NULL },
+   { INT_CMD,         VECTOR_CMD,     D(iiI2V) , NULL_VAL },
+   { BIGINT_CMD,      VECTOR_CMD,     D(iiBI2V) , NULL_VAL },
 //  int -> ideal
-   { INT_CMD,         IDEAL_CMD,      D(iiI2Id) , NULL },
-   { BIGINT_CMD,      IDEAL_CMD,      D(iiBI2Id) , NULL },
+   { INT_CMD,         IDEAL_CMD,      D(iiI2Id) , NULL_VAL },
+   { BIGINT_CMD,      IDEAL_CMD,      D(iiBI2Id) , NULL_VAL },
 //  int -> matrix
-   { INT_CMD,         MATRIX_CMD,     D(iiI2Id) , NULL },
-   { BIGINT_CMD,      MATRIX_CMD,     D(iiBI2Id) , NULL },
+   { INT_CMD,         MATRIX_CMD,     D(iiI2Id) , NULL_VAL },
+   { BIGINT_CMD,      MATRIX_CMD,     D(iiBI2Id) , NULL_VAL },
 //  int -> intvec
-   { INT_CMD,         INTVEC_CMD,     D(iiI2Iv) , NULL },
+   { INT_CMD,         INTVEC_CMD,     D(iiI2Iv) , NULL_VAL },
 //  intvec -> intmat
-   { INTVEC_CMD,      INTMAT_CMD,     D(iiDummy), NULL },
+   { INTVEC_CMD,      INTMAT_CMD,     D(iiDummy), NULL_VAL },
 //  intvec -> matrix
-   { INTVEC_CMD,      MATRIX_CMD,     D(iiIm2Ma) , NULL },
+   { INTVEC_CMD,      MATRIX_CMD,     D(iiIm2Ma) , NULL_VAL },
 //  intmat -> bigintmat
-   { INTMAT_CMD,      BIGINTMAT_CMD,  D(iiIm2Bim) , NULL },
+   { INTMAT_CMD,      BIGINTMAT_CMD,  D(iiIm2Bim) , NULL_VAL },
 //  bigintmat -> intmat
-   { BIGINTMAT_CMD,   INTMAT_CMD,     D(iiBim2Im) , NULL },
+   { BIGINTMAT_CMD,   INTMAT_CMD,     D(iiBim2Im) , NULL_VAL },
 //  intmat -> matrix
-   { INTMAT_CMD,      MATRIX_CMD,     D(iiIm2Ma) , NULL },
+   { INTMAT_CMD,      MATRIX_CMD,     D(iiIm2Ma) , NULL_VAL },
 //  number -> poly
-   { NUMBER_CMD,      POLY_CMD,       D(iiN2P)  , NULL },
+   { NUMBER_CMD,      POLY_CMD,       D(iiN2P)  , NULL_VAL },
 //  number -> matrix
-   { NUMBER_CMD,      MATRIX_CMD,     D(iiN2Ma)  , NULL },
+   { NUMBER_CMD,      MATRIX_CMD,     D(iiN2Ma)  , NULL_VAL },
 //  number -> ideal
 //  number -> vector
 //  number -> module
 //  poly -> number
 //  poly -> ideal
-   { POLY_CMD,        IDEAL_CMD,      D(iiP2Id) , NULL },
+   { POLY_CMD,        IDEAL_CMD,      D(iiP2Id) , NULL_VAL },
 //  poly -> vector
-   { POLY_CMD,        VECTOR_CMD,     D(iiP2V) , NULL },
+   { POLY_CMD,        VECTOR_CMD,     D(iiP2V) , NULL_VAL },
 //  poly -> matrix
-   { POLY_CMD,        MATRIX_CMD,     D(iiP2Id) , NULL },
+   { POLY_CMD,        MATRIX_CMD,     D(iiP2Id) , NULL_VAL },
 //  vector -> module
-   { VECTOR_CMD,      MODUL_CMD,      D(iiP2Id) , NULL },
+   { VECTOR_CMD,      MODUL_CMD,      D(iiP2Id) , NULL_VAL },
 //  vector -> matrix
-   { VECTOR_CMD,      MATRIX_CMD,     D(iiV2Ma) , NULL },
+   { VECTOR_CMD,      MATRIX_CMD,     D(iiV2Ma) , NULL_VAL },
 //  ideal -> module
-   { IDEAL_CMD,       MODUL_CMD,      D(iiMa2Mo) , NULL },
+   { IDEAL_CMD,       MODUL_CMD,      D(iiMa2Mo) , NULL_VAL },
 //  ideal -> matrix
-   { IDEAL_CMD,       MATRIX_CMD,     D(iiDummy) , NULL },
+   { IDEAL_CMD,       MATRIX_CMD,     D(iiDummy) , NULL_VAL },
 //  module -> matrix
-   { MODUL_CMD,       MATRIX_CMD,     D(iiMo2Ma) , NULL },
+   { MODUL_CMD,       MATRIX_CMD,     D(iiMo2Ma) , NULL_VAL },
 //  matrix -> ideal
 //  matrix -> module
-   { MATRIX_CMD,      MODUL_CMD,      D(iiMa2Mo) , NULL },
+   { MATRIX_CMD,      MODUL_CMD,      D(iiMa2Mo) , NULL_VAL },
 //  intvec
 //  link
-   { STRING_CMD,      LINK_CMD,       D(iiS2Link) , NULL },
+   { STRING_CMD,      LINK_CMD,       D(iiS2Link) , NULL_VAL },
 // resolution -> list
-   { RESOLUTION_CMD,  LIST_CMD,       NULL /*iiR2L*/ , D(iiR2L_l) },
+   { RESOLUTION_CMD,  LIST_CMD,       NULL_VAL /*iiR2L*/ , D(iiR2L_l) },
 // list -> resolution
-   { LIST_CMD,        RESOLUTION_CMD, D(iiL2R) , NULL },
+   { LIST_CMD,        RESOLUTION_CMD, D(iiL2R) , NULL_VAL},
 //  end of list
-   { 0,               0,              NULL , NULL }
+   { 0,               0,              NULL_VAL , NULL_VAL }
 };
 #endif
 #ifdef IPASSIGN
@@ -1206,6 +1148,7 @@ struct sValAssign dAssign[]=
 ,{D(jiA_QRING),    QRING_CMD,      IDEAL_CMD }
 ,{D(jiA_RING),     RING_CMD,       RING_CMD }
 ,{D(jiA_RING),     QRING_CMD,      QRING_CMD }
+,{D(jiA_RING),     QRING_CMD,      RING_CMD }
 ,{D(jiA_STRING),   STRING_CMD,     STRING_CMD }
 ,{D(jiA_PROC),     PROC_CMD,       STRING_CMD }
 ,{D(jiA_PROC),     PROC_CMD,       PROC_CMD }

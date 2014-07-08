@@ -10,6 +10,7 @@
 //#include <kernel/structs.h>
 #include <kernel/ideals.h>
 #include <Singular/lists.h>
+#include <Singular/fevoices.h>
 
 struct _ssubexpr;
 typedef struct _ssubexpr *Subexpr;
@@ -20,6 +21,8 @@ BOOLEAN    spaddProc    ( leftv,leftv,leftv );
 BOOLEAN    spmulProc    ( leftv,leftv,leftv );
 BOOLEAN    semicProc   ( leftv,leftv,leftv );
 BOOLEAN    semicProc3   ( leftv,leftv,leftv,leftv );
+
+BOOLEAN iiARROW (leftv, char*,char *);
 
 extern leftv iiCurrArgs;
 extern idhdl iiCurrProc;
@@ -33,6 +36,10 @@ extern ring   *iiLocalRing;
 //extern cmdnames cmds[];
 extern const char *lastreserved;
 extern const char *singular_date; /* tesths.cc, set by final compile */
+extern int myynest;
+extern int printlevel;
+extern int si_echo;
+
 
 extern BOOLEAN yyInRingConstruction; /* 1: during ring construction */
 
@@ -56,8 +63,8 @@ int     IsPrime(int i);
 
 BOOLEAN iiWRITE(leftv res,leftv exprlist);
 BOOLEAN iiExport(leftv v, int toLev);
-BOOLEAN iiExport(leftv v, int toLev, idhdl roothdl);
-BOOLEAN iiInternalExport (leftv v, int toLev, idhdl roothdl);
+BOOLEAN iiExport(leftv v, int toLev, package pack);
+BOOLEAN iiInternalExport (leftv v, int toLev, package pack);
 char *  iiGetLibName(procinfov v);
 char *  iiGetLibProcBuffer( procinfov pi, int part=1 );
 char *  iiProcName(char *buf, char & ct, char* &e);
@@ -68,7 +75,7 @@ BOOLEAN iiLibCmd( char *newlib, BOOLEAN autoexport, BOOLEAN tellerror, BOOLEAN f
    if  no, returns FALSE
 */
 /// load lib/module given in v
-BOOLEAN jjLOAD(char *s, BOOLEAN autoexport = FALSE);
+BOOLEAN jjLOAD(const char *s, BOOLEAN autoexport = FALSE);
 BOOLEAN iiLocateLib(const char* lib, char* where);
 leftv   iiMap(map theMap, const char * what);
 void    iiMakeResolv(resolvente r, int length, int rlen, char * name, int typ0,
@@ -90,7 +97,7 @@ void    iiDebug();
 BOOLEAN iiCheckRing(int i);
 poly    iiHighCorner(ideal i, int ak);
 char *  iiConvName(const char *libname);
-BOOLEAN iiLoadLIB(FILE *fp, const char *libnamebuf, char *newlib,
+BOOLEAN iiLoadLIB(FILE *fp, const char *libnamebuf, const char *newlib,
                          idhdl pl, BOOLEAN autoexport, BOOLEAN tellerror);
 
 // converts a resolution into a list of modules
@@ -113,13 +120,6 @@ BOOLEAN iiExprArithM(leftv res, sleftv* a, int op);
 BOOLEAN iiApply(leftv res,leftv a, int op, leftv proc);
 
 typedef BOOLEAN (*proc1)(leftv,leftv);
-
-#ifdef __GNUC__
-#if (__GNUC__ < 3)
-#define INIT_BUG 1
-void    jjInitTab1();
-#endif
-#endif
 
 #ifdef GENTABLE
 typedef char * (*Proc1)(char *);
@@ -209,7 +209,7 @@ int iiAddCproc(const char *libname, const char *procname, BOOLEAN pstatic,
                BOOLEAN(*func)(leftv res, leftv v));
 
 void iiCheckPack(package &p);
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 void checkall();
 #endif
 
@@ -218,7 +218,7 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord);
 idhdl  rDefault(const char *s);
 
 idhdl rSimpleFindHdl(ring r, idhdl root, idhdl n=NULL);
-idhdl rFindHdl(ring r, idhdl n, idhdl w);
+idhdl rFindHdl(ring r, idhdl n);
 void   rKill(idhdl h);
 void   rKill(ring r);
 lists scIndIndset(ideal S, BOOLEAN all, ideal Q);
@@ -246,5 +246,6 @@ void paPrint(const char *n,package p);
 /* ================================================================== */
 
 
+BOOLEAN iiTestAssume(leftv a, leftv b);
 #endif
 

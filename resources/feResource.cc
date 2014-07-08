@@ -5,19 +5,16 @@
 * ABSTRACT: management of resources
 */
 
+#include "resourcesconfig.h"
+#include "feResource.h"
+#include "omFindExec.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/param.h>
 
-#ifdef HAVE_CONFIG_H
-#include "resourcesconfig.h"
-#endif /* HAVE_CONFIG_H */
-
-#include "omFindExec.h"
-
-#include "feResource.h"
 
 char* feArgv0 = NULL;
 
@@ -34,14 +31,13 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #endif
 
 
-//#include <reporter/reporter.h>
 //char* feResource(const char id, int warn = -1);
 //char* feResource(const char* key, int warn = -1);
 
 // define RESOURCE_DEBUG for chattering about resource management
 // #define RESOURCE_DEBUG
 
-#define SINGULAR_DEFAULT_DIR "/usr/local/Singular/"
+#define SINGULAR_DEFAULT_DIR PREFIX
 
 /*****************************************************************
  *
@@ -62,37 +58,40 @@ feResourceConfig_s feResourceConfigs[] =
    "%D/singular/LIB;"
    "%r/share/singular/LIB;"
    "%b/../share/singular/LIB;"
+   // gftables:
    "%D/factory;"
    "%r/share/factory;"
-   "%b/../share/factory;"
-   "%r/libexec/singular/MOD;"
-   "%b/../libexec/singular/MOD;"
    "%b/LIB;"
-   "%r/LIB;"
-   "%d/LIB;"
-   "%b/MOD;"
-   "%r/MOD;"
-   "%d/MOD;"
-   "%b;"
    "%b/../factory;"
-   "%b/../../factory",
-   ""},
+   // path for dynamic modules, should match ProcDir:
+   "%b/MOD;"
+   "%r/lib/singular/MOD;"
+   "%r/libexec/singular/MOD;"
+   LIB_DIR "/singular/MOD;"
+   LIBEXEC_DIR "/singular/MOD;"
+   "%b",
+   (char *)""},
   {"Singular",  'S',    feResBinary,"SINGULAR_EXECUTABLE",  "%d/Singular",          (char *)""},
   {"BinDir",    'b',    feResDir,   "SINGULAR_BIN_DIR",     "",                  (char *)""},
-  // should be changed to %b/../libexec/singular/pProcs/:
-  {"ProcDir",   'P',    feResDir,   "SINGULAR_PROCS_DIR",   "%r/libexec/singular/MOD/",                  (char *)""},
+  // should be changed to %b/../lib/singular/pProcs/:
+  {"ProcDir",   'P',    feResPath,  "SINGULAR_PROCS_DIR",
+     "%b/MOD;"
+     "%r/lib/singular/MOD;"
+     "%r/libexec/singular/MOD;"
+     LIB_DIR "/singular/MOD;"   /*debian: -> /usr/lib/singular/MOD */
+     LIBEXEC_DIR "/singular/MOD" ,                  (char *)""},
   {"RootDir",   'r',    feResDir,   "SINGULAR_ROOT_DIR",    "%b/..",                (char *)""},
   {"DataDir",   'D',    feResDir,   "SINGULAR_DATA_DIR",    "%b/../share/",          (char *)""},
   {"DefaultDir",'d',    feResDir,   "SINGULAR_DEFAULT_DIR",  SINGULAR_DEFAULT_DIR,  (char *)""},
-  {"InfoFile",  'i',    feResFile,  "SINGULAR_INFO_FILE",   "%r/info/singular.hlp", (char *)""},
-  {"IdxFile",   'x',    feResFile,  "SINGULAR_IDX_FILE",    "%r/doc/singular.idx",  (char *)""},
-  {"HtmlDir",   'h',    feResDir,   "SINGULAR_HTML_DIR",    "%r/html",              (char *)""},
+  {"InfoFile",  'i',    feResFile,  "SINGULAR_INFO_FILE",   "%D/info/singular.hlp", (char *)""},
+  {"IdxFile",   'x',    feResFile,  "SINGULAR_IDX_FILE",    "%D/doc/singular.idx",  (char *)""},
+  {"HtmlDir",   'h',    feResDir,   "SINGULAR_HTML_DIR",    "%D/singular/html",              (char *)""},
 #ifdef ix86_Win
   {"HtmlHelpFile",'C',  feResFile,  "SINGULAR_CHM_FILE",    "%r/doc/Manual.chm",    (char *)""},
 #endif
-  {"ManualUrl", 'u',    feResUrl,   "SINGULAR_URL",         "http://www.singular.uni-kl.de/index.php/singular-manual.html",    (char *)""},
+  {"ManualUrl", 'u',    feResUrl,   "SINGULAR_URL",         "http://www.singular.uni-kl.de/Manual/",    (char *)""},
   {"ExDir",     'm',    feResDir,   "SINGULAR_EXAMPLES_DIR","%r/examples",          (char *)""},
-  {"Path",      'p',    feResPath,  NULL,                   "%b;$PATH",             (char *)""},
+  {"Path",      'p',    feResPath,  NULL,                   "%b;%P;$PATH",             (char *)""},
 
   {"emacs",     'E',    feResBinary,"ESINGULAR_EMACS",      "%b/emacs",             (char *)""},
   {"xemacs",    'A',    feResBinary,"ESINGULAR_EMACS",      "%b/xemacs",            (char *)""},
@@ -173,6 +172,7 @@ void feInitResources(const char* argv0)
 #endif
   if (argv0==NULL)
   {
+    //WarnS("illegal argv[0]==NULL");
     feArgv0 = (char*)malloc(MAXPATHLEN+strlen("/Singular"));
     getcwd(feArgv0, MAXPATHLEN);
     strcpy(feArgv0+strlen(feArgv0),"/Singular");
@@ -187,6 +187,7 @@ void feInitResources(const char* argv0)
   feResource('r');
   // don't complain about stuff when initializing SingularPath
   feResource('s',0);
+  feResource('P');
 
 #if defined(HAVE_SETENV) || defined(HAVE_PUTENV)
   char* path = feResource('p');

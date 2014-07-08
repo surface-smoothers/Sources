@@ -12,18 +12,10 @@
 **/
 //*****************************************************************************
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-
 #include <kernel/mod2.h>
-#include <kernel/febase.h>
+
 #include <Singular/blackbox.h>
 #include <Singular/ipshell.h>
-
-//#ifdef EMBED_PYTHON
-//#include "pyobject.cc"
-//#endif
 
 static BOOLEAN pyobject_load()
 {
@@ -34,7 +26,7 @@ static BOOLEAN pyobject_load()
 void* pyobject_autoload(blackbox* bbx)
 {
   assume(bbx != NULL);
-  return (pyobject_load() || (bbx->blackbox_Init == pyobject_autoload)? 
+  return (pyobject_load() || (bbx->blackbox_Init == pyobject_autoload)?
 	  NULL: bbx->blackbox_Init(bbx));
 }
 
@@ -44,7 +36,7 @@ void pyobject_default_destroy(blackbox  */*b*/, void */*d*/)
 }
 
 // Setting up an empty blackbox type, which can be filled with pyobject
-void pyobject_setup() 
+void pyobject_setup()
 {
   blackbox *bbx = (blackbox*)omAlloc0(sizeof(blackbox));
   bbx->blackbox_Init = pyobject_autoload;
@@ -53,14 +45,12 @@ void pyobject_setup()
 }
 
 /// Explicitely load, if not loaded already
-BOOLEAN pyobject_ensure() {
+BOOLEAN pyobject_ensure() 
+{
 
   int tok = -1;
   blackbox* bbx = (blackboxIsCmd("pyobject", tok) == ROOT_DECL?
                    getBlackboxStuff(tok): (blackbox*)NULL);
   if (bbx == NULL) return TRUE;
-  return (bbx->blackbox_Init == pyobject_autoload?  pyobject_load(): FALSE);  
+  return (bbx->blackbox_Init == pyobject_autoload?  pyobject_load(): FALSE);
 }
-
-
-

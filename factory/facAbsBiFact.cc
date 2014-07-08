@@ -8,9 +8,9 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "timing.h"
 #include "debug.h"
@@ -415,7 +415,12 @@ differentevalpoint:
     nmod_poly_factor_insert (nmodFactors, FLINTFpi, 1L);
     nmod_poly_factor_insert (nmodFactors, FLINTGpi, 1L);
 
-    long * link= new long [2];
+    // the following fix is due to interface changes from  FLINT 2.3 -> FLINT 2.4
+#   ifndef slong
+#          define slong long
+#   endif
+
+    slong * link= new slong [2];
     fmpz_poly_t *v= new fmpz_poly_t[2];
     fmpz_poly_t *w= new fmpz_poly_t[2];
     fmpz_poly_init(v[0]);

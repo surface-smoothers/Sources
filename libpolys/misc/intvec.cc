@@ -8,9 +8,9 @@
 #define INTVEC_CC
 
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 // #include <resources/feFopen.h>
@@ -134,7 +134,7 @@ char * intvec::String(int dim) const
   return ivString(1, 0, dim);
 }
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 // debug only
 void intvec::view () const
 {

@@ -1,5 +1,11 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
+/**
+ * @file fac_util.h
+ *
+ * operations mod p^k and some other useful functions for factorization
+**/
+
 #ifndef INCL_FAC_UTIL_H
 #define INCL_FAC_UTIL_H
 
@@ -10,6 +16,9 @@
 
 /*BEGINPUBLIC*/
 
+/**
+ * class to do operations mod p^k for int's p and k
+**/
 class modpk
 {
 private:
@@ -33,29 +42,9 @@ public:
 
 CanonicalForm replaceLc( const CanonicalForm & f, const CanonicalForm & c );
 
-CanonicalForm remainder( const CanonicalForm & f, const CanonicalForm & g, const modpk & pk );
-
-void divremainder( const CanonicalForm & f, const CanonicalForm & g, CanonicalForm & quot, CanonicalForm & rem, const modpk & pk );
-
-bool Hensel ( const CanonicalForm & U, CFArray & G, const CFArray & lcG, const Evaluation & A, const modpk & bound, const Variable & x );
-
-/* some special array functions */
-
-CanonicalForm sum ( const CFArray & a, int f, int l );
-
-CanonicalForm prod ( const CFArray & a, int f, int l );
-
-CanonicalForm sum ( const CFArray & a );
-
-CanonicalForm prod ( const CFArray & a );
-
-CanonicalForm crossprod ( const CFArray & a, const CFArray & b );
-
 /*ENDPUBLIC*/
 
 bool gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int & d );
-
-CanonicalForm ezgcd ( const CanonicalForm & f, const CanonicalForm & g );
 
 void extgcd ( const CanonicalForm & a, const CanonicalForm & b, CanonicalForm & S, CanonicalForm & T, const modpk & pk );
 

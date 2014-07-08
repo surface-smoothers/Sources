@@ -1055,17 +1055,12 @@ char *yytext;
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #ifdef STANDALONE_PARSER
 #include <Singular/utils.h>
-
-# ifdef HAVE_FACTORY
-int initializeGMP(){ return 1; } // NEEDED FOR MAIN APP. LINKING!!!
-int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
-# endif
 
   #define HAVE_LIBPARSER
   #define YYLPDEBUG 1
@@ -1077,7 +1072,6 @@ int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
   #include <Singular/ipid.h>
   #include <Singular/tok.h>
   #include <misc/options.h>
-  #include <kernel/febase.h>
   #include <omalloc/omalloc.h>
 #endif
 #include <Singular/libparse.h>
@@ -1204,7 +1198,7 @@ do                                            \
 while(0)
 
 #undef YY_DECL
-#define YY_DECL int yylex(char *newlib, const char *libfile, \
+#define YY_DECL int yylex(const char *newlib, const char *libfile, \
                            lib_style_types *lib_style, \
                            idhdl pl, BOOLEAN autoexport, lp_modes mode)
 #undef YY_INPUT
@@ -1620,11 +1614,7 @@ YY_RULE_SETUP
                printpi(pi);
                pi_clear(pi);
              }
-             #ifdef STANDALONE_PARSER
              pi = (procinfo *)malloc(sizeof(procinfo));
-             #else
-             pi = (procinfo *)omAlloc(sizeof(procinfo));
-             #endif
              iiInitSingularProcinfo(pi, newlib, proc, yylplineno,
                                     current_pos(0), p_static);
              #else /*STANDALONE_PARSER*/
@@ -3381,7 +3371,7 @@ extern "C" {
     if(brace2>0) { yylp_errno=YYLP_MISS_BR2; }
     if(brace3>0) { yylp_errno=YYLP_MISS_BR3; }
     if(quote>0) { yylp_errno=YYLP_MISSQUOT; }
-    /* printf("{=%d, (=%d, [=%d\n", brace1, brace2, brace3);/**/
+    //printf("{=%d, (=%d, [=%d\n", brace1, brace2, brace3);
     if(feof(yyin)) return 1; else return 0;
   }
 }

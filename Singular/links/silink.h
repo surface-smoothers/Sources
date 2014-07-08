@@ -14,6 +14,7 @@
 #include <Singular/lists.h>
 #include <Singular/attrib.h>
 
+struct sip_link;
 typedef struct sip_link    ip_link;
 typedef ip_link *          si_link;
 
@@ -29,6 +30,7 @@ typedef leftv      (*slRead2Proc)(si_link l, leftv a);
 typedef BOOLEAN    (*slDumpProc)(si_link l);
 typedef BOOLEAN    (*slGetDumpProc)(si_link l);
 typedef const char* (*slStatusProc)(si_link l, const char *request);
+typedef BOOLEAN    (*slSetRingProc)(si_link l, ring r, BOOLEAN send);
 
 struct s_si_link_extension
 {
@@ -43,6 +45,7 @@ struct s_si_link_extension
   slDumpProc       Dump;
   slGetDumpProc    GetDump;
   slStatusProc     Status;
+  slSetRingProc    SetRing;
   const char       *type;
 };
 

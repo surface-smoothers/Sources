@@ -1,19 +1,19 @@
-#ifndef CF_MAP_EXT_H
-#define CF_MAP_EXT_H
 // -*- c++ -*-
 //*****************************************************************************
 /** @file cf_map_ext.h
- *
- * @author Martin Lee
- * @date   16.11.2009
  *
  * This file implements functions to map between extensions of finite fields
  *
  * @par Copyright:
  *   (c) by The SINGULAR Team, see LICENSE file
  *
+ * @author Martin Lee
+ * @date   16.11.2009
 **/
 //*****************************************************************************
+
+#ifndef CF_MAP_EXT_H
+#define CF_MAP_EXT_H
 
 // #include "config.h"
 
@@ -58,7 +58,7 @@ map (const CanonicalForm& primElem,///< [in] primitive element of
      const CanonicalForm& F,       ///< [in] an element of \f$ F_p (\alpha) \f$,
                                    ///< whose minimal polynomial defines a field
                                    ///< extension of \f$ F_p \f$ of degree
-                                   ///< \f$ \[F_p (\alpha):F_p\] \f$
+                                   ///< \f$ F_p (\alpha):F_p \f$
      const Variable& beta          ///< [in] algebraic variable, root of \a F's
                                    ///< minimal polynomial
     );

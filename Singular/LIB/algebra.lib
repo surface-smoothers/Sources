@@ -113,6 +113,7 @@ EXAMPLE: example algebra_containment; shows an example
 // e.g.:
                def S = l[2]; setring S; check;
         ");
+     setring br;
      return(l);
     }
 }
@@ -198,6 +199,7 @@ EXAMPLE: example module_containment; shows an example
     i = (sum(leadexp(check),1..n)==0);
     if( #[1] == 0 )
     { dbprint(i*(printlevel-voice+3),"// "+string(check));
+      setring br;
       return(i);
     }
     else
@@ -211,11 +213,14 @@ EXAMPLE: example module_containment; shows an example
 // a name, e.g.:
      def S = l[2]; setring S; check;
       ");
+      setring br;
       return(l);
     }
   }
   else
-  { "ERROR: the first ideal must have nvars(basering) entries";
+  {
+      setring br;
+    "ERROR: the first ideal must have nvars(basering) entries";
     return();
   }
 }
@@ -299,6 +304,7 @@ EXAMPLE: example inSubring; shows an example
        l[2] = l[2] + string(ker[i]);
      }
   }
+  setring gnir;
   return(l);
 }
 example
@@ -425,6 +431,7 @@ EXAMPLE: example algDependent; shows an example
 // e.g.:
              def S = l[2]; setring S; ker;
         ");
+    setring br;
     return (L);
 }
 example
@@ -440,7 +447,7 @@ example
    printlevel = p;
 }
 //////////////////////////////////////////////////////////////////////////////
-proc alg_kernel( map phi, pr, list #)
+proc alg_kernel( map phi, def pr, list #)
 "USAGE:   alg_kernel(phi,pr[,s,c]); phi map to basering, pr preimage ring,
          s string (name of kernel in pr), c integer.
 RETURN:  a string, the kernel of phi as string.
@@ -455,6 +462,7 @@ NOTE:    Since the kernel of phi lives in pr, it cannot be returned to the
 EXAMPLE: example alg_kernel; shows an example
 "
 {   int tt;
+   def BAS = basering;
    if( size(#) >0 )
    { if( typeof(#[1]) == "int")
      { tt = #[1];
@@ -494,6 +502,7 @@ EXAMPLE: example alg_kernel; shows an example
       execute("ideal "+nker+"="+sker+";");
       execute("export("+nker+");");
      }
+    setring BAS;
     return(sker);
 }
 example
@@ -515,7 +524,7 @@ example
 }
 //////////////////////////////////////////////////////////////////////////////
 
-proc is_injective( map phi, pr,list #)
+proc is_injective( map phi,def pr,list #)
 "USAGE:   is_injective(phi,pr[,c,s]); phi map, pr preimage ring, c int, s string
 RETURN:
 @format
@@ -660,6 +669,7 @@ EXAMPLE: example is_surjective; shows an example
          break;
        }
     }
+   setring br;
    return(t);
 }
 example
@@ -679,7 +689,7 @@ example
 
 ///////////////////////////////////////////////////////////////////////////////
 
-proc is_bijective ( map phi, pr )
+proc is_bijective ( map phi,def pr )
 "USAGE:   is_bijective(phi,pr); phi map to basering, pr preimage ring
 RETURN:  an integer,  1 if phi is bijective, 0 if not
 NOTE:    The algorithm checks first injectivity and then surjectivity.
@@ -734,6 +744,7 @@ EXAMPLE: example is_bijective; shows an example
     }
     if ( t != 0 )
     {  dbprint(printlevel-voice+3,"// map not injective" );
+      setring br;
       return(0);
     }
    else
@@ -753,6 +764,7 @@ EXAMPLE: example is_bijective; shows an example
      if ( t == 0 )
      {  dbprint(printlevel-voice+3,"// map injective, but not surjective" );
      }
+     setring br;
      return(t);
    }
 }
@@ -984,7 +996,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc mapIsFinite(map phi, R, list #)
+proc mapIsFinite(map phi,def R, list #)
 "USAGE:   mapIsFinite(phi,R[,J]); R the preimage ring of the map
          phi: R ---> basering
          J an ideal in the basering, J = 0 if not given
@@ -1027,7 +1039,9 @@ EXAMPLE: example mapIsFinite; shows an example
   M = std(M+J);
   // ----------------------- test for finiteness ---------------------------
   list l = finitenessTest(M,1..m);
-  return(l[1]);
+  int result = l[1];
+  setring bsr;
+  return( result );
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -1039,7 +1053,7 @@ example
 }
 //////////////////////////////////////////////////////////////////////////////
 
-proc nonZeroEntry(id)
+proc nonZeroEntry(def id)
 "USAGE:  nonZeroEntry(id); id=object for which the test 'id[i]!=0', i=1,..,N,
          N=size(id) (resp. ncols(id) for id of type ideal or module)
          is defined (e.g. ideal, vector, list of polynomials, intvec,...)

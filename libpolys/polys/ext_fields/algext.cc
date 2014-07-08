@@ -28,9 +28,9 @@
   *               computing in K[a_1, ..., a_s] / I.
   **/
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -47,12 +47,10 @@
 
 #include <polys/PolyEnumerator.h>
 
-#ifdef HAVE_FACTORY
 #include <factory/factory.h>
 #include <polys/clapconv.h>
 #include <polys/clapsing.h>
-#endif
-
+#include <polys/prCopy.h>
 
 #include <polys/ext_fields/algext.h>
 #define TRANSEXT_PRIVATES 1
@@ -99,8 +97,6 @@ void     naPower(number a, int exp, number *b, const coeffs cf);
 number   naCopy(number a, const coeffs cf);
 void     naWriteLong(number &a, const coeffs cf);
 void     naWriteShort(number &a, const coeffs cf);
-number   naRePart(number a, const coeffs cf);
-number   naImPart(number a, const coeffs cf);
 number   naGetDenom(number &a, const coeffs cf);
 number   naGetNumerator(number &a, const coeffs cf);
 number   naGcd(number a, number b, const coeffs cf);
@@ -249,15 +245,17 @@ poly p_ExtGcd(poly p, poly &pFactor, poly q, poly &qFactor, ring r)
 #ifdef LDEBUG
 BOOLEAN naDBTest(number a, const char *f, const int l, const coeffs cf)
 {
-  assume(getCoeffType(cf) == ID);
   if (a == NULL) return TRUE;
   p_Test((poly)a, naRing);
-  if((((poly)a)!=naMinpoly)
-  && p_Totaldegree((poly)a, naRing) >= p_Totaldegree(naMinpoly, naRing)
-  && (p_Totaldegree((poly)a, naRing)> 1)) // allow to output par(1)
+  if (getCoeffType(cf)==n_algExt)
   {
-    dReportError("deg >= deg(minpoly) in %s:%d\n",f,l);
-    return FALSE;
+    if((((poly)a)!=naMinpoly)
+    && p_Totaldegree((poly)a, naRing) >= p_Totaldegree(naMinpoly, naRing)
+    && (p_Totaldegree((poly)a, naRing)> 1)) // allow to output par(1)
+    {
+      dReportError("deg >= deg(minpoly) in %s:%d\n",f,l);
+      return FALSE;
+    }
   }
   return TRUE;
 }
@@ -349,12 +347,6 @@ number naNeg(number a, const coeffs cf)
   naTest(a);
   if (a != NULL) a = (number)p_Neg((poly)a, naRing);
   return a;
-}
-
-number naImPart(number a, const coeffs cf)
-{
-  naTest(a);
-  return NULL;
 }
 
 number naInit_bigint(number longratBigIntNumber, const coeffs src, const coeffs cf)
@@ -487,7 +479,7 @@ number naAdd(number a, number b, const coeffs cf)
   if (b == NULL) return naCopy(a, cf);
   poly aPlusB = p_Add_q(p_Copy((poly)a, naRing),
                         p_Copy((poly)b, naRing), naRing);
-  definiteReduce(aPlusB, naMinpoly, cf);
+  //definiteReduce(aPlusB, naMinpoly, cf);
   return (number)aPlusB;
 }
 
@@ -498,7 +490,7 @@ number naSub(number a, number b, const coeffs cf)
   poly minusB = p_Neg(p_Copy((poly)b, naRing), naRing);
   if (a == NULL) return (number)minusB;
   poly aMinusB = p_Add_q(p_Copy((poly)a, naRing), minusB, naRing);
-  definiteReduce(aMinusB, naMinpoly, cf);
+  //definiteReduce(aMinusB, naMinpoly, cf);
   return (number)aMinusB;
 }
 
@@ -654,7 +646,7 @@ const char * naRead(const char *s, number *a, const coeffs cf)
 {
   poly aAsPoly;
   const char * result = p_Read(s, aAsPoly, naRing);
-  definiteReduce(aAsPoly, naMinpoly, cf);
+  if (aAsPoly!=NULL) definiteReduce(aAsPoly, naMinpoly, cf);
   *a = (number)aAsPoly;
   return result;
 }
@@ -706,7 +698,7 @@ number naLcmContent(number a, number b, const coeffs cf)
       poly xx=(poly)a;
       while (xx!=NULL)
       {
-        bt = n_Gcd(t, pGetCoeff(xx), naRing->cf);
+        bt = n_SubringGcd(t, pGetCoeff(xx), naRing->cf);
         rr = n_Mult(t, pGetCoeff(xx), naRing->cf);
         n_Delete(&pGetCoeff(xx),naRing->cf);
         pGetCoeff(xx) = n_Div(rr, bt, naRing->cf);
@@ -725,7 +717,7 @@ number naLcmContent(number a, number b, const coeffs cf)
 /* expects *param to be castable to AlgExtInfo */
 static BOOLEAN naCoeffIsEqual(const coeffs cf, n_coeffType n, void * param)
 {
-  if (ID != n) return FALSE;
+  if (n_algExt != n) return FALSE;
   AlgExtInfo *e = (AlgExtInfo *)param;
   /* for extension coefficient fields we expect the underlying
      polynomial rings to be IDENTICAL, i.e. the SAME OBJECT;
@@ -799,7 +791,6 @@ void  naNormalize(number &a, const coeffs cf)
   a=(number)aa;
 }
 
-#ifdef HAVE_FACTORY
 number naConvFactoryNSingN( const CanonicalForm n, const coeffs cf)
 {
   if (n.isZero()) return NULL;
@@ -813,8 +804,6 @@ CanonicalForm naConvSingNFactoryN( number n, BOOLEAN /*setChar*/, const coeffs c
 
   return convSingPFactoryP((poly)n,naRing);
 }
-#endif
-
 
 /* IMPORTANT NOTE: Since an algebraic field extension is again a field,
                    the gcd of two elements is not very interesting. (It
@@ -843,7 +832,7 @@ number naGcd(number a, number b, const coeffs cf)
       while (pNext(ax)!=NULL)
       {
         pIter(ax);
-        number y = n_Gcd(x, pGetCoeff(ax), naRing->cf);
+        number y = n_SubringGcd(x, pGetCoeff(ax), naRing->cf);
         n_Delete(&x,naRing->cf);
         x = y;
         if (n_IsOne(x,naRing->cf))
@@ -851,7 +840,7 @@ number naGcd(number a, number b, const coeffs cf)
       }
       do
       {
-        number y = n_Gcd(x, pGetCoeff(bx), naRing->cf);
+        number y = n_SubringGcd(x, pGetCoeff(bx), naRing->cf);
         n_Delete(&x,naRing->cf);
         x = y;
         if (n_IsOne(x,naRing->cf))
@@ -1012,6 +1001,51 @@ number naMapUP(number a, const coeffs src, const coeffs dst)
   return (number)result;
 }
 
+number naGenMap(number a, const coeffs cf, const coeffs dst)
+{
+  if (a==NULL) return NULL;
+
+  const ring rSrc = cf->extRing;
+  const ring rDst = dst->extRing;
+
+  const nMapFunc nMap=n_SetMap(rSrc->cf,rDst->cf);
+  poly f = (poly)a;
+  poly g = prMapR(f, nMap, rSrc, rDst);
+
+  assume(n_Test((number)g, dst));
+  return (number)g;
+}
+
+number naGenTrans2AlgExt(number a, const coeffs cf, const coeffs dst)
+{
+  if (a==NULL) return NULL;
+
+  const ring rSrc = cf->extRing;
+  const ring rDst = dst->extRing;
+
+  const nMapFunc nMap=n_SetMap(rSrc->cf,rDst->cf);
+  fraction f = (fraction)a;
+  poly g = prMapR(NUM(f), nMap, rSrc, rDst);
+
+  number result=NULL;
+  poly h = NULL;
+
+  if (!DENIS1(f))
+     h = prMapR(DEN(f), nMap, rSrc, rDst);
+
+  if (h!=NULL)
+  {
+    result=naDiv((number)g,(number)h,dst);
+    p_Delete(&g,dst->extRing);
+    p_Delete(&h,dst->extRing);
+  }
+  else
+    result=(number)g;
+
+  assume(n_Test((number)result, dst));
+  return (number)result;
+}
+
 nMapFunc naSetMap(const coeffs src, const coeffs dst)
 {
   /* dst is expected to be an algebraic field extension */
@@ -1023,8 +1057,7 @@ nMapFunc naSetMap(const coeffs src, const coeffs dst)
   coeffs bDst = nCoeff_bottom(dst, h); /* the bottom field in the tower dst */
   coeffs bSrc = nCoeff_bottom(src, h); /* the bottom field in the tower src */
 
-  /* for the time being, we only provide maps if h = 1 and if b is Q or
-     some field Z/pZ: */
+  /* for the time being, we only provide maps if h = 1 or 0 */
   if (h==0)
   {
     if (nCoeff_is_Q(src) && nCoeff_is_Q(bDst))
@@ -1043,33 +1076,20 @@ nMapFunc naSetMap(const coeffs src, const coeffs dst)
   if ((!nCoeff_is_Zp(bDst)) && (!nCoeff_is_Q(bDst))) return NULL;
   if ((!nCoeff_is_Zp(bSrc)) && (!nCoeff_is_Q(bSrc))) return NULL;
 
-  if (nCoeff_is_Q(bSrc) && nCoeff_is_Q(bDst))
+  nMapFunc nMap=n_SetMap(src->extRing->cf,dst->extRing->cf);
+  if (rSamePolyRep(src->extRing, dst->extRing) && (strcmp(rRingVar(0, src->extRing), rRingVar(0, dst->extRing)) == 0))
   {
-    if (rSamePolyRep(src->extRing, dst->extRing) && (strcmp(rRingVar(0, src->extRing), rRingVar(0, dst->extRing)) == 0))
-    {
-      if (src->type==n_algExt)
-         return ndCopyMap; // naCopyMap;         /// Q(a)   --> Q(a)
-      else
-         return naCopyTrans2AlgExt;
-    }
+    if (src->type==n_algExt)
+       return ndCopyMap; // naCopyMap;         /// K(a)   --> K(a)
     else
-      return NULL;                               /// Q(b)   --> Q(a)
+       return naCopyTrans2AlgExt;
   }
-
-  if (nCoeff_is_Zp(bSrc) && nCoeff_is_Zp(bDst))
+  else if ((nMap!=NULL) && (strcmp(rRingVar(0,src->extRing),rRingVar(0,dst->extRing))==0) && (rVar (src->extRing) == rVar (dst->extRing)))
   {
-    if (rSamePolyRep(src->extRing, dst->extRing) && (strcmp(rRingVar(0,src->extRing),rRingVar(0,dst->extRing))==0))
-    {
-      if (src->type==n_algExt)
-        return ndCopyMap; // naCopyMap;          /// Z/p(a) --> Z/p(a)
-      else
-         return naCopyTrans2AlgExt;
-    }
-    else if ((strcmp(rRingVar(0,src->extRing),rRingVar(0,dst->extRing))==0) && (rVar (src->extRing) == rVar (dst->extRing)))
-    {
-      if (src->type==n_transExt)
-        return naCopyTrans2AlgExt;
-    }
+    if (src->type==n_algExt)
+       return naGenMap; // naCopyMap;         /// K(a)   --> K'(a)
+    else
+       return naGenTrans2AlgExt;
   }
 
   return NULL;                                           /// default
@@ -1332,6 +1352,47 @@ void naKillChar(coeffs cf)
      rDelete(cf->extRing);
 }
 
+char* naCoeffString(const coeffs r) // currently also for tranext.
+{
+  const char* const* p=n_ParameterNames(r);
+  int l=0;
+  int i;
+  for(i=0; i<n_NumberOfParameters(r);i++)
+  {
+    l+=(strlen(p[i])+1);
+  }
+  char *s=(char *)omAlloc(l+10+1);
+  s[0]='\0';
+  snprintf(s,10+1,"%d",r->ch); /* Fp(a) or Q(a) */
+  char tt[2];
+  tt[0]=',';
+  tt[1]='\0';
+  for(i=0; i<n_NumberOfParameters(r);i++)
+  {
+    strcat(s,tt);
+    strcat(s,p[i]);
+  }
+  return s;
+}
+
+number  naChineseRemainder(number *x, number *q,int rl, BOOLEAN sym,const coeffs cf)
+{
+  poly *P=(poly*)omAlloc(rl*sizeof(poly*));
+  number *X=(number *)omAlloc(rl*sizeof(number));
+  int i;
+  for(i=0;i<rl;i++) P[i]=p_Copy((poly)(x[i]),cf->extRing);
+  poly result=p_ChineseRemainder(P,X,q,rl,cf->extRing);
+  omFreeSize(X,rl*sizeof(number));
+  omFreeSize(P,rl*sizeof(poly*));
+  return ((number)result);
+}
+
+number  naFarey(number p, number n, const coeffs cf)
+{
+  // n is really a bigint
+  poly result=p_Farey(p_Copy((poly)p,cf->extRing),n,cf->extRing);
+  return ((number)result);
+}
 
 
 BOOLEAN naInitChar(coeffs cf, void * infoStruct)
@@ -1353,16 +1414,20 @@ BOOLEAN naInitChar(coeffs cf, void * infoStruct)
 
   e->r->ref ++; // increase the ref.counter for the ground poly. ring!
   const ring R = e->r; // no copy!
-  assume( R->qideal == e->r->qideal );
   cf->extRing  = R;
 
   /* propagate characteristic up so that it becomes
      directly accessible in cf: */
   cf->ch = R->cf->ch;
+  
+  cf->is_field=TRUE;
+  cf->is_domain=TRUE;
 
   #ifdef LDEBUG
   p_Test((poly)naMinpoly, naRing);
   #endif
+
+  cf->cfCoeffString = naCoeffString;
 
   cf->cfGreaterZero  = naGreaterZero;
   cf->cfGreater      = naGreater;
@@ -1372,8 +1437,10 @@ BOOLEAN naInitChar(coeffs cf, void * infoStruct)
   cf->cfIsMOne       = naIsMOne;
   cf->cfInit         = naInit;
   cf->cfInit_bigint  = naInit_bigint;
+  cf->cfFarey        = naFarey;
+  cf->cfChineseRemainder= naChineseRemainder;
   cf->cfInt          = naInt;
-  cf->cfNeg          = naNeg;
+  cf->cfInpNeg       = naNeg;
   cf->cfAdd          = naAdd;
   cf->cfSub          = naSub;
   cf->cfMult         = naMult;
@@ -1395,7 +1462,6 @@ BOOLEAN naInitChar(coeffs cf, void * infoStruct)
   cf->cfGetDenom     = naGetDenom;
   cf->cfGetNumerator = naGetNumerator;
   cf->cfRePart       = naCopy;
-  cf->cfImPart       = naImPart;
   cf->cfCoeffWrite   = naCoeffWrite;
   cf->cfNormalize    = naNormalize;
   cf->cfKillChar     = naKillChar;
@@ -1407,16 +1473,15 @@ BOOLEAN naInitChar(coeffs cf, void * infoStruct)
   cf->cfSize         = naSize;
   cf->nCoeffIsEqual  = naCoeffIsEqual;
   cf->cfInvers       = naInvers;
-  cf->cfIntDiv       = naDiv; // ???
-#ifdef HAVE_FACTORY
   cf->convFactoryNSingN=naConvFactoryNSingN;
   cf->convSingNFactoryN=naConvSingNFactoryN;
-#endif
   cf->cfParDeg = naParDeg;
 
   cf->iNumberOfParameters = rVar(R);
-  cf->pParameterNames = R->names;
+  cf->pParameterNames = (const char**)R->names;
   cf->cfParameter = naParameter;
+  cf->has_simple_Inverse= R->cf->has_simple_Inverse;
+  /* cf->has_simple_Alloc= FALSE; */
 
   if( nCoeff_is_Q(R->cf) )
   {
@@ -1431,3 +1496,178 @@ template class CRecursivePolyCoeffsEnumerator<NAConverter>;
 
 template class IAccessor<snumber*>;
 
+/* --------------------------------------------------------------------*/
+#if 0
+void npolyCoeffWrite(const coeffs cf, BOOLEAN details)
+{
+  assume( cf != NULL );
+
+  const ring A = cf->extRing;
+
+  assume( A != NULL );
+  Print("// polynomial ring as coefficient ring :\n");
+  rWrite(A);
+  PrintLn();
+}
+number npolyMult(number a, number b, const coeffs cf)
+{
+  naTest(a); naTest(b);
+  if ((a == NULL)||(b == NULL)) return NULL;
+  poly aTimesB = p_Mult_q(p_Copy((poly)a, naRing),
+                          p_Copy((poly)b, naRing), naRing);
+  return (number)aTimesB;
+}
+
+void npolyPower(number a, int exp, number *b, const coeffs cf)
+{
+  naTest(a);
+
+  /* special cases first */
+  if (a == NULL)
+  {
+    if (exp >= 0) *b = NULL;
+    else          WerrorS(nDivBy0);
+    return;
+  }
+  else if (exp ==  0) { *b = naInit(1, cf); return; }
+  else if (exp ==  1) { *b = naCopy(a, cf); return; }
+  else if (exp == -1) { *b = naInvers(a, cf); return; }
+
+  int expAbs = exp; if (expAbs < 0) expAbs = -expAbs;
+
+  /* now compute a^expAbs */
+  poly pow; poly aAsPoly = (poly)a;
+  if (expAbs <= 7)
+  {
+    pow = p_Copy(aAsPoly, naRing);
+    for (int i = 2; i <= expAbs; i++)
+    {
+      pow = p_Mult_q(pow, p_Copy(aAsPoly, naRing), naRing);
+    }
+  }
+  else
+  {
+    pow = p_ISet(1, naRing);
+    poly factor = p_Copy(aAsPoly, naRing);
+    while (expAbs != 0)
+    {
+      if (expAbs & 1)
+      {
+        pow = p_Mult_q(pow, p_Copy(factor, naRing), naRing);
+      }
+      expAbs = expAbs / 2;
+      if (expAbs != 0)
+      {
+        factor = p_Mult_q(factor, p_Copy(factor, naRing), naRing);
+      }
+    }
+    p_Delete(&factor, naRing);
+  }
+
+  /* invert if original exponent was negative */
+  number n = (number)pow;
+  if (exp < 0)
+  {
+    number m = npolyInvers(n, cf);
+    naDelete(&n, cf);
+    n = m;
+  }
+  *b = n;
+}
+
+number npolyDiv(number a, number b, const coeffs cf)
+{
+  naTest(a); naTest(b);
+  if (b == NULL) WerrorS(nDivBy0);
+  if (a == NULL) return NULL;
+  poly p=singclap_pdivide((poly)a,(poly)b,naRing);
+  return (number)p;
+}
+
+
+BOOLEAN npolyInitChar(coeffs cf, void * infoStruct)
+{
+  assume( infoStruct != NULL );
+
+  AlgExtInfo *e = (AlgExtInfo *)infoStruct;
+  /// first check whether cf->extRing != NULL and delete old ring???
+
+  assume(e->r                     != NULL);      // extRing;
+  assume(e->r->cf                 != NULL);      // extRing->cf;
+
+  assume( cf != NULL );
+
+  e->r->ref ++; // increase the ref.counter for the ground poly. ring!
+  const ring R = e->r; // no copy!
+  cf->extRing  = R;
+
+  /* propagate characteristic up so that it becomes
+     directly accessible in cf: */
+  cf->ch = R->cf->ch;
+  cf->is_field=FALSE;
+  cf->is_domain=TRUE;
+
+  cf->cfCoeffString = naCoeffString;
+
+  cf->cfGreaterZero  = naGreaterZero;
+  cf->cfGreater      = naGreater;
+  cf->cfEqual        = naEqual;
+  cf->cfIsZero       = naIsZero;
+  cf->cfIsOne        = naIsOne;
+  cf->cfIsMOne       = naIsMOne;
+  cf->cfInit         = naInit;
+  cf->cfInit_bigint  = naInit_bigint;
+  cf->cfFarey        = naFarey;
+  cf->cfChineseRemainder= naChineseRemainder;
+  cf->cfInt          = naInt;
+  cf->cfInpNeg       = naNeg;
+  cf->cfAdd          = naAdd;
+  cf->cfSub          = naSub;
+  cf->cfMult         = npolyMult;
+  cf->cfDiv          = npolyDiv;
+  cf->cfPower        = naPower;
+  cf->cfCopy         = naCopy;
+
+  cf->cfWriteLong        = naWriteLong;
+
+  if( rCanShortOut(naRing) )
+    cf->cfWriteShort = naWriteShort;
+  else
+    cf->cfWriteShort = naWriteLong;
+
+  cf->cfRead         = naRead;
+  cf->cfDelete       = naDelete;
+  cf->cfSetMap       = naSetMap;
+  cf->cfGetDenom     = naGetDenom;
+  cf->cfGetNumerator = naGetNumerator;
+  cf->cfRePart       = naCopy;
+  cf->cfCoeffWrite   = npolyCoeffWrite;
+  cf->cfNormalize    = npolyNormalize;
+  cf->cfKillChar     = naKillChar;
+#ifdef LDEBUG
+  cf->cfDBTest       = naDBTest;
+#endif
+  cf->cfGcd          = naGcd;
+  cf->cfLcm          = naLcmContent;
+  cf->cfSize         = naSize;
+  cf->nCoeffIsEqual  = naCoeffIsEqual;
+  cf->cfInvers       = npolyInvers;
+  cf->convFactoryNSingN=naConvFactoryNSingN;
+  cf->convSingNFactoryN=naConvSingNFactoryN;
+  cf->cfParDeg = naParDeg;
+
+  cf->iNumberOfParameters = rVar(R);
+  cf->pParameterNames = (const char**)R->names;
+  cf->cfParameter = naParameter;
+  cf->has_simple_Inverse=FALSE;
+  /* cf->has_simple_Alloc= FALSE; */
+
+  if( nCoeff_is_Q(R->cf) )
+  {
+    cf->cfClearContent = naClearContent;
+    cf->cfClearDenominators = naClearDenominators;
+  }
+
+  return FALSE;
+}
+#endif

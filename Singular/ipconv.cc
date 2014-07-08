@@ -5,16 +5,15 @@
 * ABSTRACT: automatic type conversions
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
 #include <misc/options.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <Singular/subexpr.h>
@@ -29,7 +28,7 @@
 #endif
 #include <polys/matpol.h>
 #include <Singular/links/silink.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 #include <Singular/attrib.h>
 #include <polys/monomials/ring.h>
 #include <Singular/ipshell.h>
@@ -330,13 +329,6 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
           {
             output->name=ndName(pGetCoeff((poly)input->data), currRing->cf);
           }
-#ifdef TEST
-          else
-          {
-            WerrorS("wrong name, should not happen");
-            output->name=omStrDup("?");
-          }
-#endif
         }
       }
       else if ((input->rtyp==NUMBER_CMD) && (input->name==NULL))
@@ -361,7 +353,7 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
     if((dConvertTypes[index].i_typ==inputType)
     &&(dConvertTypes[index].o_typ==outputType))
     {
-      if(TEST_V_ALLWARN)
+      if(traceit&TRACE_CONV)
       {
         Print("automatic  conversion %s -> %s\n",
         Tok2Cmdname(inputType),Tok2Cmdname(outputType));

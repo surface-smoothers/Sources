@@ -1,16 +1,16 @@
-/// -*- c++ -*-
+// -*- c++ -*-
 //*****************************************************************************
 /** @file countedref.h
- *
- * @author Alexander Dreyer
- * @date 2012-08-15
  *
  * This file defines reusable classes supporting reference counted interpreter
  * objects and initiates the @c blackbox operations for high-level types
  * 'reference' and 'shared'.
  *
  * @note This works was supported by the "Industrial Algebra" project.
- * 
+ *
+ * @author Alexander Dreyer
+ * @date 2012-08-15
+ *
  * @par Copyright:
  *   (c) 2012 by The Singular Team, see LICENSE file
 **/
@@ -22,10 +22,9 @@
 
 #include <omalloc/omalloc.h>
 #include <kernel/structs.h>
-#include <kernel/febase.h>
-#include "subexpr.h"
-#include "idrec.h"
-#include "ipid.h"
+#include <Singular/subexpr.h>
+#include <Singular/idrec.h>
+#include <Singular/ipid.h>
 /** @class CountedRefPtr
  * This class implements a smart pointer which handles pointer-style access
  * to a reference-counted structure and destructing the latter after use.
@@ -79,7 +78,7 @@ public:
   }
   //}
 
-  /// Checking equality 
+  /// Checking equality
   bool operator==(const self& rhs) const { return m_ptr == rhs.m_ptr; }
 
   //{ @name Pointer-style interface
@@ -95,9 +94,9 @@ public:
   //@{
   count_type count() const { return (*this? m_ptr->ref: 0); }
   void reclaim() { if (*this) ++m_ptr->ref; }
-  void release() { 
+  void release() {
     if (*this && (--m_ptr->ref <= 0) && !nondestructive)
-      CountedRefPtr_kill(m_ptr); 
+      CountedRefPtr_kill(m_ptr);
   }
   //@}
 
@@ -135,7 +134,7 @@ template <class PtrType>
 class CountedRefWeakPtr;
 
 template <class PtrType>
-class CountedRefIndirectPtr: 
+class CountedRefIndirectPtr:
   public RefCounter {
 public:
   friend class CountedRefWeakPtr<PtrType>;
@@ -148,7 +147,7 @@ private:
   PtrType m_ptr;
 };
 
-template <class PtrType> 
+template <class PtrType>
 inline void CountedRefPtr_kill(CountedRefIndirectPtr<PtrType>* pval) { delete pval; }
 
 template <class PtrType>
@@ -183,12 +182,12 @@ public:
   /// Pointer-style interface
   //@{
   operator bool() const {  return operator->(); }
-  self& operator=(const self& rhs) { 
+  self& operator=(const self& rhs) {
     m_indirect = rhs.m_indirect;
     return *this;
   }
   self& operator=(ptr_type ptr) {
-    if (!m_indirect) 
+    if (!m_indirect)
       m_indirect = new CountedRefIndirectPtr<ptr_type>(ptr);
     else
       m_indirect->m_ptr = ptr;
@@ -208,7 +207,7 @@ private:
 
 
 /** @class LeftvHelper
- * This class implements some recurrent code sniplets to be used with 
+ * This class implements some recurrent code sniplets to be used with
  * @c leftv and @c idhdl.implements a refernce counter which we can use
  **/
 class LeftvHelper {
@@ -285,7 +284,7 @@ public:
 class LeftvShallow:
   public LeftvHelper {
   typedef LeftvShallow self;
-  
+
 public:
   /// Just allocate (all-zero) @c leftv
   LeftvShallow(): m_data(allocate()) { }
@@ -295,7 +294,7 @@ public:
   LeftvShallow(const self& rhs):  m_data(shallowcpy(rhs.m_data)) { }
 
   /// Destruct
-  ~LeftvShallow() {  
+  ~LeftvShallow() {
     recursivekill(m_data->e);
     omFree(m_data);
   }
@@ -323,7 +322,7 @@ protected:
 
 /** @class LeftvDeep
  * This class wraps @c leftv by taking into acount memory allocation, destruction
- * as well as deeply copying of a given @c leftv, i.e. we also take over 
+ * as well as deeply copying of a given @c leftv, i.e. we also take over
  * ownership of the @c leftv data.
  *
  * We have two variants:
@@ -332,7 +331,7 @@ protected:
  *
  * @note It invalidats @c leftv on input.
  **/
-class LeftvDeep: 
+class LeftvDeep:
   public LeftvHelper {
   typedef LeftvDeep self;
 
@@ -348,9 +347,9 @@ public:
 
   /// Store a deep copy of the data
   /// @ note Occupies the provided @c leftv and invalidates the latter
-  LeftvDeep(leftv data): m_data(cpy(data)) { 
-    data->e = NULL;   // occupy subexpression 
-    if(!isid()) m_data->data=data->CopyD(); 
+  LeftvDeep(leftv data): m_data(cpy(data)) {
+    data->e = NULL;   // occupy subexpression
+    if(!isid()) m_data->data=data->CopyD();
   }
 
   /// Construct even deeper copy:
@@ -389,7 +388,7 @@ public:
   /// Check a given context for our identifier
   BOOLEAN brokenid(idhdl context) const {
     assume(isid());
-    return (context == NULL) || 
+    return (context == NULL) ||
       ((context != (idhdl) m_data->data) && brokenid(IDNEXT(context)));
   }
 

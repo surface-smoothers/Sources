@@ -1,7 +1,5 @@
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include "mod2.h"
+
+#include <kernel/mod2.h>
 
 #include <omalloc/omalloc.h>
 #include <misc/auxiliary.h>
@@ -10,7 +8,6 @@
 #include "polys.h"
 
 ring  currRing = NULL;
-ideal currQuotient = NULL;
 
 void rChangeCurrRing(ring r)
 {
@@ -26,7 +23,6 @@ void rChangeCurrRing(ring r)
 
     //------------ set global ring vars --------------------------------
     currRing = r;
-    currQuotient = r->qideal;
     //------------ global variables related to coefficients ------------
     assume( r->cf!= NULL );
     nSetChar(r->cf);
@@ -37,7 +33,6 @@ void rChangeCurrRing(ring r)
   else
   {
     currRing = NULL;
-    currQuotient = NULL;
   }
 }
 /*
@@ -52,12 +47,10 @@ void rChangeCurrRing(ring r)
  // }
   //------------ set global ring vars --------------------------------
   //currRing = r;
-  //currQuotient=NULL;
   if (r != NULL)
   {
     rTest(r);
     //------------ set global ring vars --------------------------------
-    //currQuotient=r->qideal;
 
     //------------ global variables related to coefficients ------------
     nSetChar(r->cf);

@@ -1,28 +1,33 @@
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <kernel/mod2.h>
 
 #ifdef HAVE_SIMPLEIPC
-
-# include "simpleipc.h"
-
-#include <Singular/si_signals.h>
-
 #include <semaphore.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+
+# include "simpleipc.h"
+
+#include <Singular/cntrlc.h>
+#include <reporter/si_signals.h>
+
 
 
 // Not yet implemented: SYSV IPC Semaphores
 // They are more difficult to clean up after a process crash
 // but are supported more widely.
 
-static sem_t *semaphore[SIPC_MAX_SEMAPHORES];
+sem_t *semaphore[SIPC_MAX_SEMAPHORES];
+int sem_acquired[SIPC_MAX_SEMAPHORES];
 
 /* return 1 on success,
  *        0 if already initialized,
@@ -73,20 +78,36 @@ int sipc_semaphore_exists(int id)
 int sipc_semaphore_acquire(int id)
 {
   if ((id<0) || (id >= SIPC_MAX_SEMAPHORES) || (semaphore[id]==NULL))  return -1;
+  defer_shutdown++;
   si_sem_wait(semaphore[id]);
+  sem_acquired[id]++;
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
   return 1;
 }
 
 int sipc_semaphore_try_acquire(int id)
 {
   if ((id<0) || (id >= SIPC_MAX_SEMAPHORES) || (semaphore[id]==NULL))  return -1;
-  return !si_sem_trywait(semaphore[id]);
+  defer_shutdown++;
+  int trywait = si_sem_trywait(semaphore[id]);
+  if (!trywait)
+  {
+    sem_acquired[id]++;
+  }
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
+  return !trywait;
 }
 
 int sipc_semaphore_release(int id)
 {
   if ((id<0) || (id >= SIPC_MAX_SEMAPHORES) || (semaphore[id]==NULL))  return -1;
+  defer_shutdown++;
   sem_post(semaphore[id]);
+  sem_acquired[id]--;
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
   return 1;
 }
 

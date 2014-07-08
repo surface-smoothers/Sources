@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-version="version modnormal.lib 4.0.0.0 Jun_2013 "; // $Id$
+version="version modnormal.lib 4.0.0.0 Dec_2013 "; // $Id$
 category = "Commutative Algebra";
 info="
 LIBRARY:  modnormal.lib    Normalization of affine domains using modular methods
@@ -84,7 +84,7 @@ static proc pTestNormal(ideal I, list L, int p, ideal normalIP)
 // Computes the normalization of I in characterisitic p.
 // Returns an ideal Out such that the normalization mod p is the
 // module 1/condu * Out
-static proc modpNormal(ideal I, int p, poly condu,printTimings,list #)
+static proc modpNormal(ideal I, int p, poly condu,int printTimings,list #)
 {
   int tt = timer;
   int liftRelations;
@@ -313,8 +313,7 @@ EXAMPLE: example modNormal; shows an example
       {
         modarguments[j-(k-1)*n2-sh] = list(I, L[j], condu, printTimings, #);
       }
-      modresults = parallelWaitAll("modpNormal", modarguments,
-        list(list(list(ncores))));
+      modresults = parallelWaitAll("modpNormal", modarguments, 0, ncores);
       for(j = (k-1)*n2+1+sh; j <= k*n2+1; j++)
       {
         resultNormalX[j] = modresults[j-(k-1)*n2-sh][1];

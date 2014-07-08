@@ -12,20 +12,20 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #include <omalloc/omalloc.h>
 #include <misc/mylimits.h>
 
-#include <kernel/febase.h>
+#include <resources/feResource.h>
 #include <reporter/reporter.h>
 
 #include <resources/omFindExec.h>
 
-#include <Singular/si_signals.h>
+#include <reporter/si_signals.h>
 
 #include "ipid.h"
 #include "ipshell.h"
@@ -756,7 +756,7 @@ static BOOLEAN heOnlineHelp(char* s)
 
   char libnamebuf[128];
   FILE *fp=NULL;
-  // first, search for library of that name in LIB string
+  // first, search for library of that name
   if ((str[1]!='\0') &&
       ((iiLocateLib(str, libnamebuf) && (fp=feFopen(libnamebuf, "rb")) !=NULL)
        ||
@@ -1004,13 +1004,29 @@ static void heGenHelp(heEntry hentry, int br)
                      /* always defined */
                    if (hentry != NULL && *(hentry->url) != '\0')
                    #ifdef HAVE_VSNPRINTF
-                     snprintf(temp,256,"%s/%s", htmldir, hentry->url);
+                     snprintf(temp,256,"%s/%d-%d-%d/%s", htmldir,
+                                  SINGULAR_VERSION/1000,
+                                 (SINGULAR_VERSION % 1000)/100,
+                                 (SINGULAR_VERSION % 100)/10,
+                     hentry->url);
                    else
-                     snprintf(temp,256,"%s/index.htm", htmldir);
+                     snprintf(temp,256,"%s/%d-%d-%d/index.htm", htmldir,
+                                  SINGULAR_VERSION/1000,
+                                 (SINGULAR_VERSION % 1000)/100,
+                                 (SINGULAR_VERSION % 100)/10
+                     );
                    #else
-                     sprintf(temp,"%s/%s", htmldir, hentry->url);
+                     sprintf(temp,"%s/%d-%d-%d/%s", htmldir,
+                                  SINGULAR_VERSION/1000,
+                                 (SINGULAR_VERSION % 1000)/100,
+                                 (SINGULAR_VERSION % 100)/10,
+                     hentry->url);
                    else
-                     sprintf(temp,"%s/index.htm", htmldir);
+                     sprintf(temp,"%s/%d-%d-%d/index.htm", htmldir,
+                                  SINGULAR_VERSION/1000,
+                                 (SINGULAR_VERSION % 1000)/100,
+                                 (SINGULAR_VERSION % 100)/10
+                     );
                    #endif
                    strcat(sys,temp);
                    if ((*p)=='f')
@@ -1047,6 +1063,16 @@ static void heGenHelp(heEntry hentry, int br)
                    //  sprintf(temp,"Index '%s'",hentry->key);
                    else
                      sprintf(temp,"Top");
+                   strcat(sys,temp);
+                   i=strlen(sys);
+                   break;
+                 }
+        case 'v': /* version number*/
+                 {
+                   char temp[256];
+                   sprintf(temp,"%d-%d-%d",SINGULAR_VERSION/1000,
+                                 (SINGULAR_VERSION % 1000)/100,
+                                 (SINGULAR_VERSION % 100)/10);
                    strcat(sys,temp);
                    i=strlen(sys);
                    break;

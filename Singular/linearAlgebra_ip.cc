@@ -1,9 +1,9 @@
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <Singular/lists.h>
-#include <kernel/linearAlgebra.h>
+#include <kernel/linear_algebra/linearAlgebra.h>
 
 /**
  * Computes all eigenvalues of a given real quadratic matrix with
@@ -89,7 +89,7 @@ lists qrDoubleShift(const matrix A, const number tol1, const number tol2,
       eigenvalues->m[i].rtyp = NUMBER_CMD;
       eigenvalues->m[i].data = (void*)nCopy(distinctEVs[i]);
       multiplicities->m[i].rtyp = INT_CMD;
-      multiplicities->m[i].data = (void*)mults[i];
+      multiplicities->m[i].data = (void*)(long)mults[i];
       nDelete(&distinctEVs[i]);
     }
     delete [] distinctEVs; delete [] mults;

@@ -5,9 +5,9 @@
 * ABSTRACT: interpreter: LIB and help
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <kernel/mod2.h>
 
@@ -15,10 +15,10 @@
 #include <misc/options.h>
 #include <Singular/ipid.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <polys/monomials/ring.h>
 #include <Singular/subexpr.h>
 #include <Singular/ipshell.h>
+#include <Singular/fevoices.h>
 #include <Singular/lists.h>
 
 //#include <stdlib.h>
@@ -48,7 +48,7 @@
 
 
 #ifdef HAVE_DYNAMIC_LOADING
-BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport);
+BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport);
 #endif
 
 #ifdef HAVE_LIBPARSER
@@ -297,7 +297,7 @@ char* iiGetLibProcBuffer(procinfo *pi, int part )
   }
   return NULL;
 }
-#ifndef LIBSINGULAR
+
 // see below:
 struct soptionStruct
 {
@@ -307,41 +307,40 @@ struct soptionStruct
 };
 extern struct soptionStruct optionStruct[];
 extern struct soptionStruct verboseStruct[];
-#endif
+
 
 BOOLEAN iiAllStart(procinfov pi, char *p,feBufferTypes t, int l)
 {
+  // see below:
+  BITSET save1=si_opt_1;
+  BITSET save2=si_opt_2;
   newBuffer( omStrDup(p /*pi->data.s.body*/), t /*BT_proc*/,
                pi, l );
-  #ifndef LIBSINGULAR
-  // see below:
-  BITSET save1=(test & ~TEST_RINGDEP_OPTS);
-  BITSET save2=verbose;
-  #endif
   BOOLEAN err=yyparse();
   if (sLastPrinted.rtyp!=0)
   {
     sLastPrinted.CleanUp();
   }
-  #ifndef LIBSINGULAR
   // the access to optionStruct and verboseStruct do not work
   // on x86_64-Linux for pic-code
-  BITSET save11= ( test & ~TEST_RINGDEP_OPTS);
   if ((TEST_V_ALLWARN) &&
   (t==BT_proc) &&
-  ((save1!=save11)||(save2!=verbose)) &&
+  ((save1!=si_opt_1)||(save2!=si_opt_2)) &&
   (pi->libname!=NULL) && (pi->libname[0]!='\0'))
   {
-    Warn("option changed in proc %s from %s",pi->procname,pi->libname);
+    if ((pi->libname!=NULL) && (pi->libname[0]!='\0'))
+      Warn("option changed in proc %s from %s",pi->procname,pi->libname);
+    else
+      Warn("option changed in proc %s",pi->procname);
     int i;
     for (i=0; optionStruct[i].setval!=0; i++)
     {
-      if ((optionStruct[i].setval & save11)
+      if ((optionStruct[i].setval & si_opt_1)
       && (!(optionStruct[i].setval & save1)))
       {
           Print(" +%s",optionStruct[i].name);
       }
-      if (!(optionStruct[i].setval & save11)
+      if (!(optionStruct[i].setval & si_opt_1)
       && ((optionStruct[i].setval & save1)))
       {
           Print(" -%s",optionStruct[i].name);
@@ -349,12 +348,12 @@ BOOLEAN iiAllStart(procinfov pi, char *p,feBufferTypes t, int l)
     }
     for (i=0; verboseStruct[i].setval!=0; i++)
     {
-      if ((verboseStruct[i].setval & verbose)
+      if ((verboseStruct[i].setval & si_opt_2)
       && (!(verboseStruct[i].setval & save2)))
       {
           Print(" +%s",verboseStruct[i].name);
       }
-      if (!(verboseStruct[i].setval & verbose)
+      if (!(verboseStruct[i].setval & si_opt_2)
       && ((verboseStruct[i].setval & save2)))
       {
           Print(" -%s",verboseStruct[i].name);
@@ -362,7 +361,6 @@ BOOLEAN iiAllStart(procinfov pi, char *p,feBufferTypes t, int l)
     }
     PrintLn();
   }
-  #endif
   return err;
 }
 /*2
@@ -420,9 +418,85 @@ BOOLEAN iiPStart(idhdl pn, sleftv  * v)
   {
     err=iiAllStart(pi,pi->data.s.body,BT_proc,pi->data.s.body_lineno-(v!=NULL));
 
+#ifdef USE_IILOCALRING
+#if 0
+  if(procstack->cRing != iiLocalRing[myynest]) Print("iiMake_proc: 1 ring not saved procs:%x, iiLocal:%x\n",procstack->cRing, iiLocalRing[myynest]);
+#endif
+    if (iiLocalRing[myynest-1] != currRing)
+    {
+      if (iiRETURNEXPR.RingDependend())
+      {
+        //idhdl hn;
+        const char *n;
+        const char *o;
+        idhdl nh=NULL, oh=NULL;
+        if (iiLocalRing[myynest-1]!=NULL)
+          oh=rFindHdl(iiLocalRing[myynest-1],NULL);
+        if (oh!=NULL)          o=oh->id;
+        else                   o="none";
+        if (currRing!=NULL)
+          nh=rFindHdl(currRing,NULL);
+        if (nh!=NULL)          n=nh->id;
+        else                   n="none";
+        Werror("ring change during procedure call: %s -> %s (level %d)",o,n,myynest);
+        iiRETURNEXPR.CleanUp();
+        err=TRUE;
+      }
+      currRing=iiLocalRing[myynest-1];
+    }
+    if ((currRing==NULL)
+    && (currRingHdl!=NULL))
+      currRing=IDRING(currRingHdl);
+    else
+    if ((currRing!=NULL) &&
+      ((currRingHdl==NULL)||(IDRING(currRingHdl)!=currRing)
+       ||(IDLEV(currRingHdl)>=myynest-1)))
+    {
+      rSetHdl(rFindHdl(currRing,NULL));
+      iiLocalRing[myynest-1]=NULL;
+    }
+#else /* USE_IILOCALRING */
+    if (procstack->cRing != currRing)
+    {
+      //if (procstack->cRingHdl!=NULL)
+      //Print("procstack:%s,",IDID(procstack->cRingHdl));
+      //if (currRingHdl!=NULL)
+      //Print(" curr:%s\n",IDID(currRingHdl));
+      //Print("pr:%x, curr: %x\n",procstack->cRing,currRing);
+      if (iiRETURNEXPR.RingDependend())
+      {
+        //idhdl hn;
+        const char *n;
+        const char *o;
+        if (procstack->cRing!=NULL)
+        {
+          //PrintS("reset ring\n");
+          procstack->cRingHdl=rFindHdl(procstack->cRing,NULL);
+          o=IDID(procstack->cRingHdl);
+          currRing=procstack->cRing;
+          currRingHdl=procstack->cRingHdl;
+        }
+        else                            o="none";
+        if (currRing!=NULL)             n=IDID(currRingHdl);
+        else                            n="none";
+        if (currRing==NULL)
+        {
+          Werror("ring change during procedure call: %s -> %s (level %d)",o,n,myynest);
+          iiRETURNEXPR.CleanUp();
+          err=TRUE;
+        }
+      }
+      if (procstack->cRingHdl!=NULL)
+      {
+        rSetHdl(procstack->cRingHdl);
+      }
+      else
+      { currRingHdl=NULL; currRing=NULL; }
+    }
+#endif /* USE_IILOCALRING */
     //Print("kill locals for %s (level %d)\n",IDID(pn),myynest);
     killlocals(myynest);
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     checkall();
 #endif
     //Print("end kill locals for %s (%d)\n",IDID(pn),myynest);
@@ -540,7 +614,7 @@ BOOLEAN iiMake_proc(idhdl pn, package pack, sleftv* sl)
     case LANG_C:
                  leftv res = (leftv)omAlloc0Bin(sleftv_bin);
                  err = (pi->data.o.function)(res, sl);
-                 iiRETURNEXPR.Copy(res);
+                 memcpy(&iiRETURNEXPR,res,sizeof(iiRETURNEXPR));
                  omFreeBin((ADDRESS)res,  sleftv_bin);
                  break;
   }
@@ -550,7 +624,7 @@ BOOLEAN iiMake_proc(idhdl pn, package pack, sleftv* sl)
     if (traceit&TRACE_SHOW_LINENO) PrintLn();
     Print("leaving %-*.*s %s (level %d)\n",myynest*2,myynest*2," ",IDID(pn),myynest);
   }
-  //char *n="NULL";
+  //const char *n="NULL";
   //if (currRingHdl!=NULL) n=IDID(currRingHdl);
   //Print("currRing(%d):%s(%x) after %s\n",myynest,n,currRing,IDID(pn));
 #ifdef RDEBUG
@@ -561,97 +635,6 @@ BOOLEAN iiMake_proc(idhdl pn, package pack, sleftv* sl)
     iiRETURNEXPR.CleanUp();
     //iiRETURNEXPR.Init(); //done by CleanUp
   }
-#ifdef USE_IILOCALRING
-#if 0
-  if(procstack->cRing != iiLocalRing[myynest]) Print("iiMake_proc: 1 ring not saved procs:%x, iiLocal:%x\n",procstack->cRing, iiLocalRing[myynest]);
-#endif
-  if (iiLocalRing[myynest] != currRing)
-  {
-    if (currRing!=NULL)
-    {
-      if (((iiRETURNEXPR.Typ()>BEGIN_RING)
-        && (iiRETURNEXPR.Typ()<END_RING))
-      || ((iiRETURNEXPR.Typ()==LIST_CMD)
-        && (lRingDependend((lists)iiRETURNEXPR.Data()))))
-      {
-        //idhdl hn;
-        const char *n;
-        const char *o;
-        idhdl nh=NULL, oh=NULL;
-        if (iiLocalRing[myynest]!=NULL)
-          oh=rFindHdl(iiLocalRing[myynest],NULL, NULL);
-        if (oh!=NULL)          o=oh->id;
-        else                   o="none";
-        if (currRing!=NULL)
-          nh=rFindHdl(currRing,NULL, NULL);
-        if (nh!=NULL)          n=nh->id;
-        else                   n="none";
-        Werror("ring change during procedure call: %s -> %s (level %d)",o,n,myynest);
-        iiRETURNEXPR.CleanUp();
-        err=TRUE;
-      }
-    }
-    currRing=iiLocalRing[myynest];
-  }
-  if ((currRing==NULL)
-  && (currRingHdl!=NULL))
-    currRing=IDRING(currRingHdl);
-  else
-  if ((currRing!=NULL) &&
-    ((currRingHdl==NULL)||(IDRING(currRingHdl)!=currRing)
-     ||(IDLEV(currRingHdl)>=myynest)))
-  {
-    rSetHdl(rFindHdl(currRing,NULL, NULL));
-    iiLocalRing[myynest]=NULL;
-  }
-#else /* USE_IILOCALRING */
-  if (procstack->cRing != currRing)
-  {
-    //if (procstack->cRingHdl!=NULL)
-    //Print("procstack:%s,",IDID(procstack->cRingHdl));
-    //if (currRingHdl!=NULL)
-    //Print(" curr:%s\n",IDID(currRingHdl));
-    //Print("pr:%x, curr: %x\n",procstack->cRing,currRing);
-    if (((iiRETURNEXPR.Typ()>BEGIN_RING)
-      && (iiRETURNEXPR.Typ()<END_RING))
-    || ((iiRETURNEXPR.Typ()==LIST_CMD)
-      && (lRingDependend((lists)iiRETURNEXPR.Data()))))
-    {
-      //idhdl hn;
-      char *n;
-      char *o;
-      if (procstack->cRing!=NULL)
-      {
-        //PrintS("reset ring\n");
-        procstack->cRingHdl=rFindHdl(procstack->cRing,NULL, NULL);
-        if (procstack->cRingHdl==NULL)
-          procstack->cRingHdl=
-           rFindHdl(procstack->cRing,NULL,procstack->currPack->idroot);
-        if (procstack->cRingHdl==NULL)
-          procstack->cRingHdl=
-           rFindHdl(procstack->cRing,NULL,basePack->idroot);
-        o=IDID(procstack->cRingHdl);
-        currRing=procstack->cRing;
-        currRingHdl=procstack->cRingHdl;
-      }
-      else                            o="none";
-      if (currRing!=NULL)             n=IDID(currRingHdl);
-      else                            n="none";
-      if (currRing==NULL)
-      {
-        Werror("ring change during procedure call: %s -> %s",o,n);
-        iiRETURNEXPR.CleanUp();
-        err=TRUE;
-      }
-    }
-    if (procstack->cRingHdl!=NULL)
-    {
-      rSetHdl(procstack->cRingHdl);
-    }
-    else
-    { currRingHdl=NULL; currRing=NULL; }
-  }
-#endif /* USE_IILOCALRING */
   if (iiCurrArgs!=NULL)
   {
     if (!err) Warn("too many arguments for %s",IDID(pn));
@@ -701,7 +684,7 @@ BOOLEAN iiEStart(char* example, procinfo *pi)
   {
     if (iiLocalRing[myynest]!=NULL)
     {
-      rSetHdl(rFindHdl(iiLocalRing[myynest],NULL, NULL));
+      rSetHdl(rFindHdl(iiLocalRing[myynest],NULL));
       iiLocalRing[myynest]=NULL;
     }
     else
@@ -718,7 +701,7 @@ BOOLEAN iiEStart(char* example, procinfo *pi)
     {
       idhdl rh=procstack->cRingHdl;
       if ((rh==NULL)||(IDRING(rh)!=NS_LRING))
-        rh=rFindHdl(NS_LRING,NULL, NULL);
+        rh=rFindHdl(NS_LRING,NULL);
       rSetHdl(rh);
     }
     else
@@ -732,23 +715,26 @@ BOOLEAN iiEStart(char* example, procinfo *pi)
   return err;
 }
 
-int staticdemo_mod_init(SModulFunctions*){ PrintS("init of staticdemo\n"); return (0); }
 
-#define SI_GET_BUILTIN_MOD_INIT(name) \
-  int SI_MOD_INIT(name)(SModulFunctions*); \
-  if (strcmp(libname, #name ".so") == 0) {  return SI_MOD_INIT(name); }
+extern "C"
+{
+#  define SI_GET_BUILTIN_MOD_INIT0(name) int SI_MOD_INIT0(name)(SModulFunctions*);
+          SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT0)
+#  undef  SI_GET_BUILTIN_MOD_INIT0
+};
 
 
 SModulFunc_t
-iiGetBuiltinModInit(char* libname)
+iiGetBuiltinModInit(const char* libname)
 {
-  SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT)
+#  define SI_GET_BUILTIN_MOD_INIT(name) if (strcmp(libname, #name ".so") == 0){ return SI_MOD_INIT0(name); }
+          SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT)
+#  undef  SI_GET_BUILTIN_MOD_INIT
 
   return NULL;
 }
 
 
-#undef SI_GET_BUILTIN_MOD_INIT
 
 
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
@@ -800,33 +786,16 @@ BOOLEAN iiTryLoadLib(leftv v, const char *id)
 */
 BOOLEAN iiLocateLib(const char* lib, char* where)
 {
-  idhdl hl;
-
-  char *p;
-
-  hl = IDROOT->get("LIB", 0);
-  if (hl == NULL || (p=strstr(IDSTRING(hl), lib)) == NULL) return FALSE;
-  if ((p!=IDSTRING(hl)) && (*(p-1)!=',')) return FALSE;
-
-  if (strstr(IDSTRING(hl), ",") == NULL)
+  char *plib = iiConvName(lib);
+  idhdl pl = basePack->idroot->get(plib,0);
+  if( (pl!=NULL) && (IDTYP(pl)==PACKAGE_CMD) &&
+    (IDPACKAGE(pl)->language == LANG_SINGULAR))
   {
-    strcpy(where, IDSTRING(hl));
+    strncpy(where,IDPACKAGE(pl)->libname,127);
+    return TRUE;
   }
   else
-  {
-    char* tmp = omStrDup(IDSTRING(hl));
-    char* tok = strtok(tmp, ",");
-    do
-    {
-      if (strstr(tok, lib) != NULL) break;
-      tok = strtok(NULL, ",");
-    }
-    while (tok != NULL);
-    assume(tok != NULL);
-    strcpy(where, tok);
-    omFree(tmp);
-  }
-  return TRUE;
+    return FALSE;;
 }
 
 BOOLEAN iiLibCmd( char *newlib, BOOLEAN autoexport, BOOLEAN tellerror, BOOLEAN force )
@@ -918,7 +887,7 @@ static void iiRunInit(package p)
   }
 }
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
-BOOLEAN iiLoadLIB(FILE *fp, const char *libnamebuf, char*newlib,
+BOOLEAN iiLoadLIB(FILE *fp, const char *libnamebuf, const char*newlib,
              idhdl pl, BOOLEAN autoexport, BOOLEAN tellerror)
 {
   extern FILE *yylpin;
@@ -998,13 +967,7 @@ procinfo *iiInitSingularProcinfo(procinfov pi, const char *libname,
               const char *procname, int line, long pos, BOOLEAN pstatic)
 {
   pi->libname = omStrDup(libname);
-
-  if( strcmp(procname,"_init")==0)
-  {
-    pi->procname = iiConvName(libname);
-  }
-  else
-    pi->procname = omStrDup(procname);
+  pi->procname = omStrDup(procname);
   pi->language = LANG_SINGULAR;
   pi->ref = 1;
   pi->pack = NULL;
@@ -1024,36 +987,6 @@ procinfo *iiInitSingularProcinfo(procinfov pi, const char *libname,
   return(pi);
 }
 
-#if 0
-// TODO!?
-procinfo *iiInitSingularProcinfo(procinfo* pi, const char *libname,
-                                 const char *procname, int line, long pos,
-                                 BOOLEAN pstatic /*= FALSE*/)
-{
-  pi->libname = (char *)malloc(strlen(libname)+1);
-  memcpy(pi->libname, libname, strlen(libname));
-  *(pi->libname+strlen(libname)) = '\0';
-
-  pi->procname = (char *)malloc(strlen(procname)+1);
-  strcpy(pi->procname, procname/*, strlen(procname)*/);
-  pi->language = LANG_SINGULAR;
-  pi->ref = 1;
-  pi->is_static = pstatic;
-  pi->data.s.proc_start = pos;
-  pi->data.s.def_end    = 0L;
-  pi->data.s.help_start = 0L;
-  pi->data.s.body_start = 0L;
-  pi->data.s.body_end   = 0L;
-  pi->data.s.example_start = 0L;
-  pi->data.s.proc_lineno = line;
-  pi->data.s.body_lineno = 0;
-  pi->data.s.example_lineno = 0;
-  pi->data.s.body = NULL;
-  pi->data.s.help_chksum = 0;
-  return(pi);
-}
-#endif
-
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
 int iiAddCproc(const char *libname, const char *procname, BOOLEAN pstatic,
                BOOLEAN(*func)(leftv res, leftv v))
@@ -1061,7 +994,7 @@ int iiAddCproc(const char *libname, const char *procname, BOOLEAN pstatic,
   procinfov pi;
   idhdl h;
 
-  #ifndef NDEBUG
+  #ifndef SING_NDEBUG
   int dummy;
   if (IsCmd(procname,dummy))
   {
@@ -1102,7 +1035,7 @@ int iiAddCprocTop(const char *libname, const char *procname, BOOLEAN pstatic,
 
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
 #ifdef HAVE_DYNAMIC_LOADING
-BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport)
+BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
 {
 #ifdef HAVE_STATIC
   WerrorS("mod_init: static version can not load modules");
@@ -1171,13 +1104,13 @@ BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport)
       if (autoexport) sModulFunctions.iiAddCproc = iiAddCprocTop;
       else            sModulFunctions.iiAddCproc = iiAddCproc;
       (*fktn)(&sModulFunctions);
+      if (BVERBOSE(V_LOAD_LIB)) Print( "// ** loaded %s \n", fullname);
+      currPack->loaded=1;
+      currPack=s;
+      RET=FALSE;
     }
-    else Werror("mod_init: %s\n", dynl_error());
-    if (BVERBOSE(V_LOAD_LIB)) Print( "// ** loaded %s \n", fullname);
-    currPack->loaded=1;
-    currPack=s;
+    else Werror("mod_init not found:: %s\nThis is probably not a dynamic module for Singular!\n", dynl_error());
   }
-  RET=FALSE;
 
   load_modules_end:
   return RET;
@@ -1185,7 +1118,7 @@ BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport)
 }
 #endif /* HAVE_DYNAMIC_LOADING */
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
-BOOLEAN load_builtin(char *newlib, BOOLEAN autoexport, SModulFunc_t init)
+BOOLEAN load_builtin(const char *newlib, BOOLEAN autoexport, SModulFunc_t init)
 {
   int iiAddCproc(const char *libname, const char *procname, BOOLEAN pstatic,
                  BOOLEAN(*func)(leftv res, leftv v));
@@ -1385,7 +1318,7 @@ void piShowProcList()
 //}
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
 #ifdef HAVE_LIBPARSER
-void libstack::push(char */*p*/, char *libn)
+void libstack::push(const char */*p*/, char *libn)
 {
   libstackv lp;
   if( !iiGetLibStatus(libn))
@@ -1406,7 +1339,7 @@ void libstack::push(char */*p*/, char *libn)
   }
 }
 
-libstackv libstack::pop(char */*p*/)
+libstackv libstack::pop(const char */*p*/)
 {
   libstackv ls = this;
   //omFree((ADDRESS)ls->libname);

@@ -36,28 +36,44 @@ AC_DEFUN([SING_RESET_FLAGS], [
 AC_DEFUN([SING_CHECK_SET_ARGS], [
 #  SING_SHOW_FLAGS([Initial state?...])dnl
 
- ENABLE_DEBUG="no"
- ENABLE_OPTIMIZATION="yes"
-
  AC_ARG_ENABLE([debug],
   AS_HELP_STRING([--enable-debug], [build the debugging version of the libraries]),
-  [if test "x$enableval" = "xyes"; then
-   ENABLE_DEBUG="yes"
-  fi])
+  [ENABLE_DEBUG="$enableval"], [ENABLE_DEBUG=""])
 
- AC_ARG_ENABLE([optimizationflags],
-  AS_HELP_STRING([--disable-optimizationflags], [build the without default optimization flags]),
-  [if test "x$enableval" = "xno"; then
-   ENABLE_OPTIMIZATION="no"
-  fi])
-  
  AC_MSG_CHECKING([debugging checks should be embedded])
  if test "x${ENABLE_DEBUG}" != xyes; then
   AC_MSG_RESULT([no])
  else
   AC_MSG_RESULT([yes])
  fi
- 
+
+ AC_ARG_ENABLE([optimizationflags],
+  AS_HELP_STRING([--disable-optimizationflags], [build the without default optimization flags]),
+  [ENABLE_OPTIMIZATION="$enableval"], [ENABLE_OPTIMIZATION="yeah"])
+  
+ if test "x${ENABLE_DEBUG}" == xyes; then
+  SINGULAR_CFLAGS=""
+  if test "x${ENABLE_OPTIMIZATION}" == xyeah; then
+   ENABLE_OPTIMIZATION="no"
+   AC_MSG_WARN([Please note that we disable implicit (default) optimization flags since you have enabled the debug flags... ])
+  fi
+ else
+  SINGULAR_CFLAGS="-DSING_NDEBUG -DOM_NDEBUG"
+  # for now let '-DSING_NDEBUG -DOM_NDEBUG' be here...
+  AC_DEFINE([OM_NDEBUG],1,"Disable OM Debug")
+  AC_DEFINE([SING_NDEBUG],1,"Disable Singular Debug")
+ fi
+
+ if test "x${ENABLE_OPTIMIZATION}" == xyeah; then
+   ENABLE_OPTIMIZATION="yes"
+ fi
+  
+ if test "x${ENABLE_OPTIMIZATION}" == xyes; then
+  if test "x${ENABLE_DEBUG}" == xyes; then
+   AC_MSG_WARN([Please note that you will be using our optimization flags together with debug flags... ])
+  fi
+ fi 
+
  AC_MSG_CHECKING([whether optimization flags should be used])
  if test "x${ENABLE_OPTIMIZATION}" == xyes; then
   AC_MSG_RESULT([yes])
@@ -65,33 +81,31 @@ AC_DEFUN([SING_CHECK_SET_ARGS], [
   AC_MSG_RESULT([no])
  fi
  
+ 
  AM_CONDITIONAL(WANT_DEBUG, test x"${ENABLE_DEBUG}" == xyes)
- AM_CONDITIONAL(WANT_OPTIMIZATIONFLAGS, test x"${ENABLE_OPTIMIZATION}" != xno)
+ AM_CONDITIONAL(WANT_OPTIMIZATIONFLAGS, test x"${ENABLE_OPTIMIZATION}" == xyes)
 
- if test "x${ENABLE_DEBUG}" == xyes; then
-  if test "x${ENABLE_OPTIMIZATION}" == xyes; then
-   AC_MSG_ERROR([Please note that you have enabled the debug and optimization flags, which may not work well together (try \`--disable-optimizationflags')!])
-  fi
-# else
-#  AC_DEFINE([OM_NDEBUG],1,"Disable OM Debug")
-#  AC_DEFINE([NDEBUG],1,"Disable Debug")
- fi
+ AC_DEFINE_UNQUOTED([SINGULAR_CFLAGS],"$SINGULAR_CFLAGS",[SINGULAR_CFLAGS])
+ AC_SUBST(SINGULAR_CFLAGS)
 
 # SING_SHOW_FLAGS([checking flags....])
 
- FLAGS="-pipe"
+ FLAGS="-pipe -fno-common"
  AC_LANG_PUSH([C])
  AX_APPEND_COMPILE_FLAGS(${FLAGS}, [CFLAGS])
  AC_LANG_POP([C])
  
  AC_LANG_PUSH([C++])
  AX_APPEND_COMPILE_FLAGS(${FLAGS}, [CXXFLAGS])
+ AX_APPEND_COMPILE_FLAGS([-fexceptions -frtti], [POLYMAKE_CXXFLAGS])
  AC_LANG_POP([C++])
 
  AX_APPEND_LINK_FLAGS(${FLAGS}) 
- 
+
+ AC_SUBST(POLYMAKE_CXXFLAGS)
+
  if test "x${ENABLE_DEBUG}" == xyes; then
-  DBGFLAGS="-g -O0 -ftrapv -fdiagnostics-show-option -Wall -Wextra"
+  DBGFLAGS="-g -ftrapv -fdiagnostics-show-option -Wall -Wextra"
   #  -pedantic too strict ??? -Wvla -Wno-long-long ???
   AC_LANG_PUSH([C])
   AX_APPEND_COMPILE_FLAGS(${DBGFLAGS}, [CFLAGS])
@@ -101,11 +115,13 @@ AC_DEFUN([SING_CHECK_SET_ARGS], [
   AC_LANG_POP([C++])
   AX_APPEND_LINK_FLAGS(${DBGFLAGS})
  fi
- 
- if test "x${ENABLE_OPTIMIZATION}" != xno; then 
-  OPTFLAGS="-DOM_NDEBUG -DNDEBUG -O3 -Wno-unused-function -Wno-trigraphs -Wno-unused-parameter -Wno-unused-variable -fomit-frame-pointer -fwrapv -fvisibility=default -finline-functions -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-enforce-eh-specs -fconserve-space -funroll-loops"
+
+ ## for clang: -Wunneeded-internal-declaration 
+
+ if test "x${ENABLE_OPTIMIZATION}" != xno; then
+  OPTFLAGS="-O3 -Wno-unused-function -Wno-trigraphs -Wno-unused-parameter -Wno-unused-variable -fomit-frame-pointer -fwrapv -fvisibility=default -finline-functions -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-enforce-eh-specs -fconserve-space -funroll-loops"
   #  -O3 - crashes gcc???!!!  
-  # -fpermissive 
+  # -fpermissive  
   AC_LANG_PUSH([C])
   AX_APPEND_COMPILE_FLAGS(${OPTFLAGS}, [CFLAGS])
   AC_LANG_POP([C])
@@ -120,8 +136,19 @@ AC_DEFUN([SING_CHECK_SET_ARGS], [
 #  AX_APPEND_LINK_FLAGS([ ])
  fi
 
+ FLAGS2="-Qunused-arguments"
+ AC_LANG_PUSH([C])
+ AX_APPEND_COMPILE_FLAGS(${FLAGS2}, [CFLAGS])
+ AC_LANG_POP([C])
+ 
+ AC_LANG_PUSH([C++])
+ AX_APPEND_COMPILE_FLAGS(${FLAGS2}, [CXXFLAGS])
+ AC_LANG_POP([C++])
+
+ AX_APPEND_LINK_FLAGS(${FLAGS2}) 
 
 # SING_SHOW_FLAGS([before PROG_C_CC])
+
 
 AC_PROG_CC
 AC_PROG_CXX

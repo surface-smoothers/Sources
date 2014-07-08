@@ -5,24 +5,22 @@
 * ABSTRACT: Implementation of option buisness
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef HAVE_FACTORY
-#define SI_DONT_HAVE_GLOBAL_VARS
 #include <factory/factory.h>
-#endif
 
 #define FE_OPT_STRUCTURE
 #include "feOpt.h"
 
 #if !defined(GENERATE_OPTION_INDEX) && !defined(ESINGULAR) && !defined(TSINGULAR)
 #include <misc/options.h>
+#include <misc/sirandom.h>
 #endif
 
 #include "fehelp.h"
@@ -131,11 +129,6 @@ feOptIndex feGetOptIndex(int optc)
   return FE_OPT_UNDEF;
 }
 
-void* feGetOptValue(feOptIndex opt)
-{
-  return feOptSpec[(int)opt].value;
-}
-
 ///////////////////////////////////////////////////////////////
 //
 // Setting Values
@@ -145,8 +138,9 @@ void* feGetOptValue(feOptIndex opt)
 //         "error-string" on error
 #if !defined(ESINGULAR) && !defined(TSINGULAR)
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
-#include <kernel/timer.h>
+#include <resources/feResource.h>
+#include <kernel/oswrapper/feread.h>
+#include <kernel/oswrapper/timer.h>
 
 #include "ipshell.h"
 #include "tok.h"
@@ -199,7 +193,7 @@ const char* feSetOptValue(feOptIndex opt, int optarg)
     if (feOptSpec[opt].type == feOptString)
       return "option value needs to be an integer";
 
-    feOptSpec[opt].value = (void*) optarg;
+    feOptSpec[opt].value = (void*)(long) optarg;
   }
   return feOptAction(opt);
 }
@@ -259,9 +253,7 @@ static const char* feOptAction(feOptIndex opt)
         siRandomStart = (unsigned int) ((unsigned long)
 			                  (feOptSpec[FE_OPT_RANDOM].value));
         siSeed=siRandomStart;
-#ifdef HAVE_FACTORY
         factoryseed(siRandomStart);
-#endif
         return NULL;
 
       case FE_OPT_EMACS:
@@ -323,7 +315,7 @@ void fePrintOptValues()
   while (feOptSpec[i].name != 0)
   {
     if (feOptSpec[i].help != NULL && feOptSpec[i].type != feOptUntyped
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         && *(feOptSpec[i].help) != '/'
 #endif
         )
@@ -358,14 +350,14 @@ void feOptHelp(const char* name)
 #ifdef ESINGULAR
   printf("ESingular: A Program that starts-up Singular within emacs, for\n");
 #endif
-  printf("Singular version %s -- a CAS for polynomial computations. Usage:\n", S_VERSION1);
+  printf("Singular version %s -- a CAS for polynomial computations. Usage:\n", VERSION);
   printf("   %s [options] [file1 [file2 ...]]\n", name);
   printf("Options:\n");
 
   while (feOptSpec[i].name != 0)
   {
     if (feOptSpec[i].help != NULL
-#ifdef NDEBUG
+#ifdef SING_NDEBUG
         && *(feOptSpec[i].help) != '/'
 #endif
         )

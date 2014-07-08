@@ -6,34 +6,35 @@
 * ABSTRACT: general interface to links
 */
 
+#include <kernel/mod2.h>
+
+#include <omalloc/omalloc.h>
+#include <misc/options.h>
+#include <misc/intvec.h>
+#include <reporter/si_signals.h>
+#include <coeffs/numbers.h>
+
+#include <polys/matpol.h>
+#include <polys/monomials/ring.h>
+
+#include <kernel/ideals.h>
+
+#include <Singular/lists.h>
+#include <Singular/cntrlc.h>
+#include <Singular/links/ssiLink.h>
+#include <Singular/links/pipeLink.h>
+#include <Singular/tok.h>
+#include <Singular/subexpr.h>
+#include <Singular/ipid.h>
+#include <Singular/links/silink.h>
+#include <Singular/ipshell.h>
+#include "feOpt.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <kernel/mod2.h>
-#include <Singular/tok.h>
-#include <misc/options.h>
-#include <omalloc/omalloc.h>
-#include <kernel/febase.h>
-#include <Singular/subexpr.h>
-#include <Singular/ipid.h>
-#include <Singular/links/silink.h>
-#include <Singular/ipshell.h>
-#include <polys/matpol.h>
-#include <polys/monomials/ring.h>
-#include <Singular/lists.h>
-#include <kernel/ideals.h>
-#include <coeffs/numbers.h>
-#include <misc/intvec.h>
-#include <Singular/links/ssiLink.h>
-#include <Singular/links/pipeLink.h>
-#include <Singular/si_signals.h>
-#include "feOpt.h"
 
 // #ifdef HAVE_DBM
 // #ifdef ix86_Win
@@ -130,6 +131,7 @@ BOOLEAN slInit(si_link l, char *istr)
 
 void slCleanUp(si_link l)
 {
+  defer_shutdown++;
   (l->ref)--;
   if (l->ref == 0)
   {
@@ -142,13 +144,18 @@ void slCleanUp(si_link l)
     omFree((ADDRESS)l->mode);
     memset((void *) l, 0, sizeof(ip_link));
   }
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
 }
 
 void slKill(si_link l)
 {
+  defer_shutdown++;
   slCleanUp(l);
   if ((l!=NULL) &&(l->ref == 0))
     omFreeBin((ADDRESS)l,  ip_link_bin);
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
 }
 
 const char* slStatus(si_link l, const char *request)
@@ -184,6 +191,11 @@ const char* slStatus(si_link l, const char *request)
 }
 
 //--------------------------------------------------------------------------
+BOOLEAN slSetRingDummy(si_link, ring r, BOOLEAN send)
+{
+  if (currRing!=r) rChangeCurrRing(r);
+  return FALSE;
+}
 BOOLEAN slOpen(si_link l, short flag, leftv h)
 {
   BOOLEAN res = TRUE;
@@ -210,6 +222,7 @@ BOOLEAN slOpen(si_link l, short flag, leftv h)
         Werror("open: Error for link %s of type: %s, mode: %s, name: %s",
              c, l->m->type, l->mode, l->name);
     }
+    if (l->m->SetRing==NULL) l->m->SetRing=slSetRingDummy;
   }
   return res;
 }
@@ -237,6 +250,7 @@ BOOLEAN slClose(si_link l)
   if(! SI_LINK_OPEN_P(l))
     return FALSE;
 
+  defer_shutdown++;
   BOOLEAN res = TRUE;
   if (l->m->Close != NULL)
   {
@@ -245,6 +259,8 @@ BOOLEAN slClose(si_link l)
       Werror("close: Error for link of type: %s, mode: %s, name: %s",
            l->m->type, l->mode, l->name);
   }
+  defer_shutdown--;
+  if (!defer_shutdown && do_shutdown) m2_end(1);
   return res;
 }
 
@@ -401,7 +417,8 @@ static si_link_extension slTypeInit(si_link_extension s, const char* type)
   s->next = NULL;
   si_link_extension ns = (si_link_extension)omAlloc0Bin(s_si_link_extension_bin);
 
-  if (0) 0; // dummy
+  if (0)
+    ; // dummy
 #ifdef HAVE_DBM
   else if (strcmp(type, "DBM") == 0)
     s->next = slInitDBMExtension(ns);

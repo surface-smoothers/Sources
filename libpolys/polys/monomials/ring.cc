@@ -8,9 +8,9 @@
 /* includes */
 #include <math.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <omalloc/omalloc.h>
 
@@ -21,6 +21,7 @@
 
 #include <coeffs/numbers.h>
 #include <coeffs/coeffs.h>
+#include <coeffs/rmodulon.h>
 
 #include <polys/monomials/p_polys.h>
 #include <polys/simpleideals.h>
@@ -52,6 +53,8 @@
 #define BITS_PER_LONG 8*SIZEOF_LONG
 
 omBin sip_sring_bin = omGetSpecBin(sizeof(ip_sring));
+omBin char_ptr_bin =  omGetSpecBin(sizeof(char*));
+
 
 static const char * const ringorder_name[] =
 {
@@ -218,19 +221,15 @@ int rTypeOfMatrixOrder(intvec * order)
   return typ;
 }
 
-/*2
- * set a new ring from the data:
- s: name, chr: ch, varnames: rv, ordering: ord, typ: typ
- */
 
-int r_IsRingVar(const char *n, ring r)
+int r_IsRingVar(const char *n, char**names,int N)
 {
-  if ((r!=NULL) && (r->names!=NULL))
+  if (names!=NULL)
   {
-    for (int i=0; i<r->N; i++)
+    for (int i=0; i<N; i++)
     {
-      if (r->names[i]==NULL) return -1;
-      if (strcmp(n,r->names[i]) == 0) return (int)i;
+      if (names[i]==NULL) return -1;
+      if (strcmp(n,names[i]) == 0) return (int)i;
     }
   }
   return -1;
@@ -327,7 +326,7 @@ void   rWrite(ring r, BOOLEAN details)
     if (r->order[l] == ringorder_s)
     {
       assume( l == 0 );
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       Print("  syzcomp at %d",r->typ[l].data.syz.limit);
 #endif
       continue;
@@ -620,87 +619,7 @@ char * rVarStr(ring r)
 /// TODO: make it a virtual method of coeffs, together with:
 /// Decompose & Compose, rParameter & rPar
 char * rCharStr(ring r)
-{
-  char *s;
-  int i;
-
-#ifdef HAVE_RINGS
-  if (rField_is_Ring_Z(r))
-  {
-    s=omStrDup("integer");                   // Z
-    return s;
-  }
-  if(rField_is_Ring_2toM(r))
-  {
-    char* s = (char*) omAlloc(7+10+2);
-    sprintf(s,"integer,%lu",r->cf->modExponent);
-    return s;
-  }
-  if(rField_is_Ring_ModN(r))
-  {
-    long l = (long)mpz_sizeinbase(r->cf->modBase, 10) + 2+7;
-    char* s = (char*) omAlloc(l);
-    gmp_sprintf(s,"integer,%Zd",r->cf->modBase);
-    return s;
-  }
-  if(rField_is_Ring_PtoM(r))
-  {
-    long l = (long)mpz_sizeinbase(r->cf->modBase, 10) + 2+7+10;
-    char* s = (char*) omAlloc(l);
-    gmp_sprintf(s,"integer,%Zd^%lu",r->cf->modBase,r->cf->modExponent);
-    return s;
-  }
-#endif
-  if (rField_is_long_R(r))
-  {
-    i = MAX_INT_LEN*2+7; // 2 integers and real,,
-    s=(char *)omAlloc(i);
-    snprintf(s,i,"real,%d,%d",r->cf->float_len,r->cf->float_len2); /* long_R */
-    return s;
-  }
-  if (rField_is_R(r))
-  {
-    return omStrDup("real"); /* short real */
-  }
-  char const * const * const params = rParameter(r);
-  if (params==NULL)
-  {
-    s=(char *)omAlloc(MAX_INT_LEN+1);
-    snprintf(s,MAX_INT_LEN+1,"%d",n_GetChar(r->cf));         /* Q, Z/p */
-    return s;
-  }
-  if (rField_is_long_C(r))
-  {
-    i=strlen(params[0])+21;
-    s=(char *)omAlloc(i);
-    snprintf(s,i,"complex,%d,%s",r->cf->float_len,params[0]);   /* C */
-    return s;
-  }
-  if (nCoeff_is_GF(r->cf))
-  {
-    i=strlen(params[0])+21;
-    s=(char *)omAlloc(i);
-    snprintf(s,i,"%d,%s",r->cf->m_nfCharQ,params[0]); /* GF(q)  */
-    return s;
-  }
-  int l=0;
-  for(i=0; i<rPar(r);i++)
-  {
-    l+=(strlen(params[i])+1);
-  }
-  s=(char *)omAlloc((long)(l+MAX_INT_LEN+1));
-  s[0]='\0';
-  snprintf(s,MAX_INT_LEN+1,"%d",r->cf->ch); /* Fp(a) or Q(a) */
-  char tt[2];
-  tt[0]=',';
-  tt[1]='\0';
-  for(i=0; i<rPar(r);i++)
-  {
-    strcat(s,tt);
-    strcat(s,params[i]);
-  }
-  return s;
-}
+{ return r->cf->cfCoeffString(r->cf); }
 
 char * rParStr(ring r)
 {
@@ -728,15 +647,20 @@ char * rParStr(ring r)
 
 char * rString(ring r)
 {
-  char *ch=rCharStr(r);
-  char *var=rVarStr(r);
-  char *ord=rOrdStr(r);
-  char *res=(char *)omAlloc(strlen(ch)+strlen(var)+strlen(ord)+9);
-  sprintf(res,"(%s),(%s),(%s)",ch,var,ord);
-  omFree((ADDRESS)ch);
-  omFree((ADDRESS)var);
-  omFree((ADDRESS)ord);
-  return res;
+  if (r!=NULL)
+  {
+    char *ch=rCharStr(r);
+    char *var=rVarStr(r);
+    char *ord=rOrdStr(r);
+    char *res=(char *)omAlloc(strlen(ch)+strlen(var)+strlen(ord)+9);
+    sprintf(res,"(%s),(%s),(%s)",ch,var,ord);
+    omFree((ADDRESS)ch);
+    omFree((ADDRESS)var);
+    omFree((ADDRESS)ord);
+    return res;
+  }
+  else
+    return omStrDup("NULL");
 }
 
 
@@ -1481,13 +1405,13 @@ ring rCopy0(const ring r, BOOLEAN copy_qideal, BOOLEAN copy_ordering)
   {
     if (copy_qideal)
     {
-      #ifndef NDEBUG
+      #ifndef SING_NDEBUG
       if (!copy_ordering)
         WerrorS("internal error: rCopy0(Q,TRUE,FALSE)");
       else
       #endif
       {
-      #ifndef NDEBUG
+      #ifndef SING_NDEBUG
         WarnS("internal bad stuff: rCopy0(Q,TRUE,TRUE)");
       #endif
         rComplete(res);
@@ -1637,13 +1561,13 @@ ring rCopy0AndAddA(const ring r,  int64vec *wv64, BOOLEAN copy_qideal, BOOLEAN c
   {
     if (copy_qideal)
     {
-      #ifndef NDEBUG
+      #ifndef SING_NDEBUG
       if (!copy_ordering)
         WerrorS("internal error: rCopy0(Q,TRUE,FALSE)");
       else
       #endif
       {
-      #ifndef NDEBUG
+      #ifndef SING_NDEBUG
         WarnS("internal bad stuff: rCopy0(Q,TRUE,TRUE)");
       #endif
         rComplete(res);
@@ -1681,20 +1605,19 @@ ring rCopy(ring r)
 
 BOOLEAN rEqual(ring r1, ring r2, BOOLEAN qr)
 {
+  if (r1 == r2) return TRUE;
+  if (r1 == NULL || r2 == NULL) return FALSE;
+  if (r1->cf!=r2->cf) return FALSE;
+  if (rVar(r1)!=rVar(r2)) return FALSE;
+
   if( !rSamePolyRep(r1, r2) )
     return FALSE;
 
   int i/*, j*/;
 
-  if (r1 == r2) return TRUE;
-  if (r1 == NULL || r2 == NULL) return FALSE;
-
-  assume( r1->cf == r2->cf );
-  assume( rVar(r1) == rVar(r2) );
-
   for (i=0; i<rVar(r1); i++)
   {
-    if (r1->names[i] != NULL && r2->names[i] != NULL)
+    if ((r1->names[i] != NULL) && (r2->names[i] != NULL))
     {
       if (strcmp(r1->names[i], r2->names[i])) return FALSE;
     }
@@ -1812,6 +1735,10 @@ rOrderType_t rGetOrderType(ring r)
     return rOrderType_General;
 }
 
+BOOLEAN rHas_c_Ordering(const ring r)
+{
+  return (r->order[0] == ringorder_c);
+}
 BOOLEAN rHasSimpleOrder(const ring r)
 {
   if (r->order[0] == ringorder_unspec) return TRUE;
@@ -2391,11 +2318,11 @@ static void rO_Syz(int &place, int &bitplace, int &prev_ord,
   place++;
 }
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 # define MYTEST 0
-#else /* ifndef NDEBUG */
+#else /* ifndef SING_NDEBUG */
 # define MYTEST 0
-#endif /* ifndef NDEBUG */
+#endif /* ifndef SING_NDEBUG */
 
 static void rO_ISPrefix(int &place, int &bitplace, int &prev_ord,
     long *o, int /*N*/, int *v, sro_ord &ord_struct)
@@ -2635,7 +2562,7 @@ static unsigned long rGetExpSize(unsigned long bitmask, int & bits, int N)
  * DOES CALL rComplete
  */
 ring rModifyRing(ring r, BOOLEAN omit_degree,
-                         BOOLEAN omit_comp,
+                         BOOLEAN try_omit_comp,
                          unsigned long exp_limit)
 {
   assume (r != NULL );
@@ -2686,7 +2613,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
     {
       case ringorder_S:
       {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         Warn("Error: unhandled ordering in rModifyRing: ringorder_S = [%d]", r_ord);
 #endif
         order[j]=r_ord; /*r->order[i];*/
@@ -2694,7 +2621,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
       }
       case ringorder_C:
       case ringorder_c:
-        if (!omit_comp)
+        if (!try_omit_comp)
         {
           order[j]=r_ord; /*r->order[i]*/;
         }
@@ -2702,7 +2629,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         {
           j--;
           need_other_ring=TRUE;
-          omit_comp=FALSE;
+          try_omit_comp=FALSE;
           copy_block_index=FALSE;
         }
         break;
@@ -2740,12 +2667,10 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         break;
       case ringorder_IS:
       {
-        if (omit_comp)
+        if (try_omit_comp)
         {
-#ifndef NDEBUG
-          Warn("Error: WRONG USAGE of rModifyRing: cannot omit component due to the ordering block [%d]: %d (ringorder_IS)", i, r_ord);
-#endif
-          omit_comp = FALSE;
+          // tried, but cannot omit component due to the ordering block [%d]: %d (ringorder_IS)", i, r_ord
+          try_omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
         iNeedInducedOrderingSetup++;
@@ -2754,12 +2679,12 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
       case ringorder_s:
       {
         assume((i == 0) && (j == 0));
-        if (omit_comp)
+        if (try_omit_comp)
         {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
           Warn("WRONG USAGE? of rModifyRing: omitting component due to the ordering block [%d]: %d (ringorder_s)", i, r_ord);
 #endif
-          omit_comp = FALSE;
+          try_omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
         break;
@@ -2862,7 +2787,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
   {
     if ( nc_rComplete(r, res, false) ) // no qideal!
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("error in nc_rComplete");
 #endif
       // cleanup?
@@ -2919,7 +2844,7 @@ ring rModifyRing_Wp(ring r, int* weights)
   {
     if ( nc_rComplete(r, res, false) ) // no qideal!
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("error in nc_rComplete");
 #endif
       // cleanup?
@@ -2980,7 +2905,7 @@ ring rModifyRing_Simple(ring r, BOOLEAN ommit_degree, BOOLEAN ommit_comp, unsign
     {
       if ( nc_rComplete(r, res, false) ) // no qideal!
       {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         WarnS("error in nc_rComplete");
 #endif
         // cleanup?
@@ -3333,7 +3258,7 @@ static void rSetDegStuff(ring r)
 
   if( rGetISPos(0, r) != -1 ) // Are there Schreyer induced blocks?
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       assume( r->pFDeg == p_Deg || r->pFDeg == p_WTotaldegree || r->pFDeg == p_Totaldegree);
 #endif
 
@@ -3836,21 +3761,39 @@ BOOLEAN rComplete(ring r, int force)
 
 static void rCheckOrdSgn(ring r,int i/*current block*/)
 { // set r->OrdSgn
-  if ( r->OrdSgn==1)
+  int jj;
+  int oo=-1;
+  int notfound=1;
+  for(jj=i-1;jj>=0;jj--)
   {
-    int oo=-1;
-    int jj;
-    for(jj=i-1;jj>=0;jj--)
+    if(((r->order[jj]==ringorder_a)
+      ||(r->order[jj]==ringorder_aa)
+      ||(r->order[jj]==ringorder_a64))
+    &&(r->block0[jj]<=r->block0[i])
+    &&(r->block1[jj]>=r->block1[i]))
     {
-      if(((r->order[jj]==ringorder_a)
-        ||(r->order[jj]==ringorder_aa)
-        ||(r->order[jj]==ringorder_a64))
-      &&(r->block0[jj]<=r->block0[i])
-      &&(r->block1[jj]>=r->block1[i]))
-      { oo=1; break;}
+      int res=1;
+      if (r->order[jj]!=ringorder_a64)
+      {
+        for(int j=r->block1[jj]-r->block0[jj]; j>=0;j--)
+        {
+          if(r->wvhdl[jj][j]<=0) { res=-1; break;}
+        }
+      }
+      oo=res;
+      notfound=0;
     }
     r->OrdSgn=oo;
   }
+  if (notfound
+  && (r->order[i]==ringorder_ls)
+     || (r->order[i]==ringorder_ds)
+     || (r->order[i]==ringorder_Ds)
+     || (r->order[i]==ringorder_ws)
+     || (r->order[i]==ringorder_Ws)
+     || (r->order[i]==ringorder_rs)
+  )
+    r->OrdSgn=-1;
 }
 
 
@@ -3884,7 +3827,7 @@ void rUnComplete(ring r)
           assume( r->typ[i].data.syzcomp.ShiftedComponents == NULL );
           assume( r->typ[i].data.syzcomp.Components        == NULL );
 //          WarnS( "rUnComplete : ord_typ == ro_syzcomp was unhandled!!! Possibly memory leak!!!"  );
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 //          assume(0);
 #endif
         }
@@ -4054,8 +3997,6 @@ void rDebugPrint(ring r)
   for(j=0;j<r->OrdSize;j++)
   {
     Print("  typ %s", TYP[r->typ[j].ord_typ]);
-
-
     if (r->typ[j].ord_typ==ro_syz)
     {
       const short place = r->typ[j].data.syz.place;
@@ -4088,7 +4029,7 @@ void rDebugPrint(ring r)
 //      for( int k = 0; k <= r->N; k++) if (r->typ[j].data.is.pVarOffset[k] != -1) Print("[%2d]: %04x; ", k, r->typ[j].data.is.pVarOffset[k]);
 
       Print("  limit %d",r->typ[j].data.is.limit);
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       //PrintS("  F: ");idShow(r->typ[j].data.is.F, r, r, 1);
 #endif
 
@@ -4254,7 +4195,7 @@ static inline void m_DebugPrint(const poly p, const ring R)
 }
 
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 /// debug-print at most nTerms (2 by default) terms from poly/vector p,
 /// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
 void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms)
@@ -4406,7 +4347,7 @@ ring rAssure_SyzComp(const ring r, BOOLEAN complete)
 
   if ( r->order[0] == ringorder_IS )
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     WarnS("rAssure_SyzComp: input ring has an IS-ordering!");
 #endif
 //    return r;
@@ -4442,7 +4383,7 @@ ring rAssure_SyzComp(const ring r, BOOLEAN complete)
     {
       if ( nc_rComplete(r, res, false) ) // no qideal!
       {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         WarnS("error in nc_rComplete");      // cleanup?//      rDelete(res);//      return r;      // just go on..
 #endif
       }
@@ -4546,7 +4487,7 @@ ring rAssure_TDeg(ring r, int start_var, int end_var, int &pos)
   {
     if ( nc_rComplete(r, res, false) ) // no qideal!
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("error in nc_rComplete");
 #endif
       // just go on..
@@ -4619,7 +4560,7 @@ ring rAssure_HasComp(const ring r)
   {
     if ( nc_rComplete(r, new_r, false) ) // no qideal!
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("error in nc_rComplete");      // cleanup?//      rDelete(res);//      return r;      // just go on..
 #endif
     }
@@ -4670,7 +4611,7 @@ ring rAssure_CompLastBlock(ring r, BOOLEAN complete)
         {
           if ( nc_rComplete(r, new_r, false) ) // no qideal!
           {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
             WarnS("error in nc_rComplete");   // cleanup?//      rDelete(res);//      return r;      // just go on..
 #endif
           }
@@ -4704,7 +4645,7 @@ ring rAssure_SyzComp_CompLastBlock(const ring r, BOOLEAN)
    {
        if ( nc_rComplete(old_r, new_r, false) ) // no qideal!
        {
-# ifndef NDEBUG
+# ifndef SING_NDEBUG
           WarnS("error in nc_rComplete"); // cleanup?      rDelete(res);       return r;  // just go on...?
 # endif
        }
@@ -4715,14 +4656,13 @@ ring rAssure_SyzComp_CompLastBlock(const ring r, BOOLEAN)
    if (old_r->qideal != NULL)
    {
       new_r->qideal = idrCopyR(old_r->qideal, old_r, new_r);
-      //currQuotient = new_r->qideal;
    }
 
 #ifdef HAVE_PLURAL
    if( rIsPluralRing(old_r) )
      if( nc_SetupQuotient(new_r, old_r, true) )
        {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
           WarnS("error in nc_SetupQuotient"); // cleanup?      rDelete(res);       return r;  // just go on...?
 #endif
        }
@@ -4778,7 +4718,7 @@ static ring rAssure_Global(rRingOrder_t b1, rRingOrder_t b2, const ring r)
   {
     if ( nc_rComplete(r, res, false) ) // no qideal!
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("error in nc_rComplete");
 #endif
     }
@@ -4858,7 +4798,7 @@ ring rAssure_InducedSchreyerOrdering(const ring r, BOOLEAN complete = TRUE, int 
     {
       if ( nc_rComplete(r, res, false) ) // no qideal!
       {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         WarnS("error in nc_rComplete");      // cleanup?//      rDelete(res);//      return r;      // just go on..
 #endif
       }
@@ -5041,7 +4981,7 @@ void rSetSyzComp(int k, const ring r)
     }
     if(k < r->typ[0].data.syz.limit) // ?
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       Warn("rSetSyzComp called with smaller limit (%d) as before (%d)", k, r->typ[0].data.syz.limit);
 #endif
       r->typ[0].data.syz.curr_index = 1 + r->typ[0].data.syz.syz_index[k];
@@ -5057,7 +4997,7 @@ void rSetSyzComp(int k, const ring r)
            )
   {
 //      (r->typ[currRing->typ[0].data.isTemp.suffixpos].data.is.limit == k)
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("rSetSyzComp(%d) in an IS ring! Be careful!", k);
 #endif
   }

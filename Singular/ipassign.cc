@@ -10,13 +10,11 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <misc/auxiliary.h>
-#include <omalloc/omalloc.h>
 
 #include <kernel/mod2.h>
+
+#include <misc/auxiliary.h>
+#include <omalloc/omalloc.h>
 
 #define TRANSEXT_PRIVATES
 #include <polys/ext_fields/transext.h>
@@ -37,14 +35,14 @@
 #include <polys/monomials/maps.h>
 #include <polys/nc/nc.h>
 #include <polys/nc/sca.h>
+#include <polys/prCopy.h>
 
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/kstd1.h>
-#include <kernel/timer.h>
-#include <kernel/stairc.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/oswrapper/timer.h>
+#include <kernel/GBEngine/stairc.h>
+#include <kernel/GBEngine/syz.h>
 
 //#include "weight.h"
 #include "tok.h"
@@ -187,7 +185,7 @@ static BOOLEAN jjMINPOLY(leftv, leftv a)
 {
   if( !nCoeff_is_transExt(currRing->cf) && (currRing->idroot == NULL) && n_IsZero((number)a->Data(), currRing->cf) )
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     WarnS("Set minpoly over non-transcendental ground field to 0?!");
     Warn("in >>%s<<",my_yylinebuf);
 #endif
@@ -197,16 +195,18 @@ static BOOLEAN jjMINPOLY(leftv, leftv a)
 
   if ( !nCoeff_is_transExt(currRing->cf) )
   {
-//    return TRUE;
-#ifndef NDEBUG
     WarnS("Trying to set minpoly over non-transcendental ground field...");
-#endif
+    if(!nCoeff_is_algExt(currRing->cf) )
+    {
+      WerrorS("cannot set minpoly for these coeffients");
+      return TRUE;
+    }
   }
 
   if ( currRing->idroot != NULL )
   {
 //    return TRUE;
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     idhdl p = currRing->idroot;
 
     WarnS("no minpoly allowed if there are local objects belonging to the basering: ");
@@ -222,44 +222,53 @@ static BOOLEAN jjMINPOLY(leftv, leftv a)
 //  assume (currRing->idroot==NULL);
 
   number p = (number)a->CopyD(NUMBER_CMD);
+  n_Normalize(p, currRing->cf);
 
   if (n_IsZero(p, currRing->cf))
   {
     n_Delete(&p, currRing);
-
-
     if( nCoeff_is_transExt(currRing->cf) )
     {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
       WarnS("minpoly is already 0...");
 #endif
       return FALSE;
     }
-
     WarnS("cannot set minpoly to 0 / alg. extension?");
-
-//    return TRUE;
+    return TRUE;
   }
 
   // remove all object currently in the ring
   while(currRing->idroot!=NULL)
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("killing a local object due to minpoly change: %s", IDID(currRing->idroot));
 #endif
     killhdl2(currRing->idroot,&(currRing->idroot),currRing);
   }
 
-  n_Normalize(p, currRing->cf);
-
-  assume( currRing->cf->extRing->qideal == NULL );
-
   AlgExtInfo A;
 
   A.r = rCopy(currRing->cf->extRing); // Copy  ground field!
+  // if minpoly was already set:
+  if( currRing->cf->extRing->qideal != NULL ) id_Delete(&(A.r->qideal),A.r);
   ideal q = idInit(1,1);
-
-  assume( DEN((fraction)(p)) == NULL ); // minpoly must be a fraction with poly numerator...!!
+  if ((p==NULL) ||(NUM((fraction)p)==NULL))
+  {
+    Werror("Could not construct the alg. extension: minpoly==0");
+    // cleanup A: TODO
+    rDelete( A.r );
+    return TRUE;
+  }
+  if (DEN((fraction)(p)) != NULL) // minpoly must be a fraction with poly numerator...!!
+  {
+    poly z=NUM((fraction)p);
+    poly n=DEN((fraction)(p));
+    z=p_Mult_nn(z,pGetCoeff(n),currRing->cf->extRing);
+    NUM((fraction)p)=z;
+    DEN((fraction)(p))=NULL;
+    p_Delete(&n,currRing->cf->extRing);
+  }
 
   q->m[0] = NUM((fraction)p);
   A.r->qideal = q;
@@ -375,7 +384,7 @@ static BOOLEAN jiA_INT(leftv res, leftv a, Subexpr e)
       int c=e->next->start;
       if ((i>=iv->rows())||(c<1)||(c>iv->cols()))
       {
-        Werror("wrong range [%d,%d] in intmat (%d,%d)",i+1,c,iv->rows(),iv->cols());
+        Werror("wrong range [%d,%d] in intmat %s(%d,%d)",i+1,c,res->Name(),iv->rows(),iv->cols());
         return TRUE;
       }
       else
@@ -420,7 +429,7 @@ static BOOLEAN jiA_BIGINT(leftv res, leftv a, Subexpr e)
       int c=e->next->start;
       if ((i>=iv->rows())||(c<1)||(c>iv->cols()))
       {
-        Werror("wrong range [%d,%d] in bigintmat (%d,%d)",i+1,c,iv->rows(),iv->cols());
+        Werror("wrong range [%d,%d] in bigintmat %s(%d,%d)",i+1,c,res->Name(),iv->rows(),iv->cols());
         return TRUE;
       }
       else
@@ -461,7 +470,7 @@ static BOOLEAN jiA_POLY(leftv res, leftv a,Subexpr e)
     if (res->data!=NULL) pDelete((poly*)&res->data);
     res->data=(void*)p;
     jiAssignAttr(res,a);
-    if (TEST_V_QRING && (currQuotient!=NULL) && (!hasFlag(res,FLAG_QRING))) jjNormalizeQRingP(res);
+    if (TEST_V_QRING && (currRing->qideal!=NULL) && (!hasFlag(res,FLAG_QRING))) jjNormalizeQRingP(res);
   }
   else
   {
@@ -501,7 +510,7 @@ static BOOLEAN jiA_POLY(leftv res, leftv a,Subexpr e)
 }
 static BOOLEAN jiA_1x1INTMAT(leftv res, leftv a,Subexpr e)
 {
-  if ((res->rtyp!=INTMAT_CMD) /*|| (e!=NULL) - TRUE because of type int */)
+  if (/*(*/ res->rtyp!=INTMAT_CMD /*)*/) /*|| (e!=NULL) - TRUE because of type int */
   {
     // no error message: assignment simply fails
     return TRUE;
@@ -523,7 +532,7 @@ static BOOLEAN jiA_1x1INTMAT(leftv res, leftv a,Subexpr e)
 }
 static BOOLEAN jiA_1x1MATRIX(leftv res, leftv a,Subexpr e)
 {
-  if ((res->rtyp!=MATRIX_CMD) /*|| (e!=NULL) - TRUE because of type poly */)
+  if (/*(*/ res->rtyp!=MATRIX_CMD /*)*/) /*|| (e!=NULL) - TRUE because of type poly */
   {
     // no error message: assignment simply fails
     return TRUE;
@@ -576,7 +585,7 @@ static BOOLEAN jiA_PROC(leftv res, leftv a, Subexpr)
   extern void piCleanUp(procinfov pi);
 
   if(res->data!=NULL) piCleanUp((procinfo *)res->data);
-  if(a->rtyp==STRING_CMD)
+  if(a->Typ()==STRING_CMD)
   {
     res->data = (void *)omAlloc0Bin(procinfo_bin);
     ((procinfo *)(res->data))->language=LANG_NONE;
@@ -633,7 +642,7 @@ static BOOLEAN jiA_IDEAL(leftv res, leftv a, Subexpr)
   {
     setFlag(res,FLAG_STD);
   }
-  if (TEST_V_QRING && (currQuotient!=NULL)&& (!hasFlag(res,FLAG_QRING))) jjNormalizeQRingId(res);
+  if (TEST_V_QRING && (currRing->qideal!=NULL)&& (!hasFlag(res,FLAG_QRING))) jjNormalizeQRingId(res);
   return FALSE;
 }
 static BOOLEAN jiA_RESOLUTION(leftv res, leftv a, Subexpr)
@@ -651,7 +660,7 @@ static BOOLEAN jiA_MODUL_P(leftv res, leftv a, Subexpr)
   if (I->m[0]!=NULL) pSetCompP(I->m[0],1);
   pNormalize(I->m[0]);
   res->data=(void *)I;
-  if (TEST_V_QRING && (currQuotient!=NULL))
+  if (TEST_V_QRING && (currRing->qideal!=NULL))
   {
     if (hasFlag(a,FLAG_QRING)) setFlag(res,FLAG_QRING);
     else                       jjNormalizeQRingId(res);
@@ -667,7 +676,7 @@ static BOOLEAN jiA_IDEAL_M(leftv res, leftv a, Subexpr)
   MATROWS(m)=1;
   id_Normalize((ideal)m, currRing);
   res->data=(void *)m;
-  if (TEST_V_QRING && (currQuotient!=NULL)) jjNormalizeQRingId(res);
+  if (TEST_V_QRING && (currRing->qideal!=NULL)) jjNormalizeQRingId(res);
   return FALSE;
 }
 static BOOLEAN jiA_LINK(leftv res, leftv a, Subexpr)
@@ -728,46 +737,81 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     WerrorS("qring_id expected");
     return TRUE;
   }
+  assume(res->Data()==NULL);
 
-  ring qr;
+  coeffs newcf = currRing->cf;
+#ifdef HAVE_RINGS
+  ideal id = (ideal)a->Data(); //?
+  const int cpos = idPosConstant(id);
+  if(rField_is_Ring(currRing))
+    if (cpos >= 0)
+    {
+        newcf = n_CoeffRingQuot1(p_GetCoeff(id->m[cpos], currRing), currRing->cf);
+        if(newcf == NULL)
+          return TRUE;
+    }
+#endif
   //qr=(ring)res->Data();
   //if (qr!=NULL) omFreeBin((ADDRESS)qr, ip_sring_bin);
-  assume(res->Data()==NULL);
-  qr=rCopy(currRing);
+  ring qr = rCopy(currRing);
+  assume(qr->cf == currRing->cf);
+
+  if ( qr->cf != newcf )
+  {
+    nKillChar ( qr->cf ); // ???
+    qr->cf = newcf;
+  }
                  // we have to fill it, but the copy also allocates space
   idhdl h=(idhdl)res->data; // we have res->rtyp==IDHDL
   IDRING(h)=qr;
 
-  ideal id=(ideal)a->CopyD(IDEAL_CMD);
-
-  if ((idElem(id)>1) || rIsSCA(currRing) || (currRing->qideal!=NULL))
-    assumeStdFlag(a);
+  ideal qid;
 
 #ifdef HAVE_RINGS
-  if (rField_is_Ring(currRing))
-  {
-    if (idPosConstant(id) != -1)
+  if((rField_is_Ring(currRing)) && (cpos != -1))
     {
-      WerrorS("constant in q-ideal; please modify ground field/ring instead");
-      return TRUE;
+      int i, j;
+      int *perm = (int *)omAlloc0((qr->N+1)*sizeof(int));
+
+      for(i=qr->N;i>0;i--)
+        perm[i]=i;
+
+      nMapFunc nMap = n_SetMap(currRing->cf, newcf);
+      qid = idInit(IDELEMS(id)-1,1);
+      for(i = 0, j = 0; i<IDELEMS(id); i++)
+        if( i != cpos )
+          qid->m[j++] = p_PermPoly(id->m[i], perm, currRing, qr, nMap, NULL, 0);
     }
-  }
+    else
 #endif
+      qid = idrCopyR(id,currRing,qr);
+
+  idSkipZeroes(qid);
+  //idPrint(qid);
+  if ((idElem(qid)>1) || rIsSCA(currRing) || (currRing->qideal!=NULL))
+    assumeStdFlag(a);
 
   if (currRing->qideal!=NULL) /* we are already in a qring! */
   {
-    ideal tmp=idSimpleAdd(id,currRing->qideal);
+    ideal tmp=idSimpleAdd(qid,currRing->qideal);
     // both ideals should be GB, so dSimpleAdd is sufficient
-    idDelete(&id);
-    id=tmp;
+    idDelete(&qid);
+    qid=tmp;
     // delete the qr copy of quotient ideal!!!
     idDelete(&qr->qideal);
   }
-  qr->qideal = id;
+  if (idElem(qid)==0)
+  {
+    qr->qideal = NULL;
+    id_Delete(&qid,currRing);
+    IDTYP(h)=RING_CMD;
+  }
+  else
+    qr->qideal = qid;
 
   // qr is a copy of currRing with the new qideal!
   #ifdef HAVE_PLURAL
-  if(rIsPluralRing(currRing))
+  if(rIsPluralRing(currRing) &&(qr->qideal!=NULL))
   {
     if (!hasFlag(a,FLAG_TWOSTD))
     {
@@ -780,6 +824,7 @@ static BOOLEAN jiA_QRING(leftv res, leftv a,Subexpr e)
     }
   }
   #endif
+  //rWrite(qr);
   rSetHdl((idhdl)res->data);
   return FALSE;
 }
@@ -845,7 +890,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
   }
 
   int lt=l->Typ();
-  if((lt==0)/*&&(l->name!=NULL)*/)
+  if (/*(*/ lt==0 /*)*/) /*&&(l->name!=NULL)*/
   {
     if (!errorreported) Werror("left side `%s` is undefined",l->Fullname());
     return TRUE;
@@ -862,6 +907,16 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
   int i=0;
   if (lt==DEF_CMD)
   {
+    if (TEST_V_ALLWARN
+    && (rt!=RING_CMD)
+    && (rt!=QRING_CMD)
+    && (l->name!=NULL)
+    && (l->e==NULL)
+    && (iiCurrArgs==NULL) /* not in proc header */
+    )
+    {
+      Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
+    }
     if (l->rtyp==IDHDL)
     {
       IDTYP((idhdl)l->data)=rt;
@@ -899,7 +954,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     && (dAssign[i].res!=0)) i++;
   if (dAssign[i].res!=0)
   {
-    if (TEST_V_ALLWARN) Print("assign %s=%s\n",Tok2Cmdname(lt),Tok2Cmdname(rt));
+    if (traceit&TRACE_ASSIGN) Print("assign %s=%s\n",Tok2Cmdname(lt),Tok2Cmdname(rt));
     BOOLEAN b;
     b=dAssign[i].p(ld,r,l->e);
     if(l!=ld) /* i.e. l is IDHDL, l->data is ld */
@@ -926,7 +981,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
         if(!failed)
         {
           failed= dAssign[i].p(ld,rn,l->e);
-          if (TEST_V_ALLWARN)
+          if (traceit&TRACE_ASSIGN)
             Print("assign %s=%s ok? %d\n",Tok2Cmdname(lt),Tok2Cmdname(rn->rtyp),!failed);
         }
         // everything done, clean up temp. variables
@@ -1065,7 +1120,7 @@ static BOOLEAN jiA_INTVEC_L(leftv l,leftv r)
   t.rtyp=INT_CMD;
   while ((i<iv->length())&&(l!=NULL))
   {
-    t.data=(char *)(*iv)[i];
+    t.data=(char *)(long)(*iv)[i];
     h=l->next;
     l->next=NULL;
     nok=jiAssign_1(l,&t);
@@ -1116,7 +1171,7 @@ static BOOLEAN jiA_VECTOR_L(leftv l,leftv r)
   idDelete(&I);
   l1->CleanUp();
   r->CleanUp();
-  //if (TEST_V_QRING && (currQuotient!=NULL)) jjNormalizeQRingP(l);
+  //if (TEST_V_QRING && (currRing->qideal!=NULL)) jjNormalizeQRingP(l);
   return FALSE;
 }
 static BOOLEAN jjA_L_LIST(leftv l, leftv r)
@@ -1172,7 +1227,7 @@ static BOOLEAN jjA_L_LIST(leftv l, leftv r)
   {
     IDLIST((idhdl)l->data)=L;
     IDTYP((idhdl)l->data)=LIST_CMD; // was possibly DEF_CMD
-    ipMoveId((idhdl)l->data);
+    if (lRingDependend(L)) ipMoveId((idhdl)l->data);
   }
   else
   {
@@ -1193,7 +1248,7 @@ static BOOLEAN jjA_L_INTVEC(leftv l,leftv r,intvec *iv)
   {
     if (i>=iv->length())
     {
-      if (TEST_V_ALLWARN)
+      if (traceit&TRACE_ASSIGN)
       {
         Warn("expression list length(%d) does not match intmat size(%d)",
              iv->length()+exprlist_length(hh),iv->length());
@@ -1221,8 +1276,16 @@ static BOOLEAN jjA_L_INTVEC(leftv l,leftv r,intvec *iv)
     }
     hh = hh->next;
   }
-  if (IDINTVEC((idhdl)l->data)!=NULL) delete IDINTVEC((idhdl)l->data);
-  IDINTVEC((idhdl)l->data)=iv;
+  if (l->rtyp==IDHDL)
+  {
+    if (IDINTVEC((idhdl)l->data)!=NULL) delete IDINTVEC((idhdl)l->data);
+    IDINTVEC((idhdl)l->data)=iv;
+  }
+  else
+  {
+    if (l->data!=NULL) delete ((intvec*)l->data);
+    l->data=(char*)iv;
+  }
   return FALSE;
 }
 static BOOLEAN jjA_L_BIGINTMAT(leftv l,leftv r,bigintmat *bim)
@@ -1235,7 +1298,7 @@ static BOOLEAN jjA_L_BIGINTMAT(leftv l,leftv r,bigintmat *bim)
   {
     if (i>=bim->cols()*bim->rows())
     {
-      if (TEST_V_ALLWARN)
+      if (traceit&TRACE_ASSIGN)
       {
         Warn("expression list length(%d) does not match bigintmat size(%d x %d)",
               exprlist_length(hh),bim->rows(),bim->cols());
@@ -1330,7 +1393,10 @@ static BOOLEAN jiA_MATRIX_L(leftv l,leftv r)
       m->m[i]=NULL;
       h=l->next;
       l->next=NULL;
+      idhdl hh=NULL;
+      if ((l->rtyp==IDHDL)&&(l->Typ()==DEF_CMD)) hh=(idhdl)l->data;
       nok=jiAssign_1(l,&t);
+      if (hh!=NULL) { ipMoveId(hh);hh=NULL;}
       l->next=h;
       if (nok)
       {
@@ -1454,11 +1520,23 @@ static BOOLEAN jiAssign_list(leftv l, leftv r)
   BOOLEAN b;
   if (/*(ld->rtyp!=LIST_CMD)
   &&*/(ld->e==NULL)
-  &&(ld->Typ()!=r->Typ()))
+  && (ld->Typ()!=r->Typ()))
   {
     sleftv tmp;
     memset(&tmp,0,sizeof(sleftv));
     tmp.rtyp=DEF_CMD;
+    b=iiAssign(&tmp,r);
+    ld->CleanUp();
+    memcpy(ld,&tmp,sizeof(sleftv));
+  }
+  else if ((ld->e==NULL)
+  && (ld->Typ()==r->Typ())
+  && (ld->Typ()<MAX_TOK))
+  {
+    sleftv tmp;
+    memset(&tmp,0,sizeof(sleftv));
+    tmp.rtyp=r->Typ();
+    tmp.data=(char*)idrecDataInit(r->Typ());
     b=iiAssign(&tmp,r);
     ld->CleanUp();
     memcpy(ld,&tmp,sizeof(sleftv));
@@ -1537,7 +1615,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
       }
       if(like_lists)
       {
-        if (TEST_V_ALLWARN) PrintS("assign list[..]=...or similiar\n");
+        if (traceit&TRACE_ASSIGN) PrintS("assign list[..]=...or similiar\n");
         if (like_lists==1)
         {
           // check blackbox/newtype type:
@@ -1564,6 +1642,14 @@ BOOLEAN iiAssign(leftv l, leftv r)
         }
         return b;
       }
+    }
+    if (lt>MAX_TOK)
+    {
+      blackbox *bb=getBlackboxStuff(lt);
+#ifdef BLACKBOX_DEVEL
+      Print("bb-assign: bb=%lx\n",bb);
+#endif
+      return (bb==NULL) || bb->blackbox_Assign(l,r);
     }
     // end of handling elems of list and similiar
     rl=r->listLength();
@@ -1719,7 +1805,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
         num=olm->cols()*olm->rows();
         lm=mpNew(olm->rows(),olm->cols());
         int el;
-        if ((TEST_V_ALLWARN) && (num!=(el=exprlist_length(hh))))
+        if ((traceit&TRACE_ASSIGN) && (num!=(el=exprlist_length(hh))))
         {
           Warn("expression list length(%d) does not match matrix size(%d)",el,num);
         }
@@ -1805,7 +1891,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
     case STRING_CMD:
       nok=jjA_L_STRING(l,r);
       break;
-    case DEF_CMD:
+    //case DEF_CMD:
     case LIST_CMD:
       nok=jjA_L_LIST(l,r);
       break;
@@ -1825,7 +1911,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
 }
 void jjNormalizeQRingId(leftv I)
 {
-  if ((currQuotient!=NULL) && (!hasFlag(I,FLAG_QRING)))
+  if ((currRing->qideal!=NULL) && (!hasFlag(I,FLAG_QRING)))
   {
     if (I->e==NULL)
     {
@@ -1836,7 +1922,7 @@ void jjNormalizeQRingId(leftv I)
         case MODUL_CMD:
         {
           ideal F=idInit(1,1);
-          ideal II=kNF(F,currQuotient,I0);
+          ideal II=kNF(F,currRing->qideal,I0);
           idDelete(&F);
           if (I->rtyp!=IDHDL)
           {
@@ -1860,13 +1946,13 @@ void jjNormalizeQRingId(leftv I)
 }
 void jjNormalizeQRingP(leftv I)
 {
-  if ((currQuotient!=NULL) && (!hasFlag(I,FLAG_QRING)))
+  if ((currRing->qideal!=NULL) && (!hasFlag(I,FLAG_QRING)))
   {
     poly p=(poly)I->Data();
     if ((I->e==NULL) && (p!=NULL))
     {
       ideal F=idInit(1,1);
-      poly II=kNF(F,currQuotient,p);
+      poly II=kNF(F,currRing->qideal,p);
       idDelete(&F);
       if ((I->rtyp==POLY_CMD)
       || (I->rtyp==VECTOR_CMD))

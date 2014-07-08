@@ -1,45 +1,34 @@
 ACLOCAL_AMFLAGS = -I ../m4
 
-PACKAGES=include/factory libfac
-SUBDIRS=$(PACKAGES)
+SUBDIRS=include/factory
 
-# CXXTEMPLFLAGS=-ftrapv 
-## -fno-implicit-templates
-
-AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include $(FLINT_CFLAGS) ${GMP_CFLAGS} ${NTL_CFLAGS} ${OMALLOC_CFLAGS} -DHAVE_CONFIG_H
-
-# if WANT_DEBUG
-#   LIB_G=libfactory_g.la
-# else
-#   LIB_G=
-# endif
+AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include -I${srcdir} \
+$(OMALLOC_INCLUDES) $(RESOURCES_INCLUDES) \
+$(FLINT_CFLAGS) $(NTL_CFLAGS) $(GMP_CFLAGS)
 
 lib_LTLIBRARIES = libfactory.la
-#  ${LIB_G}
 
-# libfactory_la_CXXFLAGS   = -O3 -fomit-frame-pointer ${CXXTEMPLFLAGS}
-libfactory_la_LIBADD     = ${builddir}/libfac/libfac.la $(FLINT_LIBS) ${GMP_LIBS} ${NTL_LIBS}
+libfactory_la_LIBADD     =$(RESOURCES_LIBS) $(OMALLOC_LIBS) \
+$(FLINT_LIBS) $(NTL_LIBS) $(GMP_LIBS)
+
 libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION}
-# libfactory_g_la_CXXFLAGS = -g -Wextra -Wall -pedantic -Wno-long-long ${CXXTEMPLFLAGS}
-#libfactory_g_la_LIBADD   = ${builddir}/libfac/libfac_g.la $(FLINT_LIBS) ${GMP_LIBS} ${NTL_LIBS}
-#libfactory_g_la_LDFLAGS  = -release ${PACKAGE_VERSION}
-
-
 
 # factory source files
 SOURCES = \
-		algext.cc \
 		canonicalform.cc \
 		cf_algorithm.cc \
-		cf_binom.cc \
 		cf_char.cc \
+		cfCharSets.cc \
+		cfCharSetsUtil.cc \
 		cf_chinese.cc \
 		cf_cyclo.cc \
 		cf_eval.cc \
+		cfEzgcd.cc \
 		cf_factor.cc \
 		cf_factory.cc \
 		cf_gcd.cc \
-		cf_gcd_smallp.cc \
+		cfGcdAlgExt.cc \
+		cfGcdUtil.cc \
 		cf_generator.cc \
 		cf_globals.cc \
 		cf_hnf.cc \
@@ -50,32 +39,30 @@ SOURCES = \
 		cf_linsys.cc \
 		cf_map.cc \
 		cf_map_ext.cc \
+		cfModGcd.cc \
 		cfNewtonPolygon.cc \
+		cfNTLzzpEXGCD.cc \
 		cfModResultant.cc \
 		cf_ops.cc \
 		cf_primes.cc \
 		cf_random.cc \
 		cf_resultant.cc \
 		cf_reval.cc \
+		cfSubResGcd.cc \
 		cf_switches.cc \
 		cf_util.cc \
+		cfUnivarGcd.cc \
 		debug.cc \
 		DegreePattern.cc \
 		ExtensionInfo.cc \
 		facAbsBiFact.cc \
 		facAbsFact.cc \
 		facAlgExt.cc \
+		facAlgFunc.cc \
+		facAlgFuncUtil.cc \
 		facBivar.cc \
-		fac_berlekamp.cc \
-		fac_cantzass.cc \
-		fac_distrib.cc \
-		fac_ezgcd.cc \
 		facFactorize.cc \
-		fac_iterfor.cc \
-		fac_multihensel.cc \
-		fac_multivar.cc \
 		fac_sqrfree.cc \
-		fac_univar.cc \
 		fac_util.cc \
 		facFqBivar.cc \
 		facFqBivarUtil.cc \
@@ -85,7 +72,6 @@ SOURCES = \
 		facHensel.cc \
 		facIrredTest.cc \
 		facMul.cc \
-		facNTLzzpEXGCD.cc \
 		facSparseHensel.cc \
 		ffops.cc \
 		FLINTconvert.cc \
@@ -96,7 +82,6 @@ SOURCES = \
 		int_int.cc \
 		int_intdiv.cc \
 		int_poly.cc \
-		int_pp.cc \
 		int_rat.cc \
 		variable.cc \
 		NTLconvert.cc \
@@ -109,55 +94,53 @@ if WITH_PARSER_FOR_CANONICAL_FORM
 endif
 
 libfactory_la_SOURCES = $(SOURCES)
-# libfactory_g_la_SOURCES = $(SOURCES)
-
-# libfactory_la_CPPFLAGS  = ${AM_CPPFLAGS} -DHAVE_CONFIG_H -DOM_NDEBUG -DNDEBUG
-# libfactory_la_CPPFLAGS= ${AM_CPPFLAGS} -DHAVE_CONFIG_H 
 
 nodist_libfactory_la_SOURCES = cplusplus.h factory.h factoryconf.h
-# nodist_libfactory_g_la_SOURCES = cplusplus.h factory.h factoryconf.h
 
 # factory header files
 factory_headers = \
 		cf_assert.h \
 		canonicalform.h \
 		cf_algorithm.h \
+		cfCharSets.h \
+		cfCharSetsUtil.h \
 		cf_cyclo.h \
-		cf_binom.h \
 		cf_defs.h \
 		cf_eval.h \
+		cfEzgcd.h \
 		cf_factory.h \
 		cf_generator.h \
 		cf_globals.h \
-		cf_gcd_smallp.h \
+		cfGcdAlgExt.h \
+		cfGcdUtil.h \
 		cf_hnf.h \
 		cf_irred.h \
 		cf_iter.h \
 		cf_map.h \
 		cf_map_ext.h \
+		cfModGcd.h \
 		cfNewtonPolygon.h \
+		cfNTLzzpEXGCD.h \
 		cfModResultant.h \
 		cf_primes.h \
 		cf_primetab.h \
 		cf_random.h \
 		cf_reval.h \
+		cfSubResGcd.h \
 		cf_switches.h \
 		cf_util.h \
+		cfUnivarGcd.h \
 		debug.h \
 		DegreePattern.h \
 		ExtensionInfo.h \
 		facAbsBiFact.h \
 		facAbsFact.h \
 		facAlgExt.h \
+		facAlgFunc.h \
+		facAlgFuncUtil.h \
 		facBivar.h \
-		fac_berlekamp.h \
-		fac_cantzass.h \
-		fac_distrib.h \
 		facFactorize.h \
-		fac_iterfor.h \
-		fac_multivar.h \
 		fac_sqrfree.h \
-		fac_univar.h \
 		fac_util.h \
 		facFqBivar.h \
 		facFqBivarUtil.h \
@@ -167,7 +150,6 @@ factory_headers = \
 		facHensel.h \
 		facIrredTest.h \
 		facMul.h \
-		facNTLzzpEXGCD.h \
 		facSparseHensel.h \
 		ffops.h \
 		FLINTconvert.h \
@@ -178,12 +160,10 @@ factory_headers = \
 		int_cf.h \
 		int_int.h \
 		int_poly.h \
-		int_pp.h \
 		int_rat.h \
 		timing.h \
 		variable.h \
 		NTLconvert.h \
-		algext.h \
 		singext.h \
 		parseutil.h
 
@@ -197,16 +177,6 @@ nodist_libfactory_include_HEADERS = cplusplus.h factory.h factoryconf.h
 ####################################################
 # Documentation
 include $(srcdir)/aminclude.am
-
-doxysrc = $(SOURCES) parseutil.cc
-doxyincl = $(factory_headers) parseutil.h
-
-# doxygen targets
-doxy:		factory.cfg $(doxysrc) $(doxyincl)
-		doxygen $<
-
-doxyclean:
-		rm -rf doxygen
 
 ####################################################
 # the precomputed GF(q)-tables
@@ -244,7 +214,7 @@ gftables/9 gftables/9409 gftables/961
 
 EXTRA_PROGRAMS = gengftables 
 gengftables_SOURCES = gengftables-conway.cc
-gengftables_LDADD = -L${builddir} -lfactory $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
+gengftables_LDADD = libfactory.la $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
 
 
 ####################################################
@@ -264,7 +234,7 @@ hdrtemplsrc = 	factoryconf.template \
 
 EXTRA_DIST =	test_install.cc \
 		$(templatesrc) $(hdrtemplsrc) \
-		doxygen.cfg factory.cfg \
+		doxygen.cfg \
 		examples/application.cc \
 		examples/factorize.cc examples/gcd.cc \
 		bin/folding.el bin/fold-docu.el \
@@ -279,8 +249,10 @@ BUILT_SOURCES = cplusplus.h factory.h factoryconf.h
 
 CLEANFILES = $(BUILT_SOURCES) include/factory/factory.h include/factory/factoryconf.h include/factory/cplusplus.h
 
-distclean-local:
-	-rm -f readcf.cc
+DISTCLEANFILES =  config.h readcf.cc
+
+#distclean-local:
+#	-rm -f readcf.cc
 
 cplusplus_SOURCES = cplusplus.cc
 
@@ -299,47 +271,22 @@ cplusplus.h: cplusplus$(EXEEXT)
 all-local:
 	[ -d ${builddir}/gftables ] || ln -s ${srcdir}/gftables ${builddir}
 
+
 ####################################################
 ## Test program
 ##
-#if WANT_DEBUG
-# TESTS = test-s-g test-s-r test-d-g test-d-r
-#else
-TESTS = test-s-r test-d-r
-#endif
+
+TESTS = test
+
 check_PROGRAMS = $(TESTS)
 
-AMLDFLAGS =  -L${builddir}
+test_SOURCES = test.cc
+test_LDADD   = libfactory.la
 
-TESTSSOURCES = test.cc
+####################################################
+## PKG config 
+##
 
-# The following ('..') is a hack for a while... 
-TESTADDLIBDIRS = ${OMALLOC_LDFLAGS}
-TESTADDLIB = $(TESTADDLIBDIRS) $(OMALLOC_R_LDADD)
-TESTADDLIBDEBUG = $(TESTADDLIBDIRS) $(OMALLOC_G_LDADD)
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = factory.pc
 
-# test_s_g_SOURCES = $(TESTSSOURCES)
-# test_s_g_CFLAGS = -g -Wextra -Wall -pedantic -Wno-long-long -fomit-frame-pointer 
-# #ftmpl_inst.o
-# test_s_g_LDADD = -lfactory $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(TESTADDLIBDEBUG)
-
-test_s_r_SOURCES = $(TESTSSOURCES)
-#test_s_r_CFLAGS = -O3 -fomit-frame-pointer 
-#ftmpl_inst.o
-test_s_r_LDADD = -lfactory $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(TESTADDLIB)
-
-test_s_r_LDFLAGS = -static ${AMLDFLAGS}
-# test_s_g_LDFLAGS = -static ${AMLDFLAGS}
-
-# test_d_g_SOURCES = $(TESTSSOURCES)
-# test_d_g_CFLAGS = -g -Wextra -Wall -pedantic -Wno-long-long -fomit-frame-pointer 
-# #ftmpl_inst.o
-# test_d_g_LDADD = -lfactory $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(TESTADDLIBDEBUG)
-
-test_d_r_SOURCES = $(TESTSSOURCES)
-# test_d_r_CFLAGS = -O3 -fomit-frame-pointer 
-#ftmpl_inst.o
-test_d_r_LDADD = -lfactory $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(TESTADDLIB)
-
-test_d_r_LDFLAGS = ${AMLDFLAGS}
-# test_d_g_LDFLAGS = ${AMLDFLAGS}

@@ -82,14 +82,13 @@ extern idhdl      currRingHdl;
 /* ================================================================== */
 /* module support */
 typedef int (*SModulFunc_t)(SModulFunctions*);
-BOOLEAN load_builtin(char *newlib, BOOLEAN autoexport, SModulFunc_t init);
+BOOLEAN load_builtin(const char *newlib, BOOLEAN autoexport, SModulFunc_t init);
 void module_help_main(const char *newlib,const char *help);
 void module_help_proc(const char *newlib,const char *p, const char *help);
 
 /* ================================================================== */
 
 /*extern ring     currRing;  in ring.h */
-/*extern ideal      currQuotient; in structs.h */
 
 idhdl enterid(const char * a, int lev, int t, idhdl* root, BOOLEAN init=TRUE, BOOLEAN serach=TRUE);
 idhdl ggetid(const char *n);

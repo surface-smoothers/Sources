@@ -5,14 +5,13 @@
 * ABSTRACT: eigenvalues of constant square matrices
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #ifdef HAVE_EIGENVAL
 
-#include <kernel/febase.h>
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
@@ -22,7 +21,7 @@
 #include <Singular/lists.h>
 #include <polys/matpol.h>
 #include <polys/clapsing.h>
-#include <kernel/eigenval.h>
+#include <kernel/linear_algebra/eigenval.h>
 #include <Singular/eigenval_ip.h>
 
 
@@ -181,13 +180,7 @@ lists evEigenvals(matrix M)
         MATELEM(M0,i,i)=pSub(MATELEM(M0,i,i),pCopy(t));
 
       intvec *m0;
-#ifdef HAVE_FACTORY      
       ideal e0=singclap_factorize(mp_DetBareiss(M,currRing),&m0,2, currRing);
-#else
-      WarnS("cannot factorize due to missing module 'factory'");
-      ideal e0=NULL;
-#endif
-      
       if (e0==NULL)
       {
         l->Init(0);
@@ -205,7 +198,7 @@ lists evEigenvals(matrix M)
         if(pGetExp(e0->m[i],1)<2&&pGetExp(pNext(e0->m[i]),1)<2&&
            pNext(pNext(e0->m[i]))==NULL)
 	{
-          number e1=nNeg(nCopy(pGetCoeff(e0->m[i])));
+          number e1=nInpNeg(nCopy(pGetCoeff(e0->m[i])));
           if(pGetExp(pNext(e0->m[i]),1)==0)
             e->m[k]=pNSet(nDiv(pGetCoeff(pNext(e0->m[i])),e1));
           else

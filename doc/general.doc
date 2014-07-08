@@ -3445,10 +3445,9 @@ A version string is part of the header of a library.
 @item @strong{Purpose:}
   Defines the version number of a library. It is displayed when the library is loaded.
 @item @strong{Example:}
-@code{version="$}@code{Id: sample.lib 13320 2010-09-29 09:31:38Z someone $";}
+@code{version="version sample.lib 4.0.0.0 Dec_2013 ";}
 @item @strong{Note:}
-It is common practice to simply define the version string to be
-@code{"$I}@code{d:$"} and let a version control system expand it.
+Syntax: @code{version<space><filename><space><version><space><date><space>}
 @end table
 
 @c -------------------------------------------------------------------
@@ -4058,16 +4057,45 @@ easiest way to leave the procedure is to type some brackets or @code{"}
 and then @key{RETURN} .
 
 @menu
+* ASSUME::
 * Tracing of procedures::
 * Source code debugger::
 * Break points::
 * Printing of data::
 * libparse::
+* option(warn)::
 @end menu
 
 @c ---------------------------------------
-@node Tracing of procedures,Source code debugger,Debugging tools,Debugging tools
+@node ASSUME,Tracing of procedures,Debugging tools,Debugging tools
+@subsection ASSUME
+@cindex ASSUME
+
+@table @code
+@item @strong{Syntax:}
+@code{ASSUME (} int_expression @code{,} expression @code{)}
+@item @strong{Purpose:}
+Tests the expression for correctness if the int_expression is smaller
+as a variable @code{assumeLevel}. If no such variable exist the int expression
+is compared against 0. It is possible to define an individual @code{assumeLevel} for each library.
+If the expression is evaluated and not true (i.e. does not evaluate to @code{int(0)} an error is raised.
+@item @strong{Example:}
+@smallexample
+@c example error
+  ASSUME(0,2==2); // always tested
+  ASSUME(1,1==2); // not evaluated
+  int assumeLevel=2;
+  ASSUME(1,1==2);
+  // setting a different assumeLevel for poly.lib:
+  int Poly::assumeLevel=2;
+@c example
+@end smallexample
+@end table
+
+@c ---------------------------------------
+@node Tracing of procedures,Source code debugger,ASSUME,Debugging tools
 @subsection Tracing of procedures
+@cindex TRACE
 Setting the @code{TRACE} variable to 1 (resp.@: 3) results in reporting of
 all procedure entries and exits (resp.@: together with line numbers).
 If @code{TRACE} is set to 4, @code{Singular}
@@ -4200,7 +4228,7 @@ See @ref{dbprint}; @ref{voice}.
 @end ifnothtml
 
 @c ---------------------------------------
-@node libparse,,Printing of data,Debugging tools
+@node libparse,option(warn),Printing of data,Debugging tools
 @subsection libparse
 @cindex libparse
 
@@ -4284,6 +4312,31 @@ LIB "sample.lib";
 @expansion{}    ? Cannot load library,... aborting.
 @expansion{}    ? error occurred in STDIN line 1: `LIB "sample.lib";`
 @end smallexample
+@c ---------------------------------------
+@node option(warn),,libparse,Debugging tools
+@subsection option(warn)
+@cindex  option(warn)
+@cindex  warn, option
+
+
+If this option is set some constructs which @strong{may} lead to bug
+will result in a warning. While there are legitimate uses for them and they
+are @strong{not errors} is is worth thinking about it.
+
+@itemize
+@item
+change of options during a procedure call: is this side effect intended?
+@item
+use of @code{def}: avoids type checking, but usefull if a procedure handles
+several types at once
+@item
+@code{ASSUME} outside of procedures: while a failed @code{ASSUME} aborts
+the current procedures and return to the top level - what should it do at top level?
+@end itemize
+@c ref
+See
+@ref{option}.
+@c ref
 @c ---------------------------------------
 @node Dynamic loading, , Debugging tools, General concepts
 @section Dynamic loading

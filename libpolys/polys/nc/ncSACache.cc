@@ -17,12 +17,12 @@
 #endif
 
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 #define OUTPUT MYTEST
 #else
 #define OUTPUT 0

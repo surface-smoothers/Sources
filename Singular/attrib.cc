@@ -6,26 +6,28 @@
 * ABSTRACT: attributes to leftv and idhdl
 */
 
+#include <kernel/mod2.h>
+
+#include <omalloc/omalloc.h>
+
+#include <misc/options.h>
+#include <misc/intvec.h>
+
+#include <polys/matpol.h>
+
+#include <kernel/polys.h>
+#include <kernel/ideals.h>
+
+#include <Singular/tok.h>
+#include <Singular/ipid.h>
+#include <Singular/ipshell.h>
+#include <Singular/attrib.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <kernel/mod2.h>
-#include <omalloc/omalloc.h>
-#include <misc/options.h>
-#include <Singular/tok.h>
-#include <Singular/ipid.h>
-#include <misc/intvec.h>
-#include <kernel/polys.h>
-#include <kernel/ideals.h>
-#include <polys/matpol.h>
-#include <Singular/ipshell.h>
-#include <Singular/attrib.h>
 
 static omBin sattr_bin = omGetSpecBin(sizeof(sattr));
 
@@ -64,8 +66,11 @@ attr sattr::Copy()
 
 static void attr_free(attr h, const ring r=currRing)
 {
-  s_internalDelete(h->atyp,h->data,r);
-  h->data=NULL;
+  if (h->data!=NULL) /*avoid assume failure */
+  {
+    s_internalDelete(h->atyp,h->data,r);
+    h->data=NULL;
+  }
 }
 
 attr sattr::set(const char * s, void * d, int t)
@@ -108,6 +113,7 @@ attr sattr::get(const char * s)
   return NULL;
 }
 
+#if 0
 void * atGet(idhdl root,const char * name)
 {
   attr temp = root->attribute->get(name);
@@ -127,6 +133,7 @@ void * atGet(leftv root,const char * name)
   else
     return NULL;
 }
+#endif
 
 void * atGet(idhdl root,const char * name, int t, void *defaultReturnValue)
 {
@@ -227,6 +234,7 @@ void at_KillAll(idhdl root, const ring r)
   root->attribute->killAll(r);
   root->attribute = NULL;
 }
+
 void at_KillAll(leftv root, const ring r)
 {
   root->attribute->killAll(r);
@@ -294,6 +302,12 @@ BOOLEAN atATTRIB2(leftv res,leftv v,leftv b)
   {
     res->rtyp=INT_CMD;
     res->data=(void *)(((ring)v->Data())->OrdSgn==1);
+  }
+  else if ((strcmp(name,"ring_cf")==0)
+  &&(((t=v->Typ())==RING_CMD)||(t==QRING_CMD)))
+  {
+    res->rtyp=INT_CMD;
+    res->data=(void *)(long)(rField_is_Ring((ring)v->Data()));
   }
   else if (strcmp(name,"qringNF")==0)
   {

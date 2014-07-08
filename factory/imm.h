@@ -1,7 +1,16 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
+/**
+ * @file imm.h
+ *
+ * operations on immediates, that is elements of F_p, GF, Z, Q
+ * that fit into intrinsic int, long
+**/
+
 #ifndef INCL_IMM_H
 #define INCL_IMM_H
+
+#include <stdint.h>
 
 // #include "config.h"
 
@@ -30,8 +39,8 @@ const long FFMARK = 2;
 const long GFMARK = 3;
 
 /* define type of your compilers 64 bit integer type */
-#ifndef INT64
-#define INT64 long long int
+#ifndef FACTORY_INT64
+#define FACTORY_INT64 long long int
 #endif
 
 #if SIZEOF_LONG == 4
@@ -43,11 +52,11 @@ const long MAXIMMEDIATE = (1L<<60)-2L;  // 2^60-2
 #endif
 
 #if defined(WINNT) && ! defined(__GNUC__)
-const INT64 MINIMMEDIATELL = -268435454i64;
-const INT64 MAXIMMEDIATELL = 268435454i64;
+const FACTORY_INT64 MINIMMEDIATELL = -268435454i64;
+const FACTORY_INT64 MAXIMMEDIATELL = 268435454i64;
 #else
-const INT64 MINIMMEDIATELL = -268435454LL;
-const INT64 MAXIMMEDIATELL = 268435454LL;
+const FACTORY_INT64 MINIMMEDIATELL = -268435454LL;
+const FACTORY_INT64 MAXIMMEDIATELL = 268435454LL;
 #endif
 
 //{{{ conversion functions
@@ -56,7 +65,7 @@ const INT64 MAXIMMEDIATELL = 268435454LL;
 
 inline long imm2int ( const InternalCF * const imm )
 {
-    return ((long)imm) >> 2;
+    return ((intptr_t)imm) >> 2;
 }
 
 inline InternalCF * int2imm ( long i )
@@ -69,10 +78,10 @@ inline InternalCF * int2imm ( long i )
 inline int imm2int ( const InternalCF * const imm )
 {
     // this could be better done by masking the sign bit
-    if ( ((int)((long)imm)) < 0 )
-        return -((-(long)imm) >> 2);
+    if ( ((int)((intptr_t)imm)) < 0 )
+        return -((-(intptr_t)imm) >> 2);
     else
-        return (long)imm >> 2;
+        return (intptr_t)imm >> 2;
 }
 
 inline InternalCF * int2imm ( long i )
@@ -101,7 +110,7 @@ inline InternalCF * int2imm_gf ( long i )
 inline int is_imm ( const InternalCF * const ptr )
 {
     // returns 0 if ptr is not immediate
-    return ( (long)ptr & 3 );
+    return ( (intptr_t)ptr & 3 );
 }
 #endif
 
@@ -167,20 +176,19 @@ inline long imm_intval ( const InternalCF* const op )
 }
 //}}}
 
-//{{{ inline int imm_sign ( const InternalCF * const op )
-//{{{ docu
-//
-// imm_sign() - return sign of immediate object.
-//
-// If CO is an immediate integer, the sign is defined as usual.
-// If CO is an element of FF(p) and SW_SYMMETRIC_FF is on the
-// sign of CO is the sign of the symmetric representation of CO.
-// If CO is in GF(q) or in FF(p) and SW_SYMMETRIC_FF is off, the
-// sign of CO is zero iff CO is zero, otherwise the sign is one.
-//
-// See also: CanonicalForm::sign(), gf_sign()
-//
-//}}}
+/**
+ *
+ * imm_sign() - return sign of immediate object.
+ *
+ * If CO is an immediate integer, the sign is defined as usual.
+ * If CO is an element of FF(p) and SW_SYMMETRIC_FF is on the
+ * sign of CO is the sign of the symmetric representation of CO.
+ * If CO is in GF(q) or in FF(p) and SW_SYMMETRIC_FF is off, the
+ * sign of CO is zero iff CO is zero, otherwise the sign is one.
+ *
+ * @sa CanonicalForm::sign(), gf_sign()
+ *
+**/
 inline int
 imm_sign ( const InternalCF * const op )
 {
@@ -203,23 +211,21 @@ imm_sign ( const InternalCF * const op )
     else
         return -1;
 }
-//}}}
 
-//{{{ inline int imm_cmp, imm_cmp_p, imm_cmp_gf ( const InternalCF * const lhs, const InternalCF * const rhs )
-//{{{ docu
-//
-// imm_cmp(), imm_cmp_p(), imm_cmp_gf() - compare immediate objects.
-//
-// For immediate integers, it is clear how this should be done.
-// For objects from finite fields, it is not clear since they
-// are not ordered fields.  However, since we want to have a
-// total well order on polynomials we have to define a total well
-// order on all coefficients, too.  I decided to use simply the
-// order on the representation as `int's of such objects.
-//
-// See also: CanonicalForm::operator <(), CanonicalForm::operator ==()
-//
-//}}}
+/**
+ *
+ * imm_cmp(), imm_cmp_p(), imm_cmp_gf() - compare immediate objects.
+ *
+ * For immediate integers, it is clear how this should be done.
+ * For objects from finite fields, it is not clear since they
+ * are not ordered fields.  However, since we want to have a
+ * total well order on polynomials we have to define a total well
+ * order on all coefficients, too. We decided to use simply the
+ * order on the representation as `int's of such objects.
+ *
+ * @sa CanonicalForm::operator <(), CanonicalForm::operator ==()
+ *
+**/
 inline int
 imm_cmp ( const InternalCF * const lhs, const InternalCF * const rhs )
 {
@@ -300,30 +306,30 @@ imm_mul ( InternalCF * lhs, InternalCF * rhs )
     long a = imm2int( lhs );
     long b = imm2int( rhs );
     int sa= 1;
-    unsigned INT64 aa, bb;
+    unsigned FACTORY_INT64 aa, bb;
     if (a < 0)
     {
       sa= -1;
-      aa= (unsigned INT64) (-a);
+      aa= (unsigned FACTORY_INT64) (-a);
     }
     else
-      aa= (unsigned INT64) a;
+      aa= (unsigned FACTORY_INT64) a;
     if (b < 0)
     {
       sa= -sa;
-      bb= (unsigned INT64) (-b);
+      bb= (unsigned FACTORY_INT64) (-b);
     }
     else
-      bb= (unsigned INT64) b;
-    unsigned INT64 result = aa*bb;
+      bb= (unsigned FACTORY_INT64) b;
+    unsigned FACTORY_INT64 result = aa*bb;
     #if SIZEOF_LONG == 4
-    if (result>(unsigned INT64)MAXIMMEDIATE)
+    if (result>(unsigned FACTORY_INT64)MAXIMMEDIATE)
     {
         InternalCF * res = CFFactory::basic( IntegerDomain, a, true );
         return res->mulcoeff( rhs );
     }
     #else
-    if ( ( a!=0L ) && ((result/aa!=bb) || (result>(unsigned INT64) MAXIMMEDIATE) ))
+    if ( ( a!=0L ) && ((result/aa!=bb) || (result>(unsigned FACTORY_INT64) MAXIMMEDIATE) ))
     {
         InternalCF * res = CFFactory::basic( IntegerDomain, a, true );
         return res->mulcoeff( rhs );

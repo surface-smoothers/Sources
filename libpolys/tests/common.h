@@ -8,9 +8,9 @@
 #include <cxxtest/TestSuite.h>
 #include <cxxtest/GlobalFixture.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <misc/auxiliary.h>
 #include <omalloc/omalloc.h>
@@ -30,11 +30,6 @@
 #endif
 
 #include <polys/nc/gb_hack.h>
-
-#ifdef HAVE_FACTORY
-int initializeGMP(){ return 1; } // due to Factory...
-int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
-#endif
 
 // #pragma GCC diagnostic ignored "-Wwrite-strings"
 namespace

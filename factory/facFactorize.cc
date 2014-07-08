@@ -10,11 +10,11 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
 
-#include "assert.h"
+#include "config.h"
+
+
+#include "cf_assert.h"
 #include "debug.h"
 #include "timing.h"
 
@@ -24,11 +24,10 @@
 #include "facFqFactorize.h"
 #include "cf_random.h"
 #include "facHensel.h"
-#include "cf_gcd_smallp.h"
 #include "cf_map_ext.h"
-#include "algext.h"
 #include "cf_reval.h"
 #include "facSparseHensel.h"
+#include "cfUnivarGcd.h"
 
 TIMING_DEFINE_PRINT(fac_bi_factorizer)
 TIMING_DEFINE_PRINT(fac_hensel_lift)
@@ -128,6 +127,15 @@ CFList evalPoints (const CanonicalForm& F, CFList& eval, Evaluation& E)
     iter= eval;
     iter++;
     CanonicalForm contentx= content (iter.getItem(), x);
+    if (degree (contentx) > 0)
+    {
+      result= CFList();
+      eval= CFList();
+      LCFeval= CFList();
+      E.nextpoint();
+      continue;
+    }
+    contentx= content (iter.getItem());
     if (degree (contentx) > 0)
     {
       result= CFList();
@@ -383,6 +391,23 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
     minFactorsLength= biFactors.length();
   else if (biFactors.length() > minFactorsLength)
     refineBiFactors (A, biFactors, Aeval2, evaluation, minFactorsLength);
+  minFactorsLength= tmin (minFactorsLength, biFactors.length());
+
+  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
+
+  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, biFactors, evaluation);
+
+  minFactorsLength= tmin (minFactorsLength, biFactors.length());
+
+  if (minFactorsLength == 1)
+  {
+    factors.append (A);
+    appendSwapDecompress (factors, contentAFactors, N, 0, 0, x);
+    if (isOn (SW_RATIONAL))
+      normalize (factors);
+    delete [] Aeval2;
+    return factors;
+  }
 
   if (differentSecondVar == lengthAeval2)
   {
@@ -411,10 +436,6 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
       //TODO case where factors.length() > 0
     }
   }
-
-  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
-
-  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, evaluation);
 
   CFList * oldAeval= new CFList [lengthAeval2];
   for (int i= 0; i < lengthAeval2; i++)

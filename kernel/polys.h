@@ -1,11 +1,9 @@
+/*! \file kernel/polys.h KernelCommon: compatiblity layer for all operations with polys
+ 
+*/
+
 #ifndef POLYS_H
 #define POLYS_H
-/****************************************
-*  Computer Algebra System SINGULAR     *
-****************************************/
-/*
-* ABSTRACT - compatiblity layer for all operations with polys
-*/
 
 #include <polys/monomials/ring.h>
 #include <polys/monomials/p_polys.h>
@@ -14,7 +12,6 @@ extern ring currRing;
 void rChangeCurrRing(ring r);
 
 #include <coeffs/numbers.h>
-inline number nGcd(number a, number b, const ring r = currRing) { return n_Gcd(a, b, r->cf); }
 
 /***************************************************************
  *
@@ -79,12 +76,12 @@ static inline void pLmFree(poly *p)   {p_LmFree(p, currRing);}
  *
  ***************************************************************/
 
-#define pExpVectorCopy(d_p, s_p)    p_ExpVectorCopy(d_p, s_p, currRing)
-#define pExpVectorAdd(p1, p2)       p_ExpVectorAdd(p1, p2, currRing)
-#define pExpVectorSub(p1, p2)       p_ExpVectorSub(p1, p2, currRing)
-#define pExpVectorAddSub(p1, p2, p3)p_ExpVectorAddSub(p1, p2, p3, currRing)
-#define pExpVectorSum(pr, p1, p2)   p_ExpVectorSum(pr, p1, p2, currRing)
-#define pExpVectorDiff(pr, p1, p2)  p_ExpVectorDiff(pr, p1, p2, currRing)
+#define pExpVectorCopy(d_p, s_p)      p_ExpVectorCopy(d_p, s_p, currRing)
+#define pExpVectorAdd(p1, p2)         p_ExpVectorAdd(p1, p2, currRing)
+#define pExpVectorSub(p1, p2)         p_ExpVectorSub(p1, p2, currRing)
+#define pExpVectorAddSub(p1, p2, p3)  p_ExpVectorAddSub(p1, p2, p3, currRing)
+#define pExpVectorSum(pr, p1, p2)     p_ExpVectorSum(pr, p1, p2, currRing)
+#define pExpVectorDiff(pr, p1, p2)    p_ExpVectorDiff(pr, p1, p2, currRing)
 
 // Gets a copy of (resp. set) the exponent vector, where e is assumed
 // to point to (r->N +1)*sizeof(long) memory. Exponents are
@@ -223,8 +220,6 @@ static inline void pLmFree(poly *p)   {p_LmFree(p, currRing);}
  ***************************************************************/
 
 typedef poly*   polyset;
-// // // extern poly     ppNoether; // use currRing -> ppNoether!!!
-extern BOOLEAN  pVectorOut;
 
 /*-------------predicate on polys ----------------------*/
 #define  pHasNotCF(p1,p2)   p_HasNotCF(p1,p2,currRing)
@@ -245,7 +240,7 @@ extern BOOLEAN  pVectorOut;
  *
  ***************************************************************/
 inline int pWeight(int i, const ring R = currRing){ return p_Weight(i, R); }
- 
+
 
 static inline long pTotaldegree(poly p) { return p_Totaldegree(p,currRing); }
 #define pWTotaldegree(p) p_WTotaldegree(p,currRing)
@@ -305,7 +300,7 @@ BOOLEAN   pIsHomogeneous (poly p);
 // component == comp and *p of all other monoms *lq == pLength(*q)
 // On return all components pf *q == 0
 inline void pTakeOutComp(poly *p, long comp, poly *q, int *lq, const ring R = currRing)
-{ 
+{
   return p_TakeOutComp(p, comp, q, lq, R);
 }
 
@@ -360,6 +355,11 @@ inline void pNorm(poly p, const ring R = currRing){ p_Norm(p, R); }
 ///          * LE(p, j)  != LE(lcm, j)
 ///          * LE(p2, j) != LE(lcm, j)   ==> LCM(p2, p) != lcm
 BOOLEAN pCompareChain (poly p, poly p1, poly p2, poly lcm, const ring R = currRing);
+
+#ifdef HAVE_RATGRING
+BOOLEAN pCompareChainPart (poly p, poly p1, poly p2, poly lcm, const ring R = currRing);
+#endif
+
 
 #define  pEqualPolys(p1,p2) p_EqualPolys(p1,p2,currRing)
 

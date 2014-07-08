@@ -7,9 +7,9 @@
 * ngf == number gnu floats
 */
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+#include <misc/auxiliary.h>
+
 #include <coeffs/coeffs.h>
 #include <omalloc/omalloc.h>
 #include <reporter/reporter.h>
@@ -21,7 +21,6 @@
 #include <coeffs/gnumpfl.h>
 #include <coeffs/mpr_complex.h>
 
-extern size_t gmp_output_digits;
 //ring ngfMapRing; // to be used also in gnumpc.cc
 
 /// Our Type!
@@ -371,11 +370,10 @@ void ngfWrite (number &a, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
   
-  extern size_t gmp_output_digits;
   char *out;
   if ( a != NULL )
   {
-    out= floatToStr(*(gmp_float*)a, gmp_output_digits);
+    out= floatToStr(*(gmp_float*)a, r->float_len);
     StringAppendS(out);
     //omFreeSize((void *)out, (strlen(out)+1)* sizeof(char) );
     omFree( (void *)out );
@@ -401,14 +399,25 @@ void ngfSetChar(const coeffs r)
   setGMPFloatDigits(r->float_len, r->float_len2);
 }
 
+static char* ngfCoeffString(const coeffs r)
+{
+  char *s=(char*)omAlloc(27);
+  snprintf(s,27,"real,%d,%d",r->float_len,r->float_len2);
+  return s;
+}
+
 BOOLEAN ngfInitChar(coeffs n, void *parameter)
 {
   assume( getCoeffType(n) == ID );
+
+  n->is_field=TRUE;
+  n->is_domain=TRUE;
 
   n->cfKillChar = ndKillChar; /* dummy */
 
   n->cfSetChar = ngfSetChar;
   n->ch = 0;
+  n->cfCoeffString=ngfCoeffString;
   
   n->cfDelete  = ngfDelete;
   n->cfNormalize=ndNormalize;
@@ -419,7 +428,7 @@ BOOLEAN ngfInitChar(coeffs n, void *parameter)
   n->cfMult    = ngfMult;
   n->cfDiv     = ngfDiv;
   n->cfExactDiv= ngfDiv;
-  n->cfNeg     = ngfNeg;
+  n->cfInpNeg     = ngfNeg;
   n->cfInvers  = ngfInvers;
   n->cfCopy   = ngfCopy;
   n->cfGreater = ngfGreater;

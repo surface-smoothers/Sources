@@ -33,7 +33,7 @@ PROCEDURES:
                                       in the localization w.r.t P
   componentEHV(I,P,L [,Strategy]);    a P-primary component for I
   primdecEHV(I [,Strategy]);          a minimal primary decomposition of I
-  compareLists(L, K);                 procedure for comparing the output of
+  primDecsAreEquivalent(L, K);        procedure for comparing the output of
                                       primary decomposition algorithms (checks
                                       if the computed associated primes coincide)
 ";
@@ -328,8 +328,6 @@ NOTE:    Uses the algorithm of Eisenbud/Huneke/Vasconcelos,
                      = 1    : computation of the radical just with the
                               help of regular sequences
                      = 2    : does not try to find a regular sequence
-         Strategy[3]        > strategy for the computation of ideal quotients
-                     = n    : uses quot(.,.,n) for the ideal quotient computations
          If no second argument is given then Strategy=(0,0,0) is used.
 EXAMPLE: example equiRadEHV; shows an example"
 {
@@ -364,26 +362,16 @@ EXAMPLE: example equiRadEHV; shows an example"
             {
               int strategy = #[2];
             }
-          if(size(#) > 2)
-            {
-              int quoStr = #[3];
-            }
-          else
-            {
-              int quoStr = 0;
-            }
         }
       else
         {
           int strategy = 0;
-          int quoStr = 0;
         }
     }
   else
     {
       int equStr = 0;
       int strategy = 0;
-      int quoStr = 0;
     }
 
   ideal J,I0,radI0,L,radI1,I2,radI2;
@@ -416,7 +404,7 @@ EXAMPLE: example equiRadEHV; shows an example"
         {
           J = aJacob(m[2],d);
           if(printlevel > 2){"Leaving equiRadEHV.";}
-          return(quot1(m[2],J,quoStr));
+          return(quotient(m[2],J));
         }
 
       //First codim elements of I are a complete intersection:
@@ -459,11 +447,11 @@ EXAMPLE: example equiRadEHV; shows an example"
         {
           J = aJacob(I0,d);
           if(printlevel > 2){"1st quotient.";}
-          radI0 = quot1(I0,J,quoStr);
+          radI0 = quotient(I0,J);
           if(printlevel > 2){"2nd quotient.";}
-          L = quot1(radI0,m[2],quoStr);
+          L = quotient(radI0,m[2]);
           if(printlevel > 2){"3rd quotient.";}
-          radI1 = quot1(radI0,L,quoStr);
+          radI1 = quotient(radI0,L);
           attrib(radI1,"isEquidimensional",1);
           attrib(radI1,"isRadical",1);
           if(printlevel > 2){"Leaving equiRadEHV.";}
@@ -495,7 +483,7 @@ EXAMPLE: example equiRadEHV; shows an example"
       while(dim(groebner(J+I))==d)
         {
           if(printlevel > 2){"Quotient-Computation.";}
-          I = quot1(I,J,quoStr);
+          I = quotient(I,J);
           if(printlevel > 2){"Computing the a-th Jacobian";}
             J = aJacob(I,a);
         }
@@ -505,7 +493,7 @@ EXAMPLE: example equiRadEHV; shows an example"
   if(printlevel > 2){"Computing the a-th Jacobian";}
   J = aJacob(I,d);
   if(printlevel > 2){"Quotient-Computation.";}
-  I = quot1(I,J,quoStr);
+  I = quotient(I,J);
   attrib(I,"isEquidimensional",1);
   attrib(I,"isRadical",1);
   if(printlevel > 2){"Leaving equiRadEHV.";}
@@ -549,7 +537,7 @@ EXAMPLE: example radEHV; shows an example"
     {
       ERROR("// Not implemented for this ordering, please change to global ordering.");
     }
-
+  if (size(I) == 0)  { return( ideal(0) ); }
   //Compute the equidimensional radical J of I.
   ideal J = equiRadEHV(I,#);
 
@@ -1048,7 +1036,7 @@ EXAMPLE: example AssEHV; shows an example"
               //...homogenize K w.r.t. t,...
               if(printlevel > 2){"Input not homogeneous; must homogenize.";}
               def homoR=changeord(list(list("dp",1:nvars(basering))));
-	      setring homoR;
+              setring homoR;
               ideal homoJ = fetch(base,K);
               homoJ = groebner(homoJ);
               execute("ring newR = (" + charstr(base) + "),(x(1..n),t),dp;");
@@ -1380,10 +1368,10 @@ example
 
 
 /////////////////////////////////////////////////////////////////////
-proc compareLists(list L, list K)
-"USAGE:   checkLists(L,K); L,K list of ideals
+proc primDecsAreEquivalent(list L, list K)
+"USAGE:   primDecsAreEquivalent(L,K); L,K list of ideals
 RETURN:  integer, 1 if the lists are the same up to ordering and 0 otherwise
-EXAMPLE: example checkLists; shows an example"
+EXAMPLE: example primDecsAreEquivalent; shows an example"
 {
   int s1 = size(L);
   int s2 = size(K);
@@ -1420,6 +1408,10 @@ EXAMPLE: example checkLists; shows an example"
             }
         }
     }
+  if ( size(N) != s1 )
+  {
+     return(0);
+  }
   return(1);
 }
 
@@ -1431,6 +1423,5 @@ example
   ideal i = x2,xy;
   list L1 = primdecGTZ(i);
   list L2 = primdecEHV(i);
-  compareLists(L1,L2);
+  primDecsAreEquivalent(L1,L2);
 }
-

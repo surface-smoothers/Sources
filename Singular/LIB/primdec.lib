@@ -39,6 +39,7 @@ PROCEDURES:
  equidimMaxEHV(I); equidimensional locus of I via Eisenbud,Huneke,Vasconcelos
  zerodec(I);       zerodimensional decomposition via Monico
  absPrimdecGTZ(I); the absolute prime components of I
+ sep(f,k);         the separabel part of f as polynomial in Fp(t1,...,tm)
 ";
 
 LIB "general.lib";
@@ -707,9 +708,10 @@ static proc splitCharp(list l)
   {
     return(l);
   }
+  def op = option(get);
   def P=basering;
   int i,j,k,m,q,d,o;
-  int n=nvars(basering);
+  int n = nvars(basering);
   ideal s,t,u,sact;
   poly ni;
   string minp,gnir,va;
@@ -756,8 +758,16 @@ static proc splitCharp(list l)
         {
           sa=sat1(l[2*i-1],sact[1]);
           keep[size(keep)+1]=std(l[2*i-1],sa[2]);
-          l[2*i-1]=std(sa[1]);
-          l[2*i]=primaryTest(sa[1],sa[1][1]);
+          if(sa[1][1]==l[2*i-1][1])
+          {
+             l[2*i-1]=std(sa[1]);
+             l[2*i]=primaryTest(sa[1],s[1]);
+          }
+          else
+          {
+             l[2*i-1]=std(sa[1]);
+             l[2*i]=primaryTest(sa[1],factorize(sa[1][1],1)[1]);
+          }
         }
         if((size(sact)==1)&&(m==2))
         {
@@ -767,6 +777,7 @@ static proc splitCharp(list l)
         if((size(sact)==1)&&(m>2))
         {
           setring RL;
+
           option(redSB);
           t=std(t);
 
@@ -783,6 +794,7 @@ static proc splitCharp(list l)
           rp=delete(rp,1);
           rp=delete(rp,1);
           keep1=keep1+rp;
+
           option(noredSB);
         }
         kill RL;
@@ -796,11 +808,12 @@ static proc splitCharp(list l)
       if(deg(keep[i][1])>0)
       {
         l[size(l)+1]=keep[i];
-        l[size(l)+1]=primaryTest(keep[i],keep[i][1]);
+        l[size(l)+1]=primaryTest(keep[i],factorize(keep[i][1],1)[1]);
       }
     }
   }
   l=l+keep1;
+  option(set,op);
   return(l);
 }
 
@@ -1116,10 +1129,11 @@ EXAMPLE: example zero_decomp; shows an example
 
       kill lres0;
       list lres0;
-      if(size(@lh)==2)
+      if((size(@lh)==2)&&(@lh[1]!=1))
       {
         helpprim=@lh[2];
         lres0[1]=primary[2*@k-1];
+        attrib(lres0[1],"isSB",1);
         ser1=psi(helpprim);
         lres0[2]=psi1(ser1);
         if(size(reduce(lres0[2],lres0[1],1))==0)
@@ -1896,7 +1910,8 @@ EXAMPLE: example minAssPrimes; shows an example
    }
    list @res,empty;
    ideal ser;
-   option(redSB);
+   def op = option( get );
+   option( redSB );
    list @pr=facstd(i);
    //if(size(@pr)==1)
 //   {
@@ -1921,7 +1936,8 @@ EXAMPLE: example minAssPrimes; shows an example
 //         kill gnir1;
 //      }
 //   }
-    option(noredSB);
+   // option( noredSB );
+   option( set, op );
    int j,k,odim,ndim,count;
    attrib(@pr[1],"isSB",1);
    if(#[1]==77)
@@ -2094,8 +2110,13 @@ EXAMPLE: example minAssPrimes; shows an example
     }
   }
 
-  if(dim(i) == -1){setring P0;return(ideal(1));}
-  if((dim(i) == 0) && (npars(P) == 0))
+  if( dim(i) == -1 )
+  {
+    option( set,op );
+    setring P0;
+    return( ideal(1) );
+  }
+  if( (dim(i) == 0 ) && ( npars(P) == 0) )
   {
     int di = vdim(i);
     execute ("ring gnir=("+charstr(P)+"),("+varstr(P)+"),lp;");
@@ -2544,13 +2565,15 @@ proc algeDeco(ideal i, int w)
    def R=basering;
    int n=nvars(R);
 
+   def op = option(get);
+
 //---Anfang Provisorium
    if((size(i)==2) && (w==2))
    {
-      option(redSB);
-      ideal J=std(i);
-      option(noredSB);
-      if((size(J)==2)&&(deg(J[1])==1))
+      option( redSB );
+      ideal J = std(i);
+      option( noredSB );
+      if ((size(J)==2)&&(deg(J[1])==1))
       {
          ideal keep;
          poly f;
@@ -2575,6 +2598,7 @@ proc algeDeco(ideal i, int w)
             L=J[1],K[j];
             resu[j]=L;
          }
+         option( set, op );
          return(resu);
       }
    }
@@ -2650,7 +2674,8 @@ proc algeDeco(ideal i, int w)
    {
       re=convList(pr);
    }
-   return(re);
+   option( set, op );
+   return( re );
 }
 ///////////////////////////////////////////////////////////////////////////////
 static proc prepare_absprimdec(list primary)
@@ -3637,8 +3662,11 @@ EXAMPLE: example decomp; shows an example
   {
     primary=cleanPrimary(primary);
   }
-  if (abspri && (typeof(primary[1][1])=="poly"))
-  { return(prepare_absprimdec(primary));}
+  if (size(primary)>0)
+  {
+    if (abspri && (typeof(primary[1][1])=="poly"))
+    { return(prepare_absprimdec(primary));}
+  }
   return(primary);
 }
 
@@ -3768,7 +3796,7 @@ example
     intvec save=option(get);option(redSB);
     I=interred(I+F);option(set,save);return(I);
    }
-   I=simplify(I,1);
+   //I=simplify(I,1);
 
    for(i=1;i<=n;i++)             //consider all polynomials over
    {                             //Fp(t(1)^(p^-k),...,t(m)^(p^-k))
@@ -3779,7 +3807,12 @@ example
    execute(cR);
    ideal F=imap(R,F);
 
-   string nR="ring @S="+string(p)+",(y(1..m),"+varstr(R)+","+parstr(R)+"),dp;";
+   string nR1="ring @S1="+string(p)+",("+varstr(R)+","+parstr(R)+",@y(1..m)),dp;";
+   execute(nR1);
+   list lR=ringlist(@S1)[2];
+   lR=lR[(size(lR)-m+1)..(size(lR))];
+
+   string nR="ring @S="+string(p)+",("+string(lR)+","+varstr(R)+","+parstr(R)+"),dp;";
    execute(nR);
 
    ideal G=fetch(@R,F);    //G[i](t(1)^(p^-k),...,t(m)^(p^-k),x(i))=sep(F[i])
@@ -3791,7 +3824,7 @@ example
    for(i=1;i<=m;i++)
    {
       J=J,var(i)^k-var(m+n+i);
-      el=el*y(i);
+      el=el*var(i);
    }
 
    J=eliminate(J,el);
@@ -3829,6 +3862,8 @@ EXAMPLE: example radicalEHV; shows an example
    {
       "WARNING: The characteristic is too small, the result may be wrong";
    }
+   if ( size(i)==0 ) { return(ideal(0)); }
+
    ideal J,I,I0,radI0,L,radI1,I2,radI2;
    int l,n;
    intvec op=option(get);
@@ -3838,6 +3873,8 @@ EXAMPLE: example radicalEHV; shows an example
    list m=mstd(i);
         I=m[2];
    option(set,op);
+
+   if ( dim(m[1])<0 ) { return(ideal(1)); }
 
    int cod=nvars(basering)-dim(m[1]);
    //-------------------complete intersection case:----------------------
@@ -3961,16 +3998,20 @@ static proc AnnExt_R(int n,list re)
 {
   if(n<nvars(basering))
   {
-     matrix f=transpose(re[n+1]);      //Hom(_,R)
-     module k=nres(f,2)[2];            //the kernel
-     matrix g=transpose(re[n]);        //the image of Hom(_,R)
+    if(size(re[n+1])>0)
+    {
+        matrix f=transpose(re[n+1]);      //Hom(_,R)
+        module k=nres(f,2)[2];            //the kernel
+        matrix g=transpose(re[n]);        //the image of Hom(_,R)
 
-     ideal ann=quotient1(g,k);           //the anihilator
+        ideal ann=quotient1(g,k);         //the anihilator
+        return(ann);
+    }
   }
-  else
-  {
-     ideal ann=Ann(transpose(re[n]));
-  }
+  // remaining case: re[n+1] is trivial
+  // either n is at least number of variables or
+  // resolution happens to be shorter
+  ideal ann=Ann(transpose(re[n]));
   return(ann);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -4114,6 +4155,12 @@ static proc min_ass_prim_charsets0 (ideal PS)
   intvec op;
   matrix m=char_series(PS);  // We compute an irreducible
                              // characteristic series
+  if ((nrows(m)==1)
+  && (ncols(m)==1)
+  && (m[1,1]==1)) // in case of an empty series: min_ass_prim_charsets1
+  {
+    return min_ass_prim_charsets1(PS);
+  }
   int i,j,k;
   list PSI;
   list PHI;  // the ideals given by the characteristic series
@@ -4213,7 +4260,21 @@ static proc min_ass_prim_charsets1 (ideal PS)
   ideal PS=imap(oldring,PS);
   matrix m=char_series(PS);  // We compute an irreducible
                              // characteristic series
-  int i,j,k;
+                             // this series may be empty (1x1: 1)
+  int i,j,k,cnt;
+  while ((cnt<nvars(oldring))
+  && (nrows(m)==1)
+  && (ncols(m)==1)
+  && (m[1,1]==1)) // in case of an empty series: permute the variables
+  {
+    cnt++;
+    n=string(var(nvars(oldring)));
+    for(i=1;i<nvars(oldring);i++) { n=n+","+string(var(i)); }
+    kill r;
+    execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
+    ideal PS=imap(oldring,PS);
+    matrix m=char_series(PS);
+  }
   ideal I;
   list PSI;
   list PHI;    // the ideals given by the characteristic series
@@ -6457,7 +6518,7 @@ EXAMPLE: example equidimMaxEHV; shows an example
   }
   else
   {
-    list re=mres(i,0);
+    list re=mres(j,0);
   }
   ann=AnnExt_R(cod,re);
   return(ann);
@@ -7002,6 +7063,7 @@ EXAMPLE: example newDecompStep; shows an example
       }
       primary=resu;
     }
+    option(set,op);
     if (intersectOption == "intersect")
     {
       return(list(primary, fetch(gnir,@j)));

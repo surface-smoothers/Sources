@@ -17,11 +17,11 @@
 typedef double mprfloat;
 
 // --------------------------- debugging stuff ----------------------------
-#if !defined(NDEBUG)
+#if !defined(SING_NDEBUG)
 //#define mprDEBUG_ALL
 #endif
 
-#if !defined(NDEBUG) || defined(mprDEBUG_ALL)
+#if !defined(SING_NDEBUG) || defined(mprDEBUG_ALL)
 //#define mprDEBUG_PROT
 #endif
 
@@ -49,7 +49,7 @@ typedef double mprfloat;
 #define mprPROTNnl(msg,nval)
 #endif
 
-#if defined(mprDEBUG_STICKY) && defined(HAVE_FACTORY)
+#if defined(mprDEBUG_STICKY)
 // call 'option(prot);' to get status informations
 #define mprSTICKYPROT(msg) if (BTEST1(OPT_PROT)) Print(msg)
 #define mprSTICKYPROT2(msg,arg) if (BTEST1(OPT_PROT)) Print(msg,arg)

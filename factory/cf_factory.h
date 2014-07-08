@@ -1,5 +1,11 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
+/**
+ * @file cf_factory.h
+ *
+ * Interface to generate InternalCF's over various domains from intrinsic types
+ * or mpz_t's
+**/
 #ifndef INCL_CF_FACTORY_H
 #define INCL_CF_FACTORY_H
 
@@ -33,7 +39,6 @@ public:
     static InternalCF * poly ( const Variable & v, int exp = 1 );
 };
 
-mpz_ptr getmpi ( InternalCF * value, bool symmetric = true );
 void getmpi ( InternalCF * value, mpz_t mpi);
 
 #endif /* ! INCL_CF_FACTORY_H */

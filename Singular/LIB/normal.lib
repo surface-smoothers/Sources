@@ -924,6 +924,7 @@ EXAMPLE: example HomJJ;  shows an example
    L = lastRing;
    L = insert(L,0,1);
    L[3] = delt;
+   setring(P);
    return(L);
 }
 example
@@ -2155,21 +2156,33 @@ static proc deltaP(ideal I)
 }
 
 proc genus(ideal I,list #)
-"USAGE:   genus(i) or genus(i,1); I a 1-dimensional ideal
+"USAGE:   genus(I) or genus(I,<option>); I a 1-dimensional ideal over a perfect field
 RETURN:  an integer, the geometric genus p_g = p_a - delta of the projective
          curve defined by i, where p_a is the arithmetic genus.
-NOTE:    delta is the sum of all local delta-invariants of the singularities,
+NOTE:    genus always treats projective curves and takes projective closure if input is affine 1-dim variety.
+         delta is the sum of all local delta-invariants of the singularities,
          i.e. dim(R'/R), R' the normalization of the local ring R of the
          singularity. @*
-         genus(i,1) uses the normalization to compute delta. Usually genus(i,1)
-         is slower than genus(i) but sometimes not.
+         genus(I,"nor") uses the normalization to compute delta. Usually genus(I,"nor")
+         is slower than genus(I) but sometimes not. @*
+         genus(I,"pri") starts with a primary decompsition.
 EXAMPLE: example genus; shows an example
 "
 {
    int w = printlevel-voice+2;  // w=printlevel (default: w=0)
 
+   int ono,rpr,ll;
+   if(size(#)>0)
+   {
+     if(typeof(#[1])=="string")
+     {
+        if(#[1]=="nor"){ono=1;}
+        if(#[1]=="pri"){rpr=1;}
+     }
+     else { ERROR("invalid option for genus");}
+   }
    def R0=basering;
-   if(char(basering)>0)
+   if((char(basering)>0)||(ono))
    {
      def R1=changeord(list(list("dp",1:nvars(basering))));
      setring R1;
@@ -2197,10 +2210,41 @@ EXAMPLE: example genus; shows an example
        J=homog(J,@t);
        J=std(J);
      }
-     int pa=1-hilbPoly(J)[1];
-     pa=pa-deltaP(J);
+
+     list LL=normal(J,"prim");
+     int pa,i;
+     for(i=1;i<=size(LL[1]);i++)
+     {
+        def T=LL[1][i];
+        setring T;
+        pa=pa-hilbPoly(std(norid))[1];
+        setring S;
+        kill T;
+     }
+     pa=pa+1;
      setring R0;
      return(pa);
+   }
+   if(rpr)
+   {
+      list LZ=minAssGTZ(I);
+      if(size(LZ)>1)
+      {
+         int p_g;
+         for(ll=1;ll<=size(LZ);ll++)
+         {
+            p_g=p_g+genus(LZ[ll],"pri")-1;
+         }
+         return(p_g+1);
+      }
+      else
+      {
+         I=LZ[1];
+      }
+   }
+   else
+   {
+     I=radical(I);
    }
    I=std(I);
    if(dim(I)!=1)
@@ -2431,15 +2475,6 @@ EXAMPLE: example genus; shows an example
    //the singularities at the affine part
    map sigma=S,var(1),var(2),1;
    ideal I=sigma(F);
-
-   if(size(#)!=0)
-   {                              //uses the normalization to compute delta
-      list nor=normal(I);
-      delt=nor[size(nor)][2];
-      genus=genus-delt-deltainf;
-      setring R0;
-      return(genus);
-   }
 
    ideal I1=jacob(I);
    matrix Hess[2][2]=jacob(I1);
@@ -2720,12 +2755,13 @@ EXAMPLE: example deltaLoc;  shows an example
           nb=nb+gcd(NP[i][2]-NP[i+1][2],NP[i][1]-NP[i+1][1]);
         }
         if(w>=1){"Newton-Polygon is non-degenerated";"";}
+        setring R;
         option(set,save_opt);
         return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
       }
 
       if(w>=1){"Newton-Polygon is degenerated";"";}
-
+/* need to re-consider the degree bound (de):
       // the following can certainly be made more efficient when replacing
       // 'hnexpansion' (used only for computing number of branches) by
       // successive blowing-up + test if Newton polygon degenerate:
@@ -2758,7 +2794,7 @@ EXAMPLE: example deltaLoc;  shows an example
          option(set,save_opt);
          return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
       }
-
+*/
       f=jet(f,deg(hc)+2);
       if(w>=1){"now we have to use Hamburger-Noether (Puiseux) expansion";}
       ideal fac=factorize(f,1);
@@ -2774,7 +2810,8 @@ EXAMPLE: example deltaLoc;  shows an example
          return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
       }
       list HNEXP=hnexpansion(f);
-      if (typeof(HNEXP[1])=="ring") {
+      if (typeof(HNEXP[1])=="ring")
+      {
         def altring = basering;
         def HNEring = HNEXP[1]; setring HNEring;
         nb=size(hne);
@@ -2785,6 +2822,7 @@ EXAMPLE: example deltaLoc;  shows an example
       {
         nb=size(HNEXP);
       }
+      setring R;
       option(set,save_opt);
       return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
    }
@@ -2793,6 +2831,7 @@ EXAMPLE: example deltaLoc;  shows an example
       f=jet(f,deg(hc)+2);
       if(w>=1){"now we have to use Hamburger-Noether (Puiseux) expansion";}
       delt=delta(f);
+      setring R;
       option(set,save_opt);
       return(list(d*delt,d*tau,d));
    }
@@ -3847,8 +3886,8 @@ static proc normalityTest(list mstdid)
          //if ( y >= 1)
          //{ "module generators are U[i]/U[1], with U:"; U;
          //  ""; pause(); }
-         option(set,op);
          setring R;
+         option(set,op);
          ideal U = imap(Q,U);
          return(U);
       }
@@ -4046,7 +4085,6 @@ static proc computeRing(ideal J, ideal I, list #)
       ideal norid = I;
       ideal normap =  maxid;  */
 
-    list gnirlist = ringlist(R);
     def R1 = ring(gnirlist);
     setring R1;
     ideal norid = imap(R, I);
@@ -4212,6 +4250,7 @@ static proc computeRing(ideal J, ideal I, list #)
       "//   number of substituted variables:", nvars(newR)-nvars(lastRing);
       pause();"";
     }
+    setring R;
     return(lastRing);
   }
   else
@@ -4415,11 +4454,12 @@ static proc normalM(ideal I, int decomp, int withDelta, int denomOption, ideal i
         // I = I1 \cap I2
         printlevel = printlevel + 1;
         ideal JDefault = 0; // Now it uses the default J;
-        list nor1 = normalM(Id1, decomp, withDelta, denomOption, JDefault, JDefault)[1];
-        list nor2 = normalM(Id2, decomp, withDelta, denomOption, JDefault, JDefault)[1];
+        list nor1 = normalM(Id1, decomp, withDelta, denomOption, JDefault, JDefault);
+        list nor2 = normalM(Id2, decomp, withDelta, denomOption, JDefault, JDefault);
         printlevel = printlevel - 1;
         option(set,save_opt);
-        return(list(nor1, nor2));
+        list res = nor1 + nor2;
+        return(res);
       }
     }
   }
@@ -4538,11 +4578,12 @@ static proc normalM(ideal I, int decomp, int withDelta, int denomOption, ideal i
       printlevel = printlevel + 1;
 
       ideal JDefault = 0;  // Now it uses the default J;
-      list nor1 = normalM(Id1, decomp, withDelta, denomOption, JDefault, JDefault)[1];
-      list nor2 = normalM(Id2, decomp, withDelta, denomOption, JDefault, JDefault)[1];
+      list nor1 = normalM(Id1, decomp, withDelta, denomOption, JDefault, JDefault);
+      list nor2 = normalM(Id2, decomp, withDelta, denomOption, JDefault, JDefault);
       printlevel = printlevel - 1;
       option(set,save_opt);
-      return(list(nor1, nor2));
+      list res = nor1 + nor2;
+      return(res);
     }
   }
 
@@ -4928,6 +4969,7 @@ static proc testIdeal(ideal I, ideal U, ideal origJ, poly c, poly D)
 // The new ring is 1/c * U.
 // The original test ideal is origJ.
 // The original ring is R / I, where R is the basering.
+  intvec save_opt=option(get);
   int i;                                // counter
   int dbg = printlevel - voice + 2;     // dbg = printlevel (default: dbg = 0)
   def R = basering;                      // We dont work in the quo
@@ -4968,7 +5010,7 @@ static proc testIdeal(ideal I, ideal U, ideal origJ, poly c, poly D)
 
 
   // ----- computation of the test ideal using the ring structure of Ai -----
-  intvec save_opt=option(get);
+ 
   option(redSB);
   option(returnSB);
 
@@ -6578,14 +6620,24 @@ EXAMPLE: example norTest; shows an example
 //"injective:";
     a = is_injective(Qnormap,QAS);          //a. Test for injectivity of Qnormap
     dbprint ( prl, "injective: "+string(a) );
-    if ( n==1 ) { return (a); }
+    if ( n==1 )
+    {
+     intvec result = intvec(a);
+     setring BAS;
+     return (result);
+   }
    a;
 
     //------------------------ check finiteness ---------------------------
     setring newR;
     b = mapIsFinite(normap,BAS,lnorid[2]);  //b. Test for finiteness of normap
     dbprint ( prl, "finite: "+string(b) );
-    if ( n==2 ) { return (intvec(a,b)); }
+    if ( n==2 )
+    {
+       intvec result = intvec(a,b);
+       setring BAS;
+       return (result);
+    }
    b;
 
     //------------------------ check normality ---------------------------
@@ -6596,13 +6648,14 @@ EXAMPLE: example norTest; shows an example
     //norid und normap werden innnerhalb von proc computeRing ueberschrieben
     //Die Kopie newR scheint das Problem zu loesen
 
-    printlevel=prl;
 
     d = testnor[3][2];             //d = delta
     kill testnor;                              //### sollte ueberfluessig sein
     int d1 = (d==0);                           //d1=1 if delta=0
     dbprint ( prl, "delta: "+string(d) );
-    return(intvec(a,b,d1));
+    intvec result = intvec(a,b,d1);
+    setring BAS;
+    return(result);
 }
 example
 { "EXAMPLE:"; echo = 2;

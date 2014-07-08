@@ -14,26 +14,31 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 #include "debug.h"
 #include "timing.h"
 
-#include "algext.h"
+#include "cfGcdAlgExt.h"
 #include "facHensel.h"
 #include "facMul.h"
 #include "fac_util.h"
 #include "cf_algorithm.h"
 #include "cf_primes.h"
 #include "facBivar.h"
-#include "facNTLzzpEXGCD.h"
+#include "cfNTLzzpEXGCD.h"
+#include "cfUnivarGcd.h"
 
 #ifdef HAVE_NTL
 #include <NTL/lzz_pEX.h>
 #include "NTLconvert.h"
+
+#ifdef HAVE_FLINT
+#include "FLINTconvert.h"
+#endif
 
 TIMING_DEFINE_PRINT (diotime)
 TIMING_DEFINE_PRINT (product1)
@@ -41,6 +46,7 @@ TIMING_DEFINE_PRINT (product2)
 TIMING_DEFINE_PRINT (hensel23)
 TIMING_DEFINE_PRINT (hensel)
 
+#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
 static
 CFList productsNTL (const CFList& factors, const CanonicalForm& M)
 {
@@ -78,6 +84,65 @@ CFList productsNTL (const CFList& factors, const CanonicalForm& M)
   }
   return result;
 }
+#endif
+
+#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+static
+CFList productsFLINT (const CFList& factors, const CanonicalForm& M)
+{
+  nmod_poly_t FLINTmipo;
+  fq_nmod_ctx_t fq_con;
+  fq_nmod_poly_t prod;
+  fq_nmod_t buf;
+
+  nmod_poly_init (FLINTmipo, getCharacteristic());
+  convertFacCF2nmod_poly_t (FLINTmipo, M);
+
+  fq_nmod_ctx_init_modulus (fq_con, FLINTmipo, "Z");
+
+  fq_nmod_poly_t * vec=new fq_nmod_poly_t [factors.length()];
+
+  int j= 0;
+
+  for (CFListIterator i= factors; i.hasItem(); i++, j++)
+  {
+    if (i.getItem().inCoeffDomain())
+    {
+      fq_nmod_poly_init (vec[j], fq_con);
+      fq_nmod_init2 (buf, fq_con);
+      convertFacCF2Fq_nmod_t (buf, i.getItem(), fq_con);
+      fq_nmod_poly_set_coeff (vec[j], 0, buf, fq_con);
+      fq_nmod_clear (buf, fq_con);
+    }
+    else
+      convertFacCF2Fq_nmod_poly_t (vec[j], i.getItem(), fq_con);
+  }
+
+  CFList result;
+  Variable x= Variable (1);
+  fq_nmod_poly_init (prod, fq_con);
+  for (j= 0; j < factors.length(); j++)
+  {
+    int k= 0;
+    fq_nmod_poly_one (prod, fq_con);
+    for (int i= 0; i < factors.length(); i++, k++)
+    {
+      if (k == j)
+        continue;
+      fq_nmod_poly_mul (prod, prod, vec[i], fq_con);
+    }
+    result.append (convertFq_nmod_poly_t2FacCF (prod, x, M.mvar(), fq_con));
+  }
+  for (j= 0; j < factors.length(); j++)
+    fq_nmod_poly_clear (vec[j], fq_con);
+
+  nmod_poly_clear (FLINTmipo);
+  fq_nmod_poly_clear (prod, fq_con);
+  fq_nmod_ctx_clear (fq_con);
+  delete [] vec;
+  return result;
+}
+#endif
 
 static
 void tryDiophantine (CFList& result, const CanonicalForm& F,
@@ -102,7 +167,11 @@ void tryDiophantine (CFList& result, const CanonicalForm& F,
       return;
     i.getItem()= reduce (i.getItem()*inv, M);
   }
+#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+  bufFactors= productsFLINT (bufFactors, M);
+#else
   bufFactors= productsNTL (bufFactors, M);
+#endif
 
   CanonicalForm buf1, buf2, buf3, S, T;
   i= bufFactors;
@@ -490,7 +559,7 @@ diophantineHensel (const CanonicalForm & F, const CFList& factors,
 }
 
 /// solve \f$ 1=\sum_{i=1}^n{\delta_{i} \prod_{j\neq i}{f_j}} \f$ mod \f$p^k\f$
-/// over Q(alpha) by p-adic lifting
+/// over \f$ Q(\alpha) \f$ by p-adic lifting
 CFList
 diophantineHenselQa (const CanonicalForm & F, const CanonicalForm& G,
                      const CFList& factors, modpk& b, const Variable& alpha)
@@ -701,8 +770,8 @@ diophantineHenselQa (const CanonicalForm & F, const CanonicalForm& G,
 
 
 /// solve \f$ 1=\sum_{i=1}^n{\delta_{i} \prod_{j\neq i}{f_j}} \f$ mod \f$p^k\f$
-/// over Q(alpha) by first computing mod \f$p\f$ and if no zero divisor occured
-/// compute it mod \f$p^k\f$
+/// over \f$ Q(\alpha) \f$ by first computing mod \f$p\f$ and if no zero divisor
+/// occured compute it mod \f$p^k\f$
 CFList
 diophantineQa (const CanonicalForm& F, const CanonicalForm& G,
                const CFList& factors, modpk& b, const Variable& alpha)
@@ -2023,7 +2092,7 @@ nonMonicHenselLift12 (const CanonicalForm& F, CFList& factors, int l,
 }
 
 
-/// solve \f$ E=\sum_{i= 1}^r{\sigma_{i}\prod_{j=1, j\neq i}^{r}{f_{i}}}\f$
+/// solve \f$ E=\sum_{i= 1}^r{\sigma_{i}\prod_{j=1, j\neq i}^{r}{f_{j}}} \f$
 /// mod M, @a products contains \f$ \prod_{j=1, j\neq i}^{r}{f_{j}} \f$
 CFList
 diophantine (const CFList& recResult, const CFList& factors,

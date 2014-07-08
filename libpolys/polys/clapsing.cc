@@ -8,25 +8,16 @@
 
 //#define FACTORIZE2_DEBUG
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
 
-#include <misc/auxiliary.h>
 
-#ifdef HAVE_FACTORY
 
-#define SI_DONT_HAVE_GLOBAL_VARS
+
+
 
 #include <misc/auxiliary.h>
 #include "clapsing.h"
 
 #include <factory/factory.h>
-
-#ifdef HAVE_LIBFAC
-#    include <factory/libfac/libfac.h>
-#endif
-
 
 #include <omalloc/omalloc.h>
 #include <coeffs/numbers.h>
@@ -528,7 +519,7 @@ BOOLEAN singclap_extgcd ( poly f, poly g, poly &res, poly &pa, poly &pb , const 
     WerrorS( feNotImplemented );
     return TRUE;
   }
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
   // checking the result of extgcd:
   poly dummy;
   dummy=p_Sub(p_Add_q(pp_Mult_qq(f,pa,r),pp_Mult_qq(g,pb,r),r),p_Copy(res,r),r);
@@ -766,9 +757,7 @@ BOOLEAN count_Factors(ideal I, intvec *v,int j, poly &f, poly fac, const ring r)
   return TRUE;
 }
 
-#ifdef HAVE_FACTORY
 int singclap_factorize_retry;
-#endif
 
 ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
 /* destroys f, sets *v */
@@ -846,10 +835,6 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
   // use factory/libfac in general ==============================
   Off(SW_RATIONAL);
   On(SW_SYMMETRIC_FF);
-#ifdef HAVE_NTL
-  extern int prime_number;
-  if(rField_is_Q(r)) prime_number=0;
-#endif
   CFFList L;
   number N=NULL;
   number NN=NULL;
@@ -964,13 +949,13 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
 #endif
       else if (r->cf->extRing!=NULL)     /* Q(a), Fp(a) */
       {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
         intvec *w=NULL;
         if (v!=NULL) w=*v;
 #endif
         if (r->cf->extRing->qideal==NULL)
         {
-#ifdef NDEBUG
+#ifdef SING_NDEBUG
           res->m[j]= convFactoryPSingTrP( J.getItem().factor(),r );
 #else
           if(!count_Factors(res,w,j,ff,convFactoryPSingTrP( J.getItem().factor(),r ),r))
@@ -983,7 +968,7 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
         }
         else
         {
-#ifdef NDEBUG
+#ifdef SING_NDEBUG
           res->m[j]= convFactoryAPSingAP( J.getItem().factor(),r );
 #else
           if (!count_Factors(res,w,j,ff,convFactoryAPSingAP( J.getItem().factor(),r ),r))
@@ -996,7 +981,7 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
         }
       }
     }
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     if ((r->cf->extRing!=NULL) && (!p_IsConstantPoly(ff,r)))
     {
       singclap_factorize_retry++;
@@ -1220,10 +1205,6 @@ ideal singclap_sqrfree ( poly f, intvec ** v , int with_exps, const ring r)
   // use factory/libfac in general ==============================
   Off(SW_RATIONAL);
   On(SW_SYMMETRIC_FF);
-  #ifdef HAVE_NTL
-  extern int prime_number;
-  if(rField_is_Q(r)) prime_number=0;
-  #endif
   CFFList L;
   number N=NULL;
   number NN=NULL;
@@ -1384,7 +1365,6 @@ notImpl:
   return res;
 }
 
-#ifdef HAVE_LIBFAC
 matrix singclap_irrCharSeries ( ideal I, const ring r)
 {
   if (idIs0(I)) return mpNew(1,1);
@@ -1397,8 +1377,7 @@ matrix singclap_irrCharSeries ( ideal I, const ring r)
   On(SW_SYMMETRIC_FF);
   CFList L;
   ListCFList LL;
-  if (((rChar(r) == 0) || (rChar(r) > 1) )
-  && (rPar(r)==0))
+  if (rField_is_Q(r) || rField_is_Zp(r))
   {
     setCharacteristic( rChar(r) );
     for(i=0;i<IDELEMS(I);i++)
@@ -1413,11 +1392,9 @@ matrix singclap_irrCharSeries ( ideal I, const ring r)
     }
   }
   // and over Q(a) / Fp(a)
-  else if (( rChar(r)==1 ) // Q(a)
-  || (rChar(r) <-1))       // Fp(a)
+  else if (nCoeff_is_transExt (r->cf))
   {
-    if (rChar(r)==1) setCharacteristic( 0 );
-    else               setCharacteristic( -rChar(r) );
+    setCharacteristic( rChar(r) );
     for(i=0;i<IDELEMS(I);i++)
     {
       poly p=I->m[i];
@@ -1442,7 +1419,7 @@ matrix singclap_irrCharSeries ( ideal I, const ring r)
   ListIterator<CFList> LLi;
   loop
   {
-    LL=IrrCharSeries(L);
+    LL=irrCharSeries(L);
     m= LL.length(); // Anzahl Zeilen
     n=0;
     for ( LLi = LL; LLi.hasItem(); LLi++ )
@@ -1467,7 +1444,7 @@ matrix singclap_irrCharSeries ( ideal I, const ring r)
   {
     for (n=1, Li = LLi.getItem(); Li.hasItem(); Li++, n++)
     {
-      if ( (rChar(r) == 0) || (rChar(r) > 1) )
+      if (rField_is_Q(r) || rField_is_Zp(r))
         MATELEM(res,m,n)=convFactoryPSingP(Li.getItem(),r);
       else
         MATELEM(res,m,n)=convFactoryPSingTrP(Li.getItem(),r);
@@ -1483,24 +1460,33 @@ char* singclap_neworder ( ideal I, const ring r)
   Off(SW_RATIONAL);
   On(SW_SYMMETRIC_FF);
   CFList L;
-  if (((rChar(r) == 0) || (rChar(r) > 1) )
-  && (rPar(r)==0))
+  if (rField_is_Q(r) || rField_is_Zp(r))
   {
     setCharacteristic( rChar(r) );
     for(i=0;i<IDELEMS(I);i++)
     {
-      L.append(convSingPFactoryP(I->m[i],r));
+      poly p=I->m[i];
+      if (p!=NULL)
+      {
+        p=p_Copy(p,r);
+        p_Cleardenom(p, r);
+        L.append(convSingPFactoryP(p,r));
+      }
     }
   }
   // and over Q(a) / Fp(a)
-  else if (( rChar(r)==1 ) // Q(a)
-  || (rChar(r) <-1))       // Fp(a)
+  else if (nCoeff_is_transExt (r->cf))
   {
-    if (rChar(r)==1) setCharacteristic( 0 );
-    else               setCharacteristic( -rChar(r) );
+    setCharacteristic( rChar(r) );
     for(i=0;i<IDELEMS(I);i++)
     {
-      L.append(convSingTrPFactoryP(I->m[i],r));
+      poly p=I->m[i];
+      if (p!=NULL)
+      {
+        p=p_Copy(p,r);
+        p_Cleardenom(p, r);
+        L.append(convSingTrPFactoryP(p,r));
+      }
     }
   }
   else
@@ -1558,21 +1544,6 @@ char* singclap_neworder ( ideal I, const ring r)
   char * s=StringEndS();
   if (s[strlen(s)-1]==',') s[strlen(s)-1]='\0';
   return s;
-}
-#endif /*HAVE_LIBFAC*/
-
-BOOLEAN singclap_isSqrFree(poly f, const ring r)
-{
-  BOOLEAN b=FALSE;
-  CanonicalForm F( convSingPFactoryP( f,r ) );
-  if((r->cf->type==n_Zp)&&(!F.isUnivariate()))
-      goto err;
-  b=(BOOLEAN)isSqrFree(F);
-  Off(SW_RATIONAL);
-  return b;
-err:
-  WerrorS( feNotImplemented );
-  return 0;
 }
 
 poly singclap_det( const matrix m, const ring s )
@@ -1836,5 +1807,3 @@ ideal singclap_absFactorize ( poly f, ideal & mipos, intvec ** exps, int & numFa
 #endif
 #endif /* HAVE_NTL */
 
-
-#endif /* HAVE_FACTORY */

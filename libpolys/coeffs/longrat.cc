@@ -5,14 +5,12 @@
 * ABSTRACT: computation with long rational numbers (Hubert Grassmann)
 */
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
-#ifdef HAVE_FACTORY
 #include <factory/factory.h>
-#endif
 
 #include <coeffs/longrat.h>
 
@@ -22,10 +20,12 @@
 #if 0
 #define MAX_NUM_SIZE 60
 #define POW_2_28 (1L<<60)
+#define POW_2_28_32 (1L<<28)
 #define LONG long
 #else
 #define MAX_NUM_SIZE 28
 #define POW_2_28 (1L<<28)
+#define POW_2_28_32 (1L<<28)
 #define LONG int
 #endif
 
@@ -84,9 +84,6 @@ static inline number nlShort3(number x) // assume x->s==3
 #define MPZ_DIV(A,B,C) mpz_tdiv_q((A),(B),(C))
 #define MPZ_EXACTDIV(A,B,C) mpz_divexact((A),(B),(C))
 
-/// Our Type!
-static const n_coeffType ID = n_Q;
-
 void    _nlDelete_NoImm(number *a);
 
 /***************************************************************
@@ -119,7 +116,6 @@ void mpz_mul_si (mpz_ptr r, mpz_srcptr s, long int si)
 
 static number nlMapP(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_Zp );
 
   number to;
@@ -259,7 +255,6 @@ BOOLEAN nlDBTest(number a, const char *f,const int l, const coeffs /*r*/)
 }
 #endif
 
-#ifdef HAVE_FACTORY
 CanonicalForm nlConvSingNFactoryN( number n, BOOLEAN setChar, const coeffs /*r*/ )
 {
   if (setChar) setCharacteristic( 0 );
@@ -267,7 +262,15 @@ CanonicalForm nlConvSingNFactoryN( number n, BOOLEAN setChar, const coeffs /*r*/
   CanonicalForm term;
   if ( SR_HDL(n) & SR_INT )
   {
-    term = SR_TO_INT(n);
+    int nn=SR_TO_INT(n);
+    if ((long)nn==SR_TO_INT(n))
+       term = nn;
+    else
+    {
+        mpz_t dummy;
+        mpz_init_set_si(dummy, SR_TO_INT(n));
+        term = make_cf(dummy);
+    }
   }
   else
   {
@@ -326,12 +329,11 @@ number nlConvFactoryNSingN( const CanonicalForm n, const coeffs r)
     return z;
   }
 }
-#endif
+
 number nlRInit (long i);
 
 static number nlMapR(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_R );
 
   double f=nrFloat(from);
@@ -362,7 +364,6 @@ static number nlMapR(number from, const coeffs src, const coeffs dst)
 
 static number nlMapLongR(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_long_R );
 
   gmp_float *ff=(gmp_float*)from;
@@ -536,7 +537,14 @@ int nlInt(number &i, const coeffs r)
 {
   nlTest(i, r);
   nlNormalize(i,r);
-  if (SR_HDL(i) &SR_INT) return SR_TO_INT(i);
+  if (SR_HDL(i) & SR_INT)
+  {
+    int dummy = SR_TO_INT(i);
+    if((long)dummy == SR_TO_INT(i))
+        return SR_TO_INT(i);
+    else
+        return 0;
+  }
   if (i->s==3)
   {
     if(mpz_size1(i->z)>MP_SMALL) return 0;
@@ -565,7 +573,7 @@ number nlBigInt(number &i, const coeffs r)
 {
   nlTest(i, r);
   nlNormalize(i,r);
-  if (SR_HDL(i) &SR_INT) return (i);
+  if (SR_HDL(i) & SR_INT) return (i);
   if (i->s==3)
   {
     return nlCopy(i,r);
@@ -788,13 +796,25 @@ number nlIntMod (number a, number b, const coeffs r)
   if (SR_HDL(a) & SR_HDL(b) & SR_INT)
   {
     LONG bb=SR_TO_INT(b);
-    LONG c=SR_TO_INT(a)%bb;
+    LONG c=SR_TO_INT(a) % bb;
     return INT_TO_SR(c);
   }
   if (SR_HDL(a) & SR_INT)
   {
-    /* a is a small and b is a large int: -> a */
-    return a;
+    mpz_t aa;
+    mpz_init(aa);
+    mpz_set_si(aa, SR_TO_INT(a));
+    u=ALLOC_RNUMBER();
+#if defined(LDEBUG)
+    u->debug=123456;
+#endif
+    u->s = 3;
+    mpz_init(u->z);
+    mpz_mod(u->z,aa,b->z);
+    mpz_clear(aa);
+    u=nlShort3(u);
+    nlTest(u,r);
+    return u;
   }
   number bb=NULL;
   if (SR_HDL(b) & SR_INT)
@@ -816,13 +836,6 @@ number nlIntMod (number a, number b, const coeffs r)
     bb->debug=654324;
 #endif
     FREE_RNUMBER(bb);
-  }
-  if (mpz_isNeg(u->z))
-  {
-    if (mpz_isNeg(b->z))
-      mpz_sub(u->z,u->z,b->z);
-    else
-      mpz_add(u->z,u->z,b->z);
   }
   u=nlShort3(u);
   nlTest(u,r);
@@ -1026,8 +1039,6 @@ BOOLEAN nlIsMOne (number a, const coeffs r)
   if (a==NULL) return FALSE;
   nlTest(a, r);
 #endif
-  //if (SR_HDL(a) & SR_INT) return (a==INT_TO_SR(-1L));
-  //return FALSE;
   return  (a==INT_TO_SR(-1L));
 }
 
@@ -1105,6 +1116,12 @@ number nlGcd(number a, number b, const coeffs r)
   nlTest(result, r);
   return result;
 }
+//number nlGcd_dummy(number a, number b, const coeffs r)
+//{
+//  extern char my_yylinebuf[80];
+//  Print("nlGcd in >>%s<<\n",my_yylinebuf);
+//  return nlGcd(a,b,r);;
+//}
 
 number nlShort1(number x) // assume x->s==0/1
 {
@@ -1220,8 +1237,6 @@ number nlLcm(number a, number b, const coeffs r)
 // src = Q, dst = Zp (or an extension of Zp?)
 number nlModP(number q, const coeffs Q, const coeffs Zp)
 {
-  assume( getCoeffType(Q) == ID );
-
   const int p = n_GetChar(Zp);
   assume( p > 0 );
 
@@ -1233,22 +1248,19 @@ number nlModP(number q, const coeffs Q, const coeffs Zp)
   if (SR_HDL(q) & SR_INT)
   {
     long i = SR_TO_INT(q);
-    if (i<0L)
-      return n_Init( static_cast<int>( P - ((-i)%P) ), Zp);
-    else
-      return n_Init( static_cast<int>( i % P ), Zp );
+    return n_Init( i, Zp );
   }
 
   const unsigned long PP = p;
 
   // numerator modulo char. should fit into int
-  number z = n_Init( static_cast<int>(mpz_fdiv_ui(q->z, PP)), Zp );
+  number z = n_Init( static_cast<long>(mpz_fdiv_ui(q->z, PP)), Zp );
 
   // denominator != 1?
   if (q->s!=3)
   {
     // denominator modulo char. should fit into int
-    number n = n_Init( static_cast<int>(mpz_fdiv_ui(q->n, PP)), Zp );
+    number n = n_Init( static_cast<long>(mpz_fdiv_ui(q->n, PP)), Zp );
 
     number res = n_Div( z, n, Zp );
 
@@ -2092,9 +2104,6 @@ number _nlMult_aNoImm_OR_bNoImm(number a, number b)
 */
 number nlCopyMap(number a, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
-  assume( getCoeffType(src) == ID );
-
   if ((SR_HDL(a) & SR_INT)||(a==NULL))
   {
     return a;
@@ -2104,9 +2113,6 @@ number nlCopyMap(number a, const coeffs src, const coeffs dst)
 
 nMapFunc nlSetMap(const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
-//  assume( getCoeffType(src) == ID );
-
   if (nCoeff_is_Q(src))
   {
     return ndCopyMap;
@@ -2424,8 +2430,6 @@ LINLINE void nlInpMult(number &a, number b, const coeffs r)
 
 static void nlMPZ(mpz_t m, number &n, const coeffs r)
 {
-  assume( getCoeffType(r) == ID );
-
   nlTest(n, r);
   nlNormalize(n, r);
   if (SR_HDL(n) & SR_INT) mpz_init_set_si(m, SR_TO_INT(n));     /* n fits in an int */
@@ -2608,7 +2612,6 @@ void    nlCoeffWrite  (const coeffs, BOOLEAN /*details*/)
 number   nlChineseRemainderSym(number *x, number *q,int rl, BOOLEAN sym, const coeffs CF)
 // elemenst in the array are x[0..(rl-1)], q[0..(rl-1)]
 {
-#ifdef HAVE_FACTORY
   setCharacteristic( 0 ); // only in char 0
   Off(SW_RATIONAL);
   CFArray X(rl), Q(rl);
@@ -2634,11 +2637,8 @@ number   nlChineseRemainderSym(number *x, number *q,int rl, BOOLEAN sym, const c
     nlDelete(&p2,CF);
     nlDelete(&p,CF);
   }
+  nlNormalize(n,CF);
   return n;
-#else
-  WerrorS("not implemented");
-  return nlInit(0,CF);
-#endif
 }
 number   nlChineseRemainder(number *x, number *q,int rl, const coeffs C)
 {
@@ -2648,16 +2648,15 @@ number   nlChineseRemainder(number *x, number *q,int rl, const coeffs C)
 static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number& c, const coeffs cf)
 {
   assume(cf != NULL);
-  assume(getCoeffType(cf) == ID);
 
   numberCollectionEnumerator.Reset();
 
   if( !numberCollectionEnumerator.MoveNext() ) // empty zero polynomial?
   {
-    c = n_Init(1, cf);
+    c = nlInit(1, cf);
     return;
   }
-  
+
   // all coeffs are given by integers!!!
 
   // part 1, find a small candidate for gcd
@@ -2673,9 +2672,9 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
     number& n = numberCollectionEnumerator.Current();
     nlNormalize(n, cf); ++normalcount;
     cand1 = n;
-    
+
     if (SR_HDL(cand1)&SR_INT) { cand=cand1; break; }
-    assume(cand1->s==3); // all coeffs should be integers // ==0?!! after printing 
+    assume(cand1->s==3); // all coeffs should be integers // ==0?!! after printing
     s1=mpz_size1(cand1->z);
     if (s>s1)
     {
@@ -2690,7 +2689,7 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
   // part 2: compute gcd(cand,all coeffs)
 
   numberCollectionEnumerator.Reset();
-  
+
   while (numberCollectionEnumerator.MoveNext() )
   {
     number& n = numberCollectionEnumerator.Current();
@@ -2699,9 +2698,8 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
       nlNormalize(n, cf);
 
     nlInpGcd(cand, n, cf);
-
     assume( nlGreaterZero(cand,cf) );
-    
+
     if(nlIsOne(cand,cf))
     {
       c = cand;
@@ -2711,7 +2709,7 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
         // make the leading coeff positive
         c = nlNeg(c, cf);
         numberCollectionEnumerator.Reset();
-        
+
         while (numberCollectionEnumerator.MoveNext() )
         {
           number& nn = numberCollectionEnumerator.Current();
@@ -2720,12 +2718,12 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
       }
       return;
     }
-  } 
+  }
 
   // part3: all coeffs = all coeffs / cand
   if (!lc_is_pos)
     cand = nlNeg(cand,cf);
-  
+
   c = cand;
   numberCollectionEnumerator.Reset();
 
@@ -2741,13 +2739,12 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
 static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, number& c, const coeffs cf)
 {
   assume(cf != NULL);
-  assume(getCoeffType(cf) == ID);
 
   numberCollectionEnumerator.Reset();
-  
+
   if( !numberCollectionEnumerator.MoveNext() ) // empty zero polynomial?
   {
-    c = n_Init(1, cf);
+    c = nlInit(1, cf);
 //    assume( n_GreaterZero(c, cf) );
     return;
   }
@@ -2763,7 +2760,7 @@ static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, n
   cand->s=3;
 
   int s=0;
-  
+
   const BOOLEAN lc_is_pos=nlGreaterZero(numberCollectionEnumerator.Current(),cf);
 
   do
@@ -2789,7 +2786,7 @@ static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, n
     }
   }
   while (numberCollectionEnumerator.MoveNext() );
-  
+
 
   if (s==0) // nothing to do, all coeffs are already integers
   {
@@ -2808,7 +2805,7 @@ static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, n
       {
         number& n = numberCollectionEnumerator.Current();
         n = nlNeg(n, cf);
-      } 
+      }
     }
 //    assume( n_GreaterZero(c, cf) );
     return;
@@ -2819,27 +2816,158 @@ static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, n
   // part2: all coeffs = all coeffs * cand
   // make the lead coeff positive
   numberCollectionEnumerator.Reset();
-  
+
   if (!lc_is_pos)
     cand = nlNeg(cand, cf);
-  
+
   c = cand;
-  
+
   while (numberCollectionEnumerator.MoveNext() )
   {
     number &n = numberCollectionEnumerator.Current();
-    n_InpMult(n, cand, cf);
+    nlInpMult(n, cand, cf);
   }
 
 }
 
-BOOLEAN nlInitChar(coeffs r, void*)
+static char* nlCoeffString(const coeffs)
 {
-  assume( getCoeffType(r) == ID );
+  return omStrDup("0");
+}
+
+#define SSI_BASE 16
+
+static void nlWriteFd(number n,FILE* f, const coeffs)
+{
+  if(SR_HDL(n) & SR_INT)
+  {
+    #if SIZEOF_LONG == 4
+    fprintf(f,"4 %ld ",SR_TO_INT(n));
+    #else
+    long nn=SR_TO_INT(n);
+    if ((nn<POW_2_28_32)&&(nn>= -POW_2_28_32))
+    {
+      int nnn=(int)nn;
+      fprintf(f,"4 %d ",nnn);
+    }
+    else
+    {
+      mpz_t tmp;
+      mpz_init_set_si(tmp,nn);
+      fputs("8 ",f);
+      mpz_out_str (f,SSI_BASE, tmp);
+      fputc(' ',f);
+      mpz_clear(tmp);
+    }
+    #endif
+  }
+  else if (n->s<2)
+  {
+    //gmp_fprintf(f,"%d %Zd %Zd ",n->s,n->z,n->n);
+    fprintf(f,"%d ",n->s+5);
+    mpz_out_str (f,SSI_BASE, n->z);
+    fputc(' ',f);
+    mpz_out_str (f,SSI_BASE, n->n);
+    fputc(' ',f);
+
+    //if (d->f_debug!=NULL) gmp_fprintf(d->f_debug,"number: s=%d gmp/gmp \"%Zd %Zd\" ",n->s,n->z,n->n);
+  }
+  else /*n->s==3*/
+  {
+    //gmp_fprintf(d->f_write,"3 %Zd ",n->z);
+    fputs("8 ",f);
+    mpz_out_str (f,SSI_BASE, n->z);
+    fputc(' ',f);
+
+    //if (d->f_debug!=NULL) gmp_fprintf(d->f_debug,"number: gmp \"%Zd\" ",n->z);
+  }
+}
+
+static number nlReadFd(s_buff f, const coeffs)
+{
+  int sub_type=-1;
+  sub_type=s_readint(f);
+  switch(sub_type)
+  {
+     case 0:
+     case 1:
+       {// read mpz_t, mpz_t
+         number n=nlRInit(0);
+         mpz_init(n->n);
+         s_readmpz(f,n->z);
+         s_readmpz(f,n->n);
+         n->s=sub_type;
+         return n;
+       }
+
+     case 3:
+       {// read mpz_t
+         number n=nlRInit(0);
+         s_readmpz(f,n->z);
+         n->s=3; /*sub_type*/
+         #if SIZEOF_LONG == 8
+         n=nlShort3(n);
+         #endif
+         return n;
+       }
+     case 4:
+       {
+         LONG dd=s_readlong(f);
+         //#if SIZEOF_LONG == 8
+         return INT_TO_SR(dd);
+         //#else
+         //return nlInit(dd,NULL);
+         //#endif
+       }
+     case 5:
+     case 6:
+       {// read raw mpz_t, mpz_t
+         number n=nlRInit(0);
+         mpz_init(n->n);
+         s_readmpz_base (f,n->z, SSI_BASE);
+         s_readmpz_base (f,n->n, SSI_BASE);
+         n->s=sub_type-5;
+         return n;
+       }
+     case 8:
+       {// read raw mpz_t
+         number n=nlRInit(0);
+         s_readmpz_base (f,n->z, SSI_BASE);
+         n->s=sub_type=3; /*subtype-5*/
+         #if SIZEOF_LONG == 8
+         n=nlShort3(n);
+         #endif
+         return n;
+       }
+
+     default: Werror("error in reading number: invalid subtype %d",sub_type);
+              return NULL;
+  }
+  return NULL;
+}
+BOOLEAN nlCoeffIsEqual(const coeffs r, n_coeffType n, void *p)
+{
+  /* test, if r is an instance of nInitCoeffs(n,parameter) */
+  /* if paramater is not needed */
+  if (n==r->type)
+  {
+    if ((p==NULL)&&(r->cfDiv==nlDiv)) return TRUE;
+    if ((p!=NULL)&&(r->cfDiv!=nlDiv)) return TRUE;
+  }
+  return FALSE;
+}
+
+
+
+BOOLEAN nlInitChar(coeffs r, void*p)
+{
+  r->is_domain=TRUE;
+
   //const int ch = (int)(long)(p);
 
-  r->nCoeffIsEqual=ndCoeffIsEqual;
+  r->nCoeffIsEqual=nlCoeffIsEqual;
   r->cfKillChar = ndKillChar; /* dummy */
+  r->cfCoeffString=nlCoeffString;
 
   r->cfInitMPZ = nlInitMPZ;
   r->cfMPZ  = nlMPZ;
@@ -2847,9 +2975,20 @@ BOOLEAN nlInitChar(coeffs r, void*)
   r->cfMult  = nlMult;
   r->cfSub   = nlSub;
   r->cfAdd   = nlAdd;
-  r->cfDiv   = nlDiv;
-  r->cfIntDiv= nlIntDiv;
-  r->cfIntMod= nlIntMod;
+  if (p==NULL) /* Q */
+  {
+    r->is_field=TRUE;
+    r->cfDiv   = nlDiv;
+    //r->cfGcd  = ndGcd_dummy;
+    r->cfSubringGcd  = nlGcd;
+  }
+  else /* Z: coeffs_BIGINT */
+  {
+    r->is_field=FALSE;
+    r->cfDiv   = nlIntDiv;
+    r->cfIntMod= nlIntMod;
+    r->cfGcd  = nlGcd;
+  }
   r->cfExactDiv= nlExactDiv;
   r->cfInit = nlInit;
   r->cfSize  = nlSize;
@@ -2863,7 +3002,7 @@ BOOLEAN nlInitChar(coeffs r, void*)
   //r->cfGetUnit = NULL; // only for ring stuff
   //r->cfDivBy = NULL; // only for ring stuff
   #endif
-  r->cfNeg   = nlNeg;
+  r->cfInpNeg   = nlNeg;
   r->cfInvers= nlInvers;
   r->cfCopy  = nlCopy;
   r->cfRePart = nlCopy;
@@ -2880,7 +3019,6 @@ BOOLEAN nlInitChar(coeffs r, void*)
   r->cfPower = nlPower;
   r->cfGetDenom = nlGetDenom;
   r->cfGetNumerator = nlGetNumerator;
-  r->cfGcd  = nlGcd;
   r->cfExtGcd = nlExtGcd; // only for ring stuff and Z
   r->cfLcm  = nlLcm;
   r->cfDelete= nlDelete;
@@ -2898,10 +3036,12 @@ BOOLEAN nlInitChar(coeffs r, void*)
   // debug stuff
   r->cfDBTest=nlDBTest;
 #endif
-#ifdef HAVE_FACTORY
   r->convSingNFactoryN=nlConvSingNFactoryN;
   r->convFactoryNSingN=nlConvFactoryNSingN;
-#endif
+
+  // io via ssi
+  r->cfWriteFd=nlWriteFd;
+  r->cfReadFd=nlReadFd;
 
   // the variables: general stuff (required)
   r->nNULL = INT_TO_SR(0);

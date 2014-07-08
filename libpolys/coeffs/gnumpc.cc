@@ -7,9 +7,9 @@
 * ngc == number gnu complex
 */
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <omalloc/omalloc.h>
 
@@ -41,7 +41,7 @@ void ngcSetChar(const coeffs r);
 // Private interface should be hidden!!!
 
 /// Note: MAY NOT WORK AS EXPECTED!
-BOOLEAN  ngcGreaterZero(number za, const coeffs r); 
+BOOLEAN  ngcGreaterZero(number za, const coeffs r);
 BOOLEAN  ngcGreater(number a, number b, const coeffs r);
 BOOLEAN  ngcEqual(number a, number b, const coeffs r);
 BOOLEAN  ngcIsOne(number a, const coeffs r);
@@ -97,7 +97,7 @@ number   ngcParameter(int i, const coeffs r)
   if( i == 1 )
     return (number)(new gmp_complex( (long)0, (long)1 ));
 
-  return NULL; // new gmp_complex( )  // 0? 
+  return NULL; // new gmp_complex( )  // 0?
 }
 
 /*2
@@ -414,14 +414,12 @@ void ngcWrite (number &a, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 
-  extern size_t gmp_output_digits; /// comes from mpr_complex.cc
-
   if (a==NULL)
     StringAppendS("0");
   else
   {
     char *out;
-    out= complexToStr(*(gmp_complex*)a, gmp_output_digits, r);
+    out= complexToStr(*(gmp_complex*)a, r->float_len, r);
     StringAppendS(out);
     //    omFreeSize((void *)out, (strlen(out)+1)* sizeof(char) );
     omFree( (void *)out );
@@ -433,8 +431,14 @@ BOOLEAN ngcCoeffIsEqual (const coeffs r, n_coeffType n, void * parameter)
   if (n==ID)
   {
     LongComplexInfo* p = (LongComplexInfo *)(parameter);
-    
-    if (
+
+    if ((p==NULL)
+      && (6==r->float_len)
+      && (6==r->float_len2)
+      && (strcmp("i",n_ParameterNames(r)[0]) == 0)
+      )
+        return TRUE;
+    if ((p!=NULL) &&
         (p->float_len == r->float_len) &&
         (p->float_len2 == r->float_len2)
        )
@@ -451,18 +455,29 @@ static void ngcKillChar(coeffs r)
   const int P = n_NumberOfParameters(r);
 
   for( int i = 1; i <= P; i++ )
-    if (p[i-1] != NULL) 
+    if (p[i-1] != NULL)
       omFree( (ADDRESS)p[i-1] );
 
-  omFreeSize((ADDRESS)p, P * sizeof(char*));  
+  omFreeSize((ADDRESS)p, P * sizeof(char*));
+}
+
+static char* ngcCoeffString(const coeffs r)
+{
+  const char *p=n_ParameterNames(r)[0];
+  char *s=(char*)omAlloc(31+strlen(p));
+  sprintf(s,"complex,%d,%d,%s",r->float_len,r->float_len2,p);
+  return s;
 }
 
 BOOLEAN ngcInitChar(coeffs n, void* parameter)
 {
   assume( getCoeffType(n) == ID );
+  n->is_field=TRUE;
+  n->is_domain=TRUE;
 
   n->cfKillChar = ngcKillChar;
   n->ch = 0;
+  n->cfCoeffString=ngcCoeffString;
 
   n->cfDelete  = ngcDelete;
   n->cfNormalize=ndNormalize;
@@ -473,7 +488,7 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   n->cfMult    = ngcMult;
   n->cfDiv     = ngcDiv;
   n->cfExactDiv= ngcDiv;
-  n->cfNeg     = ngcNeg;
+  n->cfInpNeg     = ngcNeg;
   n->cfInvers  = ngcInvers;
   n->cfCopy   = ngcCopy;
   n->cfGreater = ngcGreater;
@@ -485,7 +500,7 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
 
   n->cfWriteLong  = ngcWrite;
   n->cfWriteShort = ngcWrite;
-  
+
   n->cfRead    = ngcRead;
   n->cfPower   = ngcPower;
   n->cfSetMap = ngcSetMap;
@@ -514,7 +529,6 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   r->cfSub   = nlSub;
   r->cfAdd   = nlAdd;
   r->cfDiv   = nlDiv;
-  r->cfIntDiv= nlIntDiv;
   r->cfIntMod= nlIntMod;
   r->cfExactDiv= nlExactDiv;
   r->cfInit = nlInit;
@@ -526,7 +540,7 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   r->cfGetUnit = NULL; // only for ring stuff
   r->cfExtGcd = NULL; // only for ring stuff
 #endif
-  r->cfNeg   = nlNeg;
+  r->cfInpNeg   = nlNeg;
   r->cfInvers= nlInvers;
   r->cfCopy  = nl_Copy;
   r->cfRePart = nl_Copy;
@@ -574,27 +588,28 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   if( parameter != NULL)
   {
     LongComplexInfo* p = (LongComplexInfo*)parameter;
-    pParameterNames[0] = omStrDup(p->par_name); //TODO use omAlloc for allocating memory and use strcpy?
+    pParameterNames[0] = omStrDup(p->par_name);
+    // fix wrong parameters:
+    if (p->float_len<SHORT_REAL_LENGTH) p->float_len=SHORT_REAL_LENGTH;
     n->float_len = p->float_len;
     n->float_len2 = p->float_len2;
-    
+
   } else // default values, just for testing!
   {
     pParameterNames[0] = omStrDup("i");
     n->float_len = SHORT_REAL_LENGTH;
-    n->float_len2 = SHORT_REAL_LENGTH;     
+    n->float_len2 = SHORT_REAL_LENGTH;
   }
-   
+
   assume( n->float_len <= n->float_len2 );
-  assume( n->float_len2 >= SHORT_REAL_LENGTH );
   assume( pParameterNames != NULL );
   assume( pParameterNames[0] != NULL );
-  
-  n->pParameterNames = pParameterNames;
+
+  n->pParameterNames = (const char**)pParameterNames;
 
   // NOTE: n->complex_parameter was replaced by n_ParameterNames(n)[0]
   // TODO: nfKillChar MUST destroy n->pParameterNames[0] (0-term. string) && n->pParameterNames (array of size 1)
-  
+
   return FALSE;
 }
 
@@ -704,5 +719,5 @@ void    ngcCoeffWrite  (const coeffs r, BOOLEAN /*details*/)
   Print("//   characteristic : 0 (complex:%d digits, additional %d digits)\n",
         r->float_len, r->float_len2);  /* long C */
   Print("//   1 parameter    : %s \n", n_ParameterNames(r)[0]); // this trailing space is for compatibility with the legacy Singular
-  Print("//   minpoly        : (%s^2+1)\n", n_ParameterNames(r)[0]);  
+  Print("//   minpoly        : (%s^2+1)\n", n_ParameterNames(r)[0]);
 }

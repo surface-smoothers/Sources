@@ -1,7 +1,7 @@
 //// Singular library normaliz.lib
 
 version="version normaliz.lib 4.0.0.0 Jun_2013 "; // $Id$
-category="Commutative algebra"
+category="Commutative Algebra";
 info="
 LIBRARY: normaliz.lib  Provides an interface for the use of Normaliz 2.7
          within SINGULAR.
@@ -817,7 +817,7 @@ example
 }
 
 
-static proc runNormaliz(intmat sgr,nmz_mode, list #)
+static proc runNormaliz(intmat sgr,def nmz_mode, list #)
 {
     if(!queryInt("nmz_files_keep_switch"))
     {

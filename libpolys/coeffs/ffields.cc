@@ -5,14 +5,15 @@
 * ABSTRACT: finite fields with a none-prime number of elements (via tables)
 */
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <omalloc/omalloc.h>
 
 #include <misc/auxiliary.h>
 #include <misc/mylimits.h>
+#include <misc/sirandom.h>
 
 #include <reporter/reporter.h>
 
@@ -578,35 +579,8 @@ const char * nfRead (const char *s, number *a, const coeffs r)
   return s;
 }
 
-#ifdef HAVE_FACTORY
 int gf_tab_numdigits62 ( int q );
 int convertback62 ( char * p, int n );
-#else
-static int gf_tab_numdigits62 ( int q )
-{
-    if ( q < 62 )          return 1;
-    else  if ( q < 62*62 ) return 2;
-    /*else*/               return 3;
-}
-
-static int convback62 ( char c )
-{
-    if ( c >= '0' && c <= '9' )
-        return int(c) - int('0');
-    else  if ( c >= 'A' && c <= 'Z' )
-        return int(c) - int('A') + 10;
-    else
-        return int(c) - int('a') + 36;
-}
-
-static int convertback62 ( char * p, int n )
-{
-    int r = 0;
-    for ( int j = 0; j < n; j++ )
-        r = r * 62 + convback62( p[j] );
-    return r;
-}
-#endif
 
 int nfMinPoly[16];
 
@@ -663,7 +637,7 @@ void nfReadTable(const int c, const coeffs r)
 
   if (fftable[i]==0)
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("illegal GF-table size: %d", c);
 #endif
     return;
@@ -845,17 +819,27 @@ static void nfKillChar(coeffs r)
   omFreeSize((ADDRESS)p, P * sizeof(char*));
 }
 
+static char* nfCoeffString(const coeffs r)
+{
+  const char *p=n_ParameterNames(r)[0];
+  char *s=(char*)omAlloc(11+1+strlen(p));
+  sprintf(s,"%d,%s",r->m_nfCharQ,p);
+  return s;
+}
+
 BOOLEAN nfInitChar(coeffs r,  void * parameter)
 {
+  r->is_field=TRUE;
+  r->is_domain=TRUE;
   //r->cfInitChar=npInitChar;
   r->cfKillChar=nfKillChar;
   r->nCoeffIsEqual=nfCoeffIsEqual;
+  r->cfCoeffString=nfCoeffString;
 
   r->cfMult  = nfMult;
   r->cfSub   = nfSub;
   r->cfAdd   = nfAdd;
   r->cfDiv   = nfDiv;
-  r->cfIntDiv= nfDiv;
   //r->cfIntMod= ndIntMod;
   r->cfExactDiv= nfDiv;
   r->cfInit = nfInit;
@@ -868,7 +852,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   //r->cfExtGcd = NULL; // only for ring stuff
   // r->cfDivBy = NULL; // only for ring stuff
   #endif
-  r->cfNeg   = nfNeg;
+  r->cfInpNeg   = nfNeg;
   r->cfInvers= nfInvers;
   //r->cfCopy  = ndCopy;
   //r->cfRePart = ndCopy;
@@ -922,7 +906,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   assume( pParameterNames != NULL );
   assume( pParameterNames[0] != NULL );
 
-  r->pParameterNames = pParameterNames;
+  r->pParameterNames = (const char**)pParameterNames;
   // NOTE: r->m_nfParameter was replaced by n_ParameterNames(r)[0]
 
   // TODO: nfKillChar MUST destroy r->pParameterNames[0] (0-term. string) && r->pParameterNames (array of size 1)
@@ -939,7 +923,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
 
   if(p->GFChar > (2<<15))
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("illegal characteristic");
 #endif
     return TRUE;
@@ -949,7 +933,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
 
   if( (p->GFDegree * check) > sixteenlog2 )
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("Sorry: illegal size: %u ^ %u", p->GFChar, p->GFDegree );
 #endif
     return TRUE;
@@ -961,7 +945,7 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
 
   if( r->m_nfPlus1Table == NULL )
   {
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     Warn("Sorry: cannot init lookup table!");
 #endif
     return TRUE;

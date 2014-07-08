@@ -11,24 +11,24 @@
 /*****************************************************************************/
 
 // include header files
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
 
-#include <misc/auxiliary.h>
 #include <kernel/mod2.h>
-#include <Singular/si_signals.h>
+#include <misc/auxiliary.h>
+#include <misc/sirandom.h>
 
-#ifdef HAVE_FACTORY
-#define SI_DONT_HAVE_GLOBAL_VARS
+#include <reporter/si_signals.h>
+
 #include <factory/factory.h>
-#endif
 
 #include <coeffs/si_gmp.h>
 #include <coeffs/coeffs.h>
 
 #include <polys/ext_fields/algext.h>
 #include <polys/ext_fields/transext.h>
+
+#ifdef HAVE_SIMPLEIPC
+#include <Singular/links/simpleipc.h>
+#endif
 
 #include "misc_ip.h"
 #include "ipid.h"
@@ -359,7 +359,7 @@ lists primeFactorisation(const number n, const int pBound)
   for (i = 0; i < index; i++)
   {
     multiplicitiesL->m[i].rtyp = INT_CMD;
-    multiplicitiesL->m[i].data = (void*)multiplicities[i];
+    multiplicitiesL->m[i].data = (void*)(long)multiplicities[i];
   }
   omFree(multiplicities);
 
@@ -384,10 +384,10 @@ lists primeFactorisation(const number n, const int pBound)
 #include <polys/monomials/ring.h>
 #include <polys/templates/p_Procs.h>
 
-#include <kernel/febase.h>
-#include <kernel/kstd1.h>
-#include <kernel/timer.h>
-
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/oswrapper/timer.h>
+#include <resources/feResource.h>
+#include <kernel/oswrapper/feread.h>
 
 #include "subexpr.h"
 #include "cntrlc.h"
@@ -399,8 +399,6 @@ lists primeFactorisation(const number n, const int pBound)
 #ifdef HAVE_STATIC
 #undef HAVE_DYN_RL
 #endif
-
-#define SI_DONT_HAVE_GLOBAL_VARS
 
 //#ifdef HAVE_LIBPARSER
 //#  include "libparse.h"
@@ -784,41 +782,26 @@ char * versionString(/*const bool bShowDetails = false*/ )
 {
   StringSetS("");
   StringAppend("Singular for %s version %s (%s, %d bit) %s #%s",
-               S_UNAME, S_VERSION1, // SINGULAR_VERSION,
-               PACKAGE_VERSION, SIZEOF_LONG*8, singular_date, GIT_VERSION);
+               S_UNAME, VERSION, // SINGULAR_VERSION,
+               PACKAGE_VERSION, SIZEOF_VOIDP*8, singular_date, GIT_VERSION);
   StringAppendS("\nwith\n\t");
-#ifdef HAVE_FACTORY
-  StringAppend("factory(%s){'%s','%s'}", factoryVersion, FACTORY_CFLAGS, FACTORY_LIBS);
-#ifdef HAVE_LIBFAC
-  // libfac:
-//  extern const char * libfac_version;
-//  extern const char * libfac_date;
-  StringAppend("+libfac");
-#endif // #ifdef HAVE_LIBFAC
-  StringAppend(",");
-#endif
 
-#if defined (__GNU_MP_VERSION) && defined (__GNU_MP_VERSION_MINOR)
-              StringAppend("GMP(%d.%d){'%s','%s'},",__GNU_MP_VERSION,__GNU_MP_VERSION_MINOR, GMP_CFLAGS, GMP_LIBS);
-#else
-              StringAppendS("GMP(1.3),");
+#if defined(mpir_version)
+              StringAppend("MPIR(%s)~GMP(%s),", mpir_version, gmp_version);
+#elif defined(gmp_version)
+              // #if defined (__GNU_MP_VERSION) && defined (__GNU_MP_VERSION_MINOR)
+              //              StringAppend("GMP(%d.%d),",__GNU_MP_VERSION,__GNU_MP_VERSION_MINOR);
+              StringAppend("GMP(%s),", gmp_version);
 #endif
 #ifdef HAVE_NTL
 #include <NTL/version.h>
-              StringAppend("NTL(%s){'%s','%s'},",NTL_VERSION, NTL_CFLAGS, NTL_LIBS);
+              StringAppend("NTL(%s),",NTL_VERSION);
 #endif
 
-#ifdef HAVE_FACTORY
 #ifdef HAVE_FLINT
-              StringAppend("FLINT(%s){'%s','%s'},",version, FLINT_CFLAGS, FLINT_LIBS);
+              StringAppend("FLINT(%s),",version);
 #endif
-#endif
-
-#if SIZEOF_VOIDP == 8
-              StringAppendS("64bit,");
-#else
-              StringAppendS("32bit,");
-#endif
+              StringAppend("factory(%s),\n\t", factoryVersion);
 #if defined(HAVE_DYN_RL)
               if (fe_fgets_stdin==fe_fgets_dummy)
                 StringAppendS("no input,");
@@ -855,9 +838,6 @@ char * versionString(/*const bool bShowDetails = false*/ )
               StringAppendS("dynamic modules,");
 #endif
               if (p_procs_dynamic) StringAppendS("dynamic p_Procs,");
-#ifdef TEST
-              StringAppendS("TESTs,");
-#endif
 #if YYDEBUG
               StringAppendS("YYDEBUG=1,");
 #endif
@@ -876,14 +856,23 @@ char * versionString(/*const bool bShowDetails = false*/ )
 #ifdef OM_NDEBUG
               StringAppendS("OM_NDEBUG,");
 #endif
+#ifdef SING_NDEBUG
+              StringAppendS("SING_NDEBUG,");
+#endif
 #ifdef PDEBUG
               StringAppendS("PDEBUG,");
 #endif
 #ifdef KDEBUG
               StringAppendS("KDEBUG,");
 #endif
-#ifndef __OPTIMIZE__
-              StringAppendS("-g,");
+#ifdef __OPTIMIZE__
+              StringAppendS("CC:OPTIMIZE,");
+#endif
+#ifdef __OPTIMIZE_SIZE__
+              StringAppendS("CC:OPTIMIZE_SIZE,");
+#endif
+#ifdef __NO_INLINE__
+              StringAppendS("CC:NO_INLINE,");
 #endif
 #ifdef HAVE_EIGENVAL
               StringAppendS("eigenvalues,");
@@ -1021,7 +1010,7 @@ void listall(int showproc)
 }
 #endif
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 void checkall()
 {
       idhdl hh=basePack->idroot;
@@ -1029,7 +1018,10 @@ void checkall()
       {
         omCheckAddr(hh);
         omCheckAddr((ADDRESS)IDID(hh));
-        if (RingDependend(IDTYP(hh))) Print("%s typ %d in Top\n",IDID(hh),IDTYP(hh));
+        if (RingDependend(IDTYP(hh)))
+        {
+          Print("%s typ %d in Top (should be in ring)\n",IDID(hh),IDTYP(hh));
+        }
         hh=IDNEXT(hh);
       }
       hh=basePack->idroot;
@@ -1038,12 +1030,18 @@ void checkall()
         if (IDTYP(hh)==PACKAGE_CMD)
         {
           idhdl h2=IDPACKAGE(hh)->idroot;
-          while (h2!=NULL)
+          if (IDPACKAGE(hh)!=basePack)
           {
-            omCheckAddr(h2);
-            omCheckAddr((ADDRESS)IDID(h2));
-            if (RingDependend(IDTYP(h2))) Print("%s typ %d in %s\n",IDID(h2),IDTYP(h2),IDID(hh));
-            h2=IDNEXT(h2);
+            while (h2!=NULL)
+            {
+              omCheckAddr(h2);
+              omCheckAddr((ADDRESS)IDID(h2));
+              if (RingDependend(IDTYP(h2)))
+              {
+                Print("%s typ %d in %s (should be in ring)\n",IDID(h2),IDTYP(h2),IDID(hh));
+              }
+              h2=IDNEXT(h2);
+            }
           }
         }
         hh=IDNEXT(hh);
@@ -1065,73 +1063,95 @@ int singular_fstat(int fd, struct stat *buf)
 * the global exit routine of Singular
 */
 extern "C" {
+/* Note: We cannot use a mutex here because mutexes are not async-safe, but
+ * m2_end is called by sig_term_hdl(). Anyway, the race condition in the first
+ * few lines of m2_end() should not matter.
+ */
+volatile BOOLEAN m2_end_called = FALSE;
 
 void m2_end(int i)
 {
-  fe_reset_input_mode();
-  #ifdef PAGE_TEST
-  mmEndStat();
-  #endif
-  fe_reset_input_mode();
-  if (ssiToBeClosed_inactive)
+  if (!m2_end_called)
   {
-    link_list hh=ssiToBeClosed;
-    while(hh!=NULL)
+    m2_end_called = TRUE;
+#ifdef HAVE_SIMPLEIPC
+    for (int j = SIPC_MAX_SEMAPHORES; j >= 0; j--)
     {
-      //Print("close %s\n",hh->l->name);
-      slPrepClose(hh->l);
-      hh=(link_list)hh->next;
-    }
-    ssiToBeClosed_inactive=FALSE;
-
-    idhdl h = currPack->idroot;
-    while(h != NULL)
-    {
-      if(IDTYP(h) == LINK_CMD)
+      if (semaphore[j] != NULL)
       {
-        idhdl hh=h->next;
-        //Print("kill %s\n",IDID(h));
-        killhdl(h, currPack);
-        h = hh;
+        while (sem_acquired[j] > 0)
+        {
+          sem_post(semaphore[j]);
+          sem_acquired[j]--;
+        }
+      }
+    }
+#endif   // HAVE_SIMPLEIPC
+    fe_reset_input_mode();
+#ifdef PAGE_TEST
+    mmEndStat();
+#endif
+    fe_reset_input_mode();
+    if (ssiToBeClosed_inactive)
+    {
+      link_list hh=ssiToBeClosed;
+      while(hh!=NULL)
+      {
+        //Print("close %s\n",hh->l->name);
+        slPrepClose(hh->l);
+        hh=(link_list)hh->next;
+      }
+      ssiToBeClosed_inactive=FALSE;
+
+      idhdl h = currPack->idroot;
+      while(h != NULL)
+      {
+        if(IDTYP(h) == LINK_CMD)
+        {
+          idhdl hh=h->next;
+          //Print("kill %s\n",IDID(h));
+          killhdl(h, currPack);
+          h = hh;
+        }
+        else
+        {
+          h = h->next;
+        }
+      }
+      hh=ssiToBeClosed;
+      while(hh!=NULL)
+      {
+        //Print("close %s\n",hh->l->name);
+        slClose(hh->l);
+        hh=ssiToBeClosed;
+      }
+    }
+    if (!singular_in_batchmode)
+    {
+      if (i<=0)
+      {
+        if (TEST_V_QUIET)
+        {
+          if (i==0)
+            printf("Auf Wiedersehen.\n");
+          else
+            printf("\n$Bye.\n");
+        }
+        //#ifdef sun
+        //  #ifndef __svr4__
+        //    _cleanup();
+        //    _exit(0);
+        //  #endif
+        //#endif
+        i=0;
       }
       else
       {
-        h = h->next;
-      }
-    }
-    hh=ssiToBeClosed;
-    while(hh!=NULL)
-    {
-      //Print("close %s\n",hh->l->name);
-      slClose(hh->l);
-      hh=ssiToBeClosed;
-    }
-  }
-  if (!singular_in_batchmode)
-  {
-    if (i<=0)
-    {
-      if (TEST_V_QUIET)
-      {
-        if (i==0)
-          printf("Auf Wiedersehen.\n");
-        else
-          printf("\n$Bye.\n");
-      }
-      //#ifdef sun
-      //  #ifndef __svr4__
-      //    _cleanup();
-      //    _exit(0);
-      //  #endif
-      //#endif
-      i=0;
-    }
-    else
-    {
         printf("\nhalt %d\n",i);
+      }
     }
+    exit(i);
   }
-  exit(i);
 }
 }
 
@@ -1154,11 +1174,7 @@ extern "C"
 */
 void siInit(char *name)
 {
-#ifdef HAVE_FACTORY
 // factory default settings: -----------------------------------------------
-  On(SW_USE_NTL);
-  On(SW_USE_NTL_GCD_0); // On -> seg11 in Old/algnorm, Old/factor...
-  On(SW_USE_NTL_GCD_P); // On -> cyle in Short/brnoeth_s: fixed
   On(SW_USE_EZGCD);
   On(SW_USE_CHINREM_GCD);
   //On(SW_USE_FF_MOD_GCD);
@@ -1166,7 +1182,6 @@ void siInit(char *name)
   On(SW_USE_QGCD);
   Off(SW_USE_NTL_SORT); // may be changed by an command line option
   factoryError=WerrorS;
-#endif
 
 // memory initialization: -----------------------------------------------
     om_Opts.OutOfMemoryFunc = omSingOutOfMemoryFunc;
@@ -1182,9 +1197,6 @@ void siInit(char *name)
     omInitInfo();
 
 // interpreter tables etc.: -----------------------------------------------
-#ifdef INIT_BUG
-  jjInitTab1();
-#endif
   memset(&sLastPrinted,0,sizeof(sleftv));
   sLastPrinted.rtyp=NONE;
 
@@ -1199,7 +1211,7 @@ void siInit(char *name)
   currPackHdl=h;
   basePackHdl=h;
 
-  coeffs_BIGINT = nInitChar(n_Q,NULL);
+  coeffs_BIGINT = nInitChar(n_Q,(void*)1);
 
 #if 1
    // def HAVE_POLYEXTENSIONS
@@ -1220,9 +1232,7 @@ void siInit(char *name)
   if (t==0) t=1;
   initRTimer();
   siSeed=t;
-#ifdef HAVE_FACTORY
   factoryseed(t);
-#endif
   siRandomStart=t;
   feOptSpec[FE_OPT_RANDOM].value = (void*) ((long)siRandomStart);
 
@@ -1255,15 +1265,3 @@ void siInit(char *name)
   }
   errorreported = 0;
 }
-
-/*
-#ifdef LIBSINGULAR
-#ifdef HAVE_FACTORY
-// the init routines of factory need mmInit
-int mmInit( void )
-{
-  return 1;
-}
-#endif
-#endif
-*/

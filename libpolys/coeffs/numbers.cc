@@ -9,15 +9,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
-#ifdef HAVE_FACTORY
 #include <factory/factory.h>
-#endif
-
 
 #include "coeffs.h"
 #include <coeffs/numbers.h>
@@ -52,6 +49,12 @@ n_Procs_s *cf_root=NULL;
 
 void   nNew(number* d) { *d=NULL; }
 void   ndDelete(number* d, const coeffs) { *d=NULL; }
+number ndAnn(number, const coeffs) { return NULL;}
+char* ndCoeffString(const coeffs r)
+{
+  char *s=(char *)omAlloc(11);snprintf(s,11,"Coeffs(%d)",r->type);
+  return s;
+}
 void   ndInpMult(number &a, number b, const coeffs r)
 {
   number n=n_Mult(a,b,r);
@@ -229,7 +232,6 @@ BOOLEAN ndIsUnit(number a, const coeffs r) { return !n_IsZero(a,r); }
 number  ndExtGcd (number, number, number *, number *, const coeffs r) { return n_Init(1,r); }
 #endif
 
-#ifdef HAVE_FACTORY
 CanonicalForm ndConvSingNFactoryN( number, BOOLEAN /*setChar*/, const coeffs)
 {
   CanonicalForm term(0);
@@ -242,7 +244,6 @@ number ndConvFactoryNSingN( const CanonicalForm, const coeffs)
   Werror("no conversion from factory");
   return NULL;
 }
-#endif
 
 number  ndInit_bigint(number, const coeffs, const coeffs)
 {
@@ -327,6 +328,8 @@ coeffs nInitChar(n_coeffType t, void * parameter)
     n->cfName =  ndName;
     n->cfImPart=ndReturn0;
     n->cfDelete= ndDelete;
+    n->cfAnn = ndAnn;
+    n->cfCoeffString = ndCoeffString; // should alway be changed!
     n->cfInpMult=ndInpMult;
     n->cfInpAdd=ndInpAdd;
     n->cfCopy = ndCopy;
@@ -378,7 +381,8 @@ coeffs nInitChar(n_coeffType t, void * parameter)
     cf_root=n;
     // post init settings:
     if (n->cfRePart==NULL) n->cfRePart=n->cfCopy;
-    if (n->cfIntDiv==NULL) n->cfIntDiv=n->cfDiv;
+    if (n->cfExactDiv==NULL) n->cfExactDiv=n->cfDiv;
+    if (n->cfSubringGcd==NULL) n->cfSubringGcd=n->cfGcd;
     
 #ifdef HAVE_RINGS
     if (n->cfGetUnit==NULL) n->cfGetUnit=n->cfCopy;
@@ -389,11 +393,11 @@ coeffs nInitChar(n_coeffType t, void * parameter)
 
     assume(n->nCoeffIsEqual!=NULL);
     assume(n->cfSetChar!=NULL);
+    assume(n->cfCoeffString!=ndCoeffString);
     assume(n->cfMult!=NULL);
     assume(n->cfSub!=NULL);
     assume(n->cfAdd!=NULL);
     assume(n->cfDiv!=NULL);
-    assume(n->cfIntDiv!=NULL);
     assume(n->cfIntMod!=NULL);
     assume(n->cfExactDiv!=NULL);
     assume(n->cfInit!=NULL);
@@ -405,10 +409,8 @@ coeffs nInitChar(n_coeffType t, void * parameter)
     //assume(n->cfIsUnit!=NULL);
     //assume(n->cfGetUnit!=NULL);
     //assume(n->cfExtGcd!=NULL);
-    assume(n->cfNeg!=NULL);
+    assume(n->cfInpNeg!=NULL);
     assume(n->cfCopy!=NULL);
-    assume(n->cfRePart!=NULL);
-    assume(n->cfImPart!=NULL);
 
     assume(n->cfWriteLong!=NULL);
     assume(n->cfWriteShort!=NULL);
@@ -446,14 +448,16 @@ coeffs nInitChar(n_coeffType t, void * parameter)
     assume(n->cfClearDenominators != NULL);
     
 #ifdef LDEBUG
-    assume(n->cfDBTest!=NULL);
+    if(n->cfDBTest==NULL)
+    { n->cfDBTest=ndDBTest;Warn("cfDBTest is NULL for coeff %d",t); }
 #endif
     assume(n->type==t);
      
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
     if(n->cfKillChar==NULL) Warn("cfKillChar is NULL for coeff %d",t);
     if(n->cfWriteLong==NULL) Warn("cfWrite is NULL for coeff %d",t);
     if(n->cfWriteShort==NULL) Warn("cfWriteShort is NULL for coeff %d",t);
+    if(n->cfCoeffString==ndCoeffString) Warn("cfCoeffString is undefined for coeff %d",t);
 #endif
      
    if( n->nNULL == NULL )
@@ -503,15 +507,15 @@ n_coeffType nRegister(n_coeffType n, cfInitCharProc p)
     if (nInitCharTable==nInitCharTableDefault)
     {
       nInitCharTable=(cfInitCharProc*)omAlloc0(
-                                          nLastCoeffs*sizeof(cfInitCharProc));
+                                          ((int)nLastCoeffs+1)*sizeof(cfInitCharProc));
       memcpy(nInitCharTable,nInitCharTableDefault,
-              (nLastCoeffs-1)*sizeof(cfInitCharProc));
+              ((int)nLastCoeffs)*sizeof(cfInitCharProc));
     }
     else
     {
       nInitCharTable=(cfInitCharProc*)omReallocSize(nInitCharTable,
-                                          (((int)nLastCoeffs)-1)*sizeof(cfInitCharProc),
-                                          ((int)nLastCoeffs)*sizeof(cfInitCharProc));
+                                          ((int)nLastCoeffs)*sizeof(cfInitCharProc),
+                                          (((int)nLastCoeffs)+1)*sizeof(cfInitCharProc));
     }
 
     nInitCharTable[nLastCoeffs]=p;

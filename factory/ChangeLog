@@ -190,7 +190,7 @@ Wed Jun 03 14:47:41 1998    <pohl@FUECHSE>
 
 Mon May 11 11:36:22 1998  Jens Schmidt  <schmidt@mathematik.uni-kl.de>
 
-	* config.h.in (INT64): unused declarations for MetroWerks removed
+	* config.h.in (FACTORY_INT64): unused declarations for MetroWerks removed
 
 	* imm.cc (imm_mul): wrapped by `#ifdef __MWERKS__'
 
@@ -228,7 +228,7 @@ Tue Apr 14 14:05:47 1998  Wilfred Pohl  <pohl@mathematik.uni-kl.de>
 	* fac_univar.cc (UnivariateQuadraticLift): type for `log()' must
 	  be float, hence constant `2' replaced by `2.0'
 
-	* config.h.in (INT64): new typedef for Metroworks compiler
+	* config.h.in (FACTORY_INT64): new typedef for Metroworks compiler
 
 Mon Apr  6 14:06:49 MET DST 1998  Jens Schmidt
 
@@ -570,7 +570,7 @@ Tue Dec  9 10:03:07 1997  Jens Schmidt  <schmidt@mathematik.uni-kl.de>
 	  (dist): creates directory `winnt/'
 	  (distfiles): `bin/makeheader.pl' added to distribution
 
-	* config.h.in (INT64): new define
+	* config.h.in (FACTORY_INT64): new define
 
 	* bin/makeheader.pl: new file
 
@@ -598,18 +598,18 @@ Thu Nov 27 21:00:00 1997  Ruediger Stobbe  <rstobbe@de.oracle.com>
 	* winnt/factory.h: for the first time this file is a hand-made
 	  version of factory.h for Windows NT
 
-	* config.h.in: new typedef INT64 for 64 bit integer type of various
+	* config.h.in: new typedef FACTORY_INT64 for 64 bit integer type of various
 	  platforms (currently 'long long int' for gcc and '__int64' for
 	  MS VC++)
 
 	* readcf.y: malloc.h and memory.h are included in the case of WINNT
 	  to have prototypes for alloca and memcpy
 
-	* ffops.h: now uses INT64 instead of long long int
+	* ffops.h: now uses FACTORY_INT64 instead of long long int
 
-	* ffops.cc: now uses INT64 instead of long long int
+	* ffops.cc: now uses FACTORY_INT64 instead of long long int
 
-	* imm.h: now uses INT64 instead of long long int
+	* imm.h: now uses FACTORY_INT64 instead of long long int
 
 	* int_poly.cc: includes strstrea.h instead of strstream.h in the
 	  case of WINNT (a typical Microsoft 8.3 problem - its a pity)
@@ -1519,7 +1519,7 @@ Thu Jun  5 15:03:48 1997  Jens Schmidt  <schmidt@mathematik.uni-kl.de>
 	* configure.in: checks on sizeof(int) == sizeof(void *) == 4
 	  removed
 
-	* debug.h: dependency on #define NDEBUG removed
+	* debug.h: dependency on #define SING_NDEBUG removed
 
 	* factoryconf.template: doc fix
 
@@ -1607,9 +1607,9 @@ Before Mon Jun  4 1997 Jens Schmidt <schmidt@mathematik.uni-kl.de>
 	"TIMING macros" we mean one (or more) of the macros defined in
 	debug.h, cf_assert.h, and timing.h, resp.
 
-	* cf_assert.h (NOASSERT, NDEBUG): #define NDEBUG to switch off
+	* cf_assert.h (NOASSERT, SING_NDEBUG): #define SING_NDEBUG to switch off
 	  assertions replaced by #define NOASSERT.  For sake of backward
-	  compatibility NDEBUG works, too.
+	  compatibility SING_NDEBUG works, too.
 
 	* cf_assert.h (DEBINCLEVEL, DEBDECLEVEL, DEBOUTSL, DEBOUT, DEBOUTLN):
 	  DEBOUT macros moved to debug.h
@@ -1664,7 +1664,7 @@ Before Mon Jun  4 1997 Jens Schmidt <schmidt@mathematik.uni-kl.de>
 	* fac_univar.cc: debug output rewritten
 	  (hprint): calls to hprint() wrapped by calls to #define
  	  DEBOUTHPRINT, which definition depends on #define DEBUGOUTPUT
-	  (instead of NDEBUG, as before).  All callers changed.
+	  (instead of SING_NDEBUG, as before).  All callers changed.
 
 	* cf_linsys.cc: superfluous #define TIMING removed
 	* fac_distrib.cc: superfluous #undef DEBUGOUTPUT removed
@@ -1696,7 +1696,7 @@ Before Mon Jun  4 1997 Jens Schmidt <schmidt@mathematik.uni-kl.de>
  	  callers changed.
 
 	* debug.h (DEBUGOUTPUT): #define DEBUGOUTPUT is switched off now
-	  if #define NDEBUG is switched on
+	  if #define SING_NDEBUG is switched on
 
 	* fac_univar.cc (ZFactorizeUnivariate): timing stuff changed to
 	  calls of TIMING macros

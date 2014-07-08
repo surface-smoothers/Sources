@@ -34,27 +34,11 @@
 
 /* includes */
 
-#include <stdio.h>
-// === Zeit & System (Holger Croeni ===
-#include <time.h>
-#include <sys/time.h>
-#include <math.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <float.h>
-#include <misc/mylimits.h>
-#include <sys/types.h>
-
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
 #include <kernel/mod2.h>
 #include <misc/intvec.h>
 #include <Singular/cntrlc.h>
 #include <misc/options.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <Singular/ipshell.h>
 #include <Singular/ipconv.h>
 #include <coeffs/ffields.h>
@@ -65,35 +49,43 @@
 #include <polys/monomials/maps.h>
 
 /* include Hilbert-function */
-#include <kernel/stairc.h>
+#include <kernel/GBEngine/stairc.h>
 
 /** kstd2.cc */
-#include <kernel/kutil.h>
-#include <kernel/khstd.h>
+#include <kernel/GBEngine/kutil.h>
+#include <kernel/GBEngine/khstd.h>
 
 #include <Singular/walk.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <Singular/ipid.h>
 #include <Singular/tok.h>
-#include <kernel/febase.h>
 #include <coeffs/numbers.h>
 #include <Singular/ipid.h>
 #include <polys/monomials/ring.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <polys/matpol.h>
 #include <polys/weight.h>
 #include <misc/intvec.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 #include <Singular/lists.h>
 #include <polys/prCopy.h>
 #include <polys/monomials/ring.h>
 //#include <polys/ext_fields/longalg.h>
-#ifdef HAVE_FACTORY
 #include <polys/clapsing.h>
-#endif
 
 #include <coeffs/mpr_complex.h>
+
+#include <stdio.h>
+// === Zeit & System (Holger Croeni ===
+#include <time.h>
+#include <sys/time.h>
+#include <math.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <float.h>
+#include <misc/mylimits.h>
+#include <sys/types.h>
 
 int nstep;
 
@@ -438,6 +430,7 @@ static void TimeStringFractal(clock_t tinput, clock_t tostd, clock_t tif,clock_t
 }
 #endif
 
+#ifdef CHECK_IDEAL_MWALK
 static void idString(ideal L, const char* st)
 {
   int i, nL = IDELEMS(L);
@@ -449,9 +442,9 @@ static void idString(ideal L, const char* st)
   }
   Print(" %s;", pString(L->m[nL-1]));
 }
+#endif
 
-//unused
-//#if 0
+#if defined(CHECK_IDEAL_MWALK) || defined(ENDWALKS)
 static void headidString(ideal L, char* st)
 {
   int i, nL = IDELEMS(L);
@@ -463,10 +456,9 @@ static void headidString(ideal L, char* st)
   }
   Print(" %s;", pString(pHead(L->m[nL-1])));
 }
-//#endif
+#endif
 
-//unused
-//#if 0
+#if defined(CHECK_IDEAL_MWALK) || defined(ENDWALKS)
 static void idElements(ideal L, char* st)
 {
   int i, nL = IDELEMS(L);
@@ -504,7 +496,7 @@ static void idElements(ideal L, char* st)
   }
   omFree(K);
 }
-//#endif
+#endif
 
 
 static void ivString(intvec* iv, const char* ch)
@@ -948,7 +940,7 @@ static ideal MstdhomCC(ideal G)
 intvec* MivMatrixOrder(intvec* iv)
 {
   int i, nR = iv->length();
-  
+
   intvec* ivm = new intvec(nR*nR);
 
   for(i=0; i<nR; i++)
@@ -1116,7 +1108,7 @@ intvec* MPertVectors(ideal G, intvec* ivtarget, int pdeg)
      if (mpz_cmp(maxdeg,  tot_deg) > 0 )
      {
        mpz_set(tot_deg, maxdeg);
-     } 
+     }
   }
 
   delete ivUnit;
@@ -1880,7 +1872,7 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
   mpz_t sing_int_half;
   mpz_init(sing_int_half);
   mpz_set_si(sing_int_half,  3*(1073741824/2));
-  
+
   mpz_t deg_w0_p1, deg_d0_p1;
   mpz_init(deg_w0_p1);
   mpz_init(deg_d0_p1);
@@ -1968,12 +1960,12 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
   }
 //Print("\n// Alloc Size = %d \n", nRing*sizeof(mpz_t));
   mpz_t *vec=(mpz_t*)omAlloc(nRing*sizeof(mpz_t));
-  
+
 
   // there is no 0<t<1 and define the next weight vector that is equal to the current weight vector
   if(mpz_cmp(t_nenner, t_null) == 0)
   {
-    #ifndef NDEBUG
+    #ifndef SING_NDEBUG
     Print("\n//MwalkNextWeightCC: t_nenner ist Null!");
     #endif
     delete diff_weight;
@@ -2060,7 +2052,7 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
     }
     mpz_add(sntz, s_nenner, s_zaehler);
     mpz_init_set(vec[j], sntz);
-   
+
 #ifdef NEXT_VECTORS_CC
     Print("\n//   j = %d ==> ", j);
     PrintS("(");
@@ -2125,7 +2117,7 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
     for (j=0; j<nRing; j++)
     {
       if(mpz_cmp_si(ggt,1)==0)
-      {      
+      {
         (*diff_weight1)[j] = floor(0.1*(*diff_weight)[j] + 0.5);
         // Print("\n//  vector[%d] = %d \n",j+1, (*diff_weight1)[j]);
       }
@@ -2152,7 +2144,7 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
       goto TEST_OVERFLOW;
     }
 */
-  
+
     if(test_w_in_ConeCC(G,diff_weight1) != 0)
     {
       Print("\n// MwalkNextWeightCC: geaenderter vector liegt in Groebnerkegel! \n");
@@ -2184,8 +2176,8 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
         Overflow_Error = TRUE;
         PrintS("\n// ** OVERFLOW in \"MwalkNextWeightCC\": ");
         mpz_out_str( stdout, 10, vec[j]);
-        PrintS(" is greater than 2147483647 (max. integer representation)");
-        Print("\n//  So vector[%d] := %d is wrong!!\n",j+1, vec[j]);
+        PrintS(" is greater than 2147483647 (max. integer representation)\n");
+        //Print("//  So vector[%d] := %d is wrong!!\n",j+1, vec[j]);// vec[j] is mpz_t
       }
     }
   }
@@ -2210,7 +2202,7 @@ static intvec* MwalkNextWeightCC(intvec* curr_weight, intvec* target_weight,
    mpz_clear(t_null);
 
 
- 
+
   if(Overflow_Error == FALSE)
   {
     Overflow_Error = nError;
@@ -2333,7 +2325,7 @@ static void VMrHomogeneous(intvec* va, intvec* vb)
   r->OrdSgn    = 1;
 
   // complete ring intializations
-  
+
   rComplete(r);
 
   rChangeCurrRing(r);
@@ -2407,7 +2399,7 @@ static void VMrDefault(intvec* va)
   r->OrdSgn    = 1;
 
   // complete ring intializations
-  
+
   rComplete(r);
 
   rChangeCurrRing(r);
@@ -2470,7 +2462,7 @@ static void VMrDefaultlp(void)
   r->OrdSgn    = 1;
 
   /* complete ring intializations */
-  
+
   rComplete(r);
 
   rChangeCurrRing(r);
@@ -2613,7 +2605,7 @@ static void DefRingParlp(void)
 //   }
 
   // complete ring intializations
-  
+
   rComplete(r);
 
   // clean up history
@@ -3131,7 +3123,7 @@ static intvec* TranPertVector(ideal G, intvec* iva)
 
 #ifdef INVEPS_SMALL_IN_TRAN
   if(mpz_cmp_ui(ndeg, nV)>0 && nV > 3)
-  { 
+  {
     mpz_cdiv_q_ui(ndeg, ndeg, nV);
   }
  //PrintS("\n// choose the \"small\" inverse epsilon:");
@@ -3975,7 +3967,7 @@ static intvec* MWalkRandomNextWeight(ideal G, intvec* curr_weight, intvec* targe
   {
     //compute a perturbed next weight vector "next_weight1"
     intvec* next_weight1 = MkInterRedNextWeight(MPertVectors(G, MivMatrixOrder(curr_weight), pert_deg), target_weight, G);
-    //Print("\n // size of next_weight1 = %d", sizeof((*next_weight1))); 
+    //Print("\n // size of next_weight1 = %d", sizeof((*next_weight1)));
 
     //compute a random next weight vector "next_weight2"
     while(1)
@@ -3990,7 +3982,7 @@ static intvec* MWalkRandomNextWeight(ideal G, intvec* curr_weight, intvec* targe
           weight_norm = weight_norm + (*next_weight22)[i]*(*next_weight22)[i];
         }
         weight_norm = 1 + floor(sqrt(weight_norm));
-      } 
+      }
 
       for(i=nV-1; i>=0; i--)
       {
@@ -4004,7 +3996,7 @@ static intvec* MWalkRandomNextWeight(ideal G, intvec* curr_weight, intvec* targe
         }
       //Print("\n//  next_weight22[%d]  = %d", i, (*next_weight22)[i]);
       }
-     
+
       if(test_w_in_ConeCC(G, next_weight22) == 1)
       {
         //Print("\n//MWalkRandomNextWeight: next_weight2 im Kegel\n");
@@ -4034,7 +4026,7 @@ static intvec* MWalkRandomNextWeight(ideal G, intvec* curr_weight, intvec* targe
         {
           (*result)[i] = (*next_weight1)[i];
         }
-      }    
+      }
     }
     else
     {
@@ -4233,7 +4225,7 @@ static ideal REC_GB_Mwalk(ideal G, intvec* curr_weight, intvec* orig_target_weig
     to = clock();
     // compute a next weight vector
     intvec* next_weight = MkInterRedNextWeight(curr_weight,target_weight, G);
-  
+
 
     xtnw = xtnw + clock() - to;
 
@@ -4612,7 +4604,7 @@ ideal Mrwalk(ideal Go, intvec* curr_weight, intvec* target_weight, int weight_ra
   tinput = clock();
   clock_t tim;
   nstep=0;
-  int i,k,nwalk,endwalks = 0;
+  int i,nwalk,endwalks = 0;
   int nV = currRing->N;
 
   ideal Gomega, M, F, Gomega1, Gomega2, M1, F1, G;
@@ -4668,7 +4660,7 @@ nwalk = 0;
       //idString(Gomega, "G_omega");
       M = REC_GB_Mwalk(idCopy(Gomega), tmp_weight, curr_weight,pert_deg,1);
       Print("\n//Mrwalk: time for the last std(Gw)  = %.2f sec\n",((double) (clock()-tim)/1000000));
-      
+
 #ifdef CHECK_IDEAL_MWALK
       idString(Gomega, "G_omega");
       idString(M, "M");
@@ -4697,12 +4689,11 @@ nwalk = 0;
     }
     else
     {
-    NORMAL_GW:
 #ifndef  BUCHBERGER_ALG
       if(isNolVector(curr_weight) == 0)
       {
         hilb_func = hFirstSeries(Gomega,NULL,NULL,curr_weight,currRing);
-      }	
+      }
       else
       {
         hilb_func = hFirstSeries(Gomega,NULL,NULL,last_omega,currRing);
@@ -4779,11 +4770,11 @@ nwalk = 0;
       tred = tred + clock() - to;
     }
 
-  NEXT_VECTOR:
+  //NEXT_VECTOR:
     to = clock();
     //intvec* next_weight = MkInterRedNextWeight(curr_weight,target_weight,G);
    intvec* next_weight = MWalkRandomNextWeight(G, curr_weight, target_weight, weight_rad, pert_deg);
-    
+
   tnw = tnw + clock() - to;
 //#ifdef PRINT_VECTORS
   MivString(curr_weight, target_weight, next_weight);
@@ -4844,7 +4835,7 @@ nwalk = 0;
   return(G);
 }
 
-//unused 
+//unused
 #if 0
 ideal Mwalk_tst(ideal Go, intvec* curr_weight, intvec* target_weight)
 {
@@ -5810,7 +5801,7 @@ static ideal rec_r_fractal_call(ideal G, int nlev, intvec* omtmp, int weight_rad
       }
       else
       {
-        // compute a perturbed next weight vector "next_vect1" 
+        // compute a perturbed next weight vector "next_vect1"
         intvec* next_vect11 = MPertVectors(G, MivMatrixOrder(omega), nlev);
         intvec* next_vect1 = MkInterRedNextWeight(next_vect11, omega2, G);
         // Print("\n//  size of next_vect  = %d", sizeof((*next_vect)));
@@ -5821,7 +5812,7 @@ static ideal rec_r_fractal_call(ideal G, int nlev, intvec* omtmp, int weight_rad
         // compare next_vect and next_vect1
         ideal G_test = MwalkInitialForm(G, next_vect);
         ideal G_test1 = MwalkInitialForm(G, next_vect1);
-	// Print("\n// G_test, G_test 1 erzeugt");
+        // Print("\n// G_test, G_test 1 erzeugt");
         if(IDELEMS(G_test1) <= IDELEMS(G_test))
           {
           next_vect = ivCopy(next_vect1);
@@ -5847,7 +5838,7 @@ static ideal rec_r_fractal_call(ideal G, int nlev, intvec* omtmp, int weight_rad
               weight_norm = weight_norm + (*next_vect22)[i]*(*next_vect22)[i];
             }
             weight_norm = 1 + floor(sqrt(weight_norm));
-          } 
+          }
           for(i=nV-1; i>=0; i--)
           {
             if((*next_vect22)[i] < 0)
@@ -5855,7 +5846,7 @@ static ideal rec_r_fractal_call(ideal G, int nlev, intvec* omtmp, int weight_rad
               (*next_vect22)[i] = 1 + (*omega)[i] + floor(weight_rad*(*next_vect22)[i]/weight_norm);
             }
             else
-            { 
+            {
               (*next_vect22)[i] = (*omega)[i] + floor(weight_rad*(*next_vect22)[i]/weight_norm);
             }
           }
@@ -6791,7 +6782,7 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
 #ifdef TIME_TEST
   clock_t tinput = clock();
 #endif
-  int nsteppert=0, i, k, nV = currRing->N, nwalk=0, npert_tmp=0;
+  int nsteppert=0, i, nV = currRing->N, nwalk=0, npert_tmp=0;
   int *npert=(int*)omAlloc(2*nV*sizeof(int));
   ideal Gomega, M,F,  G1, Gomega1, Gomega2, M1, F1;
   //ring endRing;
@@ -6828,7 +6819,7 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
 
   to=clock();
   // compute a red. GB w.r.t. the help ring
-  if(MivComp(curr_weight, iv_dp) == 1) 
+  if(MivComp(curr_weight, iv_dp) == 1)
   {
     //rOrdStr(currRing) = "dp"
     G = MstdCC(G);
@@ -6971,9 +6962,9 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
 
     if(MivComp(next_weight, target_weight) != 1)
     {
-      // compute a perturbed next weight vector "next_weight1" 
+      // compute a perturbed next weight vector "next_weight1"
       intvec* next_weight1 = MkInterRedNextWeight(MPertVectors(G, MivMatrixOrder(curr_weight), pert_deg), target_weight, G);
-   
+
       // compare next_weight and next_weight1
       ideal G_test = MwalkInitialForm(G, next_weight);
       ideal G_test1 = MwalkInitialForm(G, next_weight1);
@@ -6986,7 +6977,7 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
       intvec* next_weight22 = ivCopy(target_weight);
       // Print("\n//  size of target_weight  = %d", sizeof((*target_weight)));
       k = 0;
-    
+
       while(test_w_in_ConeCC(G, next_weight22) == 0 && k < 11)
       {
         k++;
@@ -7004,10 +6995,10 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
             weight_norm = weight_norm + (*next_weight22)[i]*(*next_weight22)[i];
           }
           weight_norm = 1 + floor(sqrt(weight_norm));
-        } 
+        }
         for(i=nV-1; i>=0; i--)
         {
-	  if((*next_weight22)[i] < 0)
+          if((*next_weight22)[i] < 0)
           {
             (*next_weight22)[i] = 1 + (*curr_weight)[i] + floor(weight_rad*(*next_weight22)[i]/weight_norm);
           }
@@ -7017,7 +7008,7 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
           }
           // Print("\n//  next_weight22[%d]  = %d", i, (*next_weight22)[i]);
         }
-      } 
+      }
 
       if(test_w_in_ConeCC(G, next_weight22) == 1)
       {
@@ -7027,7 +7018,7 @@ ideal TranMrImprovwalk(ideal G,intvec* curr_weight,intvec* target_tmp, int nP, i
 
         ideal G_test2 = MwalkInitialForm(G, next_weight2);
         if(IDELEMS(G_test2) <= IDELEMS(G_test))
-	{
+        {
           if(IDELEMS(G_test2) <= IDELEMS(G_test1))
           {
              // Print("\n// ZUFALL BENUTZT!\n");
@@ -7790,9 +7781,9 @@ ideal MAltwalk1(ideal Go, int op_deg, int tp_deg, intvec* curr_weight,
         nOverflow_Error = Overflow_Error;
 #endif
         tproc = clock()-xftinput;
-        
+
         //Print("\n//  main routine takes %d steps and calls \"Mpwalk\" (1,%d):", nwalk,  tp_deg);
-        
+
         // compute the red. GB of <G> w.r.t. the lex order by the "recursive-modified" perturbation walk alg (1,tp_deg)
         G = Mpwalk_MAltwalk1(G, curr_weight, tp_deg);
         delete next_weight;

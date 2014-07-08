@@ -12,12 +12,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+#include <kernel/mod2.h>
 #include <misc/auxiliary.h>
 
-#include <kernel/mod2.h>
 #include <misc/mylimits.h>
 #include <omalloc/omalloc.h>
 #include <Singular/tok.h>
@@ -26,10 +23,11 @@
 #include <Singular/fehelp.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
-#include <kernel/febase.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <Singular/subexpr.h>
 #include <Singular/ipshell.h>
 #include <Singular/ipconv.h>
@@ -37,13 +35,13 @@
 #include <kernel/ideals.h>
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
-#include <kernel/stairc.h>
-#include <kernel/timer.h>
+#include <kernel/GBEngine/stairc.h>
+#include <kernel/oswrapper/timer.h>
 #include <Singular/cntrlc.h>
 #include <polys/monomials/maps.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 #include <Singular/lists.h>
-#include <libpolys/coeffs/longrat.h>
+#include <coeffs/longrat.h>
 #include <Singular/libparse.h>
 #include <coeffs/bigintmat.h>
 
@@ -172,13 +170,6 @@ void yyerror(const char * fmt)
   {
     Werror("leaving %s",VoiceName());
   }
-#ifdef HAVE_FACTORY
-  // libfac:
-#ifdef HAVE_LIBFAC
-  //extern int libfac_interruptflag;
-  libfac_interruptflag=0;
-#endif // #ifdef HAVE_LIBFAC
-#endif
 }
 
 %}
@@ -196,6 +187,7 @@ void yyerror(const char * fmt)
 %token NOTEQUAL
 %token PLUSPLUS
 %token COLONCOLON
+%token ARROW
 
 /* types, part 1 (ring indep.)*/
 %token <i> GRING_CMD
@@ -318,6 +310,7 @@ void yyerror(const char * fmt)
 
 /* control */
 %token <i> APPLY
+%token <i> ASSUME_CMD
 %token <i> BREAK_CMD
 %token <i> CONTINUE_CMD
 %token <i> ELSE_CMD
@@ -357,7 +350,7 @@ void yyerror(const char * fmt)
 %left EQUAL_EQUAL NOTEQUAL
 %left '<'
 %left '+' '-' ':'
-%left '/' '*'
+%left '/'
 %left UMINUS NOT
 %left  '^'
 %left '[' ']'
@@ -365,6 +358,7 @@ void yyerror(const char * fmt)
 %left PLUSPLUS MINUSMINUS
 %left COLONCOLON
 %left '.'
+%left ARROW
 
 %%
 lines:
@@ -515,7 +509,7 @@ elemexpr:
           {
             if(iiExprArith2(&$$, &$1, COLONCOLON, &$3)) YYERROR;
           }
-        | elemexpr '.' elemexpr
+        | expr '.' elemexpr
           {
             if(iiExprArith2(&$$, &$1, '.', &$3)) YYERROR;
           }
@@ -603,41 +597,6 @@ elemexpr:
         | PROC_CMD '(' expr ')'
           {
             if(iiExprArith1(&$$,&$3,$1)) YYERROR;
-          }
-        ;
-
-exprlist:
-        exprlist ',' expr
-          {
-            leftv v = &$1;
-            while (v->next!=NULL)
-            {
-              v=v->next;
-            }
-            v->next = (leftv)omAllocBin(sleftv_bin);
-            memcpy(v->next,&($3),sizeof(sleftv));
-            $$ = $1;
-          }
-        | expr
-          {
-            $$ = $1;
-          }
-        ;
-
-expr:   expr_arithmetic
-          {
-            /*if ($1.typ == eunknown) YYERROR;*/
-            $$ = $1;
-          }
-        | elemexpr       { $$ = $1; }
-        | '(' exprlist ')'    { $$ = $2; }
-        | expr '[' expr ',' expr ']'
-          {
-            if(iiExprArith3(&$$,'[',&$1,&$3,&$5)) YYERROR;
-          }
-        | expr '[' expr ']'
-          {
-            if(iiExprArith2(&$$,&$1,'[',&$3)) YYERROR;
           }
         | ROOT_DECL '(' expr ')'
           {
@@ -735,6 +694,45 @@ expr:   expr_arithmetic
           {
             if(iiExprArith1(&$$,&$3,RING_CMD)) YYERROR;
           }
+        | extendedid  ARROW BLOCKTOK
+          {
+            if (iiARROW(&$$,$1,$3)) YYERROR;
+          }
+        ;
+
+exprlist:
+        exprlist ',' expr
+          {
+            leftv v = &$1;
+            while (v->next!=NULL)
+            {
+              v=v->next;
+            }
+            v->next = (leftv)omAllocBin(sleftv_bin);
+            memcpy(v->next,&($3),sizeof(sleftv));
+            $$ = $1;
+          }
+        | expr
+          {
+            $$ = $1;
+          }
+        ;
+
+expr:   expr_arithmetic
+          {
+            /*if ($1.typ == eunknown) YYERROR;*/
+            $$ = $1;
+          }
+        | elemexpr       { $$ = $1; }
+        | '(' exprlist ')'    { $$ = $2; }
+        | expr '[' expr ',' expr ']'
+          {
+            if(iiExprArith3(&$$,'[',&$1,&$3,&$5)) YYERROR;
+          }
+        | expr '[' expr ']'
+          {
+            if(iiExprArith2(&$$,&$1,'[',&$3)) YYERROR;
+          }
         | APPLY '('  expr ',' CMD_1 ')'
           {
             if (iiApply(&$$, &$3, $5, NULL)) YYERROR;
@@ -780,6 +778,12 @@ expr:   expr_arithmetic
             siq--;
             #endif
           }
+        | assume_start expr ',' expr quote_end
+          {
+            iiTestAssume(&$2,&$4);
+            memset(&$$,0,sizeof($$));
+            $$.rtyp=NONE;
+          }
         | EVAL  '('
           {
             #ifdef SIQ
@@ -799,6 +803,14 @@ expr:   expr_arithmetic
           ;
 
 quote_start:    QUOTE  '('
+          {
+            #ifdef SIQ
+            siq++;
+            #endif
+          }
+          ;
+
+assume_start:    ASSUME_CMD '('
           {
             #ifdef SIQ
             siq++;
@@ -865,10 +877,15 @@ expr_arithmetic:
           }
         | NOT expr
           {
-            memset(&$$,0,sizeof($$));
-            int i; TESTSETINT($2,i);
-            $$.rtyp  = INT_CMD;
-            $$.data = (void *)(long)(i == 0 ? 1 : 0);
+            if (siq>0)
+            { if (iiExprArith1(&$$,&$2,NOT)) YYERROR; }
+            else
+            {
+              memset(&$$,0,sizeof($$));
+              int i; TESTSETINT($2,i);
+              $$.rtyp  = INT_CMD;
+              $$.data = (void *)(long)(i == 0 ? 1 : 0);
+            }
           }
         | '-' expr %prec UMINUS
           {
@@ -1173,7 +1190,7 @@ exportcmd:
         {
           if (basePack!=$2.req_packhdl)
           {
-            if(iiExport(&$2,0,currPackHdl)) YYERROR;
+            if(iiExport(&$2,0,currPack)) YYERROR;
           }
           else
             if (iiExport(&$2,0)) YYERROR;
@@ -1374,7 +1391,7 @@ setringcmd:
             && ($2.rtyp==IDHDL))
             {
               idhdl h=(idhdl)$2.data;
-              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL, NULL);
+              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL);
               //Print("setring %s lev %d (ptr:%x)\n",IDID(h),IDLEV(h),IDRING(h));
               if ($1==KEEPRING_CMD)
               {

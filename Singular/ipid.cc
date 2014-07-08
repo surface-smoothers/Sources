@@ -6,9 +6,9 @@
 * ABSTRACT: identfier handling
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <kernel/mod2.h>
 
@@ -19,18 +19,18 @@
 
 #include <coeffs/numbers.h>
 #include <coeffs/bigintmat.h>
+#include <coeffs/longrat.h>
 
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
 
-#include <kernel/febase.h>
-#include <libpolys/coeffs/longrat.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 
 #include <Singular/tok.h>
 #include <Singular/ipshell.h>
+#include <Singular/fevoices.h>
 #include <Singular/lists.h>
 #include <Singular/attrib.h>
 #include <Singular/links/silink.h>
@@ -249,6 +249,7 @@ char * idrec::String(BOOLEAN typed)
 idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN search)
 {
   if (s==NULL) return NULL;
+  if (root==NULL) return NULL;
   idhdl h;
   s=omStrDup(s);
   // idhdl *save_root=root;
@@ -319,7 +320,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
     }
   }
   *root = (*root)->set(s, lev, t, init);
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
   checkall();
 #endif
   return *root;
@@ -432,7 +433,7 @@ void killhdl2(idhdl h, idhdl * ih, ring r)
   }
   else if ((IDTYP(h)==RING_CMD)||(IDTYP(h)==QRING_CMD))
     rKill(h);
-  else
+  else if (IDDATA(h)!=NULL)
     s_internalDelete(IDTYP(h),IDDATA(h),r);
   //  general  -------------------------------------------------------------
   // now dechain it and delete idrec
@@ -603,7 +604,7 @@ void  ipMoveId(idhdl tomove)
 
 const char * piProcinfo(procinfov pi, const char *request)
 {
-  if(pi == NULL) return "empty proc";
+  if((pi == NULL)||(pi->language==LANG_NONE)) return "empty proc";
   else if (strcmp(request, "libname")  == 0) return pi->libname;
   else if (strcmp(request, "procname") == 0) return pi->procname;
   else if (strcmp(request, "type")     == 0)

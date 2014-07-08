@@ -9,22 +9,15 @@
 #ifndef MOD2_H
 #define MOD2_H
 
+/* please include singularconfig.h exclusively via <kernel/mod2.h> and before any other header */
+# include <singularconfig.h>
 
-#ifdef HAVE_CONFIG_H
-/* config.h is a private header that will not be installed and thus cannot be unconditionally included */
-# include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-
-
-#include <misc/auxiliary.h>
+# include <misc/auxiliary.h>
 
 #define SINGULAR_MAJOR_VERSION 4
 #define SINGULAR_MINOR_VERSION 0
 #define SINGULAR_SUB_VERSION 0
 #define S_ROOT_DIR ""
-
-/* Define version date as a string - temporarily*/
-#define S_VERSION2 ""
 
 /*******************************************************************
  * Defines which are not set by configure
@@ -34,7 +27,6 @@
 #define HAVE_GETTIMEOFDAY 1
 #define TIME_WITH_SYS_TIME 1
 #define HAVE_SYS_TIME_H 1
-#define PROC_BUG 1
 /* Default value for timer resolution in ticks per second */
 /* set to 10 for resolution of tenth of a second, etc */
 #define TIMER_RESOLUTION 1
@@ -65,7 +57,7 @@
 
 /* procedures to compute groebner bases with the f5 implementation */
 /* still testing */
-#undef HAVE_F5 
+#undef HAVE_F5
 
 /* procedures to compute groebner bases with the f5c implementation */
 /* still testing */
@@ -95,7 +87,7 @@
 #define ALIGN_8
 #endif
 
-#define SINGULAR_PATCHLEVEL 0
+#define SINGULAR_PATCHLEVEL 1
 #define SINGULAR_VERSION ((SINGULAR_MAJOR_VERSION*1000 + SINGULAR_MINOR_VERSION*100 + SINGULAR_SUB_VERSION*10)+SINGULAR_PATCHLEVEL)
 
 /*******************************************************************
@@ -159,15 +151,15 @@
 
 /*******************************************************************
  * DEBUG OPTIONS
- * -- only significant for for compiling without -DNDEBUG
+ * -- only significant for for compiling without -DSING_NDEBUG
  * -- you better know what your are doing, if you touch this
  ******************************************************************/
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 
 /* undefine to enable inline */
 #define NO_INLINE
 
-/* undefine to disable assume -- should normally be defined for NDEBUG */
+/* undefine to disable assume -- should normally be defined for SING_NDEBUG */
 #define HAVE_ASSUME
 
 /* undef PDEBUG to disable checks of polys
@@ -185,10 +177,10 @@
        #include "mod2.h"
        ...
 
-       makes sure that all poly operations in your file are done with 
+       makes sure that all poly operations in your file are done with
        PDEBUG == 2
  To break after an error occured, set a debugger breakpoint on
- dErrorBreak. 
+ dErrorBreak.
 */
 #ifndef PDEBUG
 #define PDEBUG 0
@@ -222,31 +214,31 @@
      0     : addresses are really freed
      1     : addresses are only marked as free and not really freed.
 
-   OM_CHECK, OM_TRACK, and OM_KEEP can be set on a per-file basis 
+   OM_CHECK, OM_TRACK, and OM_KEEP can be set on a per-file basis
    (as can OM_NDEBUG),  e.g.:
      #define OM_CHECK 3
      #define OM_TRACK 5
      #define OM_KEEP  1
      #include "mod2.h"
      #include <omalloc/omalloc.h>
-   ensures that all memory allocs/free in this file are done with 
-   OM_CHECK==3 and OM_TRACK==5, and that all addresses allocated/freed 
+   ensures that all memory allocs/free in this file are done with
+   OM_CHECK==3 and OM_TRACK==5, and that all addresses allocated/freed
    in this file are only marked as free and never really freed.
- 
-   To set OM_CHECK, OM_TRACK and OM_KEEP under dynamic scope, set 
-   om_Opts.MinCheck, om_Opts.MinTrack to the respectiv values and 
-   om_Opts.Keep to the number of addresses which are kept before they are 
+
+   To set OM_CHECK, OM_TRACK and OM_KEEP under dynamic scope, set
+   om_Opts.MinCheck, om_Opts.MinTrack to the respectiv values and
+   om_Opts.Keep to the number of addresses which are kept before they are
    actually freed. E.g.:
      int check=om_Opts.MinCheck, track=om_Opts.MinTrack, keep= m_OPts.Keep;
      om_Opts.MinCheck = 3; om_Opts.MinTrack = 5; omOpts.Keep = LONG_MAX;
      ExternalRoutine();
      om_Opts.MinCheck = check; omOpts.MinTrack = track; omOpts.Keep = keep;
    ensures that all calls omDebug routines  occuring during the computation of
-   ExternalRoutine() are done with OM_CHECK==3 and OM_TRACK==5, and 
+   ExternalRoutine() are done with OM_CHECK==3 and OM_TRACK==5, and
    calls to omFree only mark addresses as free and not really free them.
 
-   Furthermore, the value of OM_SING_KEEP (resp. om_Opts.Keep) specifies 
-   how many addresses are kept before they are actually freed, independently 
+   Furthermore, the value of OM_SING_KEEP (resp. om_Opts.Keep) specifies
+   how many addresses are kept before they are actually freed, independently
    of the value of OM_KEEP.
 
    Some tips on possible values of OM_TRACK, OM_CHECK, OM_KEEP:
@@ -259,31 +251,31 @@
        #include <omalloc/omalloc.h>
      Under dynamic scope, do (e.g., from within the debugger):
        om_Opts.MinCheck = 3; om_Opts.MinTrack = 5; omOpts.Keep = LONG_MAX;
-   + to find out where "memory corruption" occured, increase value of 
-     OM_CHECK - the higher this value is, the more consistency checks are 
-     done (However a value > 3 checks the entire memory each time an omalloc 
+   + to find out where "memory corruption" occured, increase value of
+     OM_CHECK - the higher this value is, the more consistency checks are
+     done (However a value > 3 checks the entire memory each time an omalloc
      routine is used!)
-   
+
    Some more tips on the usage of omalloc:
-   + omAlloc*, omRealloc*, omFree*, omCheck* omDebug* omTest* rotuines 
+   + omAlloc*, omRealloc*, omFree*, omCheck* omDebug* omTest* rotuines
      assume that sizes are > 0 and pointers are != NULL
    + omalloc*, omrealloc*, omfree* omcheck*, omdebug* omtest* routines allow
      NULL pointers and sizes == 0
-   + You can safely use any free/realloc routine in combination with any alloc 
+   + You can safely use any free/realloc routine in combination with any alloc
      routine (including the debug versions): E.g., an address allocated with
-     omAllocBin can be freed with omfree, or an adress allocated with 
+     omAllocBin can be freed with omfree, or an adress allocated with
      om(Debug)Alloc can be freed with omfree, or omFree, or omFreeSize, etc.
-     However, keep in mind that the efficiency decreases from 
+     However, keep in mind that the efficiency decreases from
      Bin over Size to General routines (i.e., omFreeBin is more efficient than
      omFreeSize which is more efficient than omFree, likewise with the alloc
      routines).
    + if OM_CHECK is undefined or 0, then all omCheck routines do nothing
-   + if OM_CHECK and OM_TRACK are both undefined (or 0), or if OM_NDEBUG is 
-     defined, then the "real" alloc/realloc/free macros are used, and all 
+   + if OM_CHECK and OM_TRACK are both undefined (or 0), or if OM_NDEBUG is
+     defined, then the "real" alloc/realloc/free macros are used, and all
      omTest, omDebug and omCheck routines are undefined
-   + to break after an omError occured within a debugger, 
+   + to break after an omError occured within a debugger,
      set a breakpoint on dErrorBreak
-   + to do checks from within the debugger, or to do checks with explicit 
+   + to do checks from within the debugger, or to do checks with explicit
      check level, use omTest routines.
 */
 
@@ -295,13 +287,13 @@
 #ifndef OM_CHECK
 #define OM_CHECK 1
 #endif
-/* Do actually free memory: 
-   (be careful: if this is set, memory is never really freed, 
+/* Do actually free memory:
+   (be careful: if this is set, memory is never really freed,
     but only marked as free) */
 #ifndef OM_KEEP
 #define OM_KEEP 0
 #endif
-/* but only after you have freed 1000 more addresses 
+/* but only after you have freed 1000 more addresses
    (this is actually independent of the value of OM_KEEP and used
    to initialize om_Opts.Keep) */
 #ifndef OM_SING_KEEP
@@ -311,12 +303,12 @@
 #endif /* MDEBUG */
 
 
-/* undef KDEBUG for check of data during std computations 
+/* undef KDEBUG for check of data during std computations
  *
  * define KDEBUG to
  * 0 for basic tests
- * 1 for tests in kSpoly 
- * NOTE: You can locally enable tests in kspoly by setting the 
+ * 1 for tests in kSpoly
+ * NOTE: You can locally enable tests in kspoly by setting the
  *       define at the beginning of kspoly.cc
  */
 #define KDEBUG 0
@@ -368,14 +360,14 @@
 #endif
 
 
-#else /* not NDEBUG **************************************************** */
+#else /* not SING_NDEBUG **************************************************** */
 
 #define NO_PDEBUG
 
 /* define YYDEBUG 1 for debugging bison texts, 0 otherwise */
 #define YYDEBUG 0
 
-#endif /* not NDEBUG */
+#endif /* not SING_NDEBUG */
 
 /*******************************************************************
  *
@@ -432,7 +424,7 @@ while (0)
 /* do have RDEBUG, unless we are doing the very real thing */
 #ifdef HAVE_ASSUME
 #ifndef RDEBUG
-#define RDEBUG 
+#define RDEBUG
 #endif
 #endif
 

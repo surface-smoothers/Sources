@@ -6,9 +6,9 @@
 */
 #define TRANSEXT_PRIVATES
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <omalloc/omalloc.h>
 
@@ -24,8 +24,7 @@
 //#include <libpolys/polys/ext_fields/longtrans.h>
 // #include <kernel/longalg.h>
 
-#include <kernel/febase.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 
 #include "maps_ip.h"
 #include "ipid.h"
@@ -116,7 +115,7 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
       if ((what==FETCH_CMD)&& (preimage_r->cf==currRing->cf))
         res->data=(void *)prCopyR( (poly)data, preimage_r, currRing);
       else
-      if ((what==IMAP_CMD) || ((what==FETCH_CMD) /* && (nMap!=nCopy)*/))
+	if ( (what==IMAP_CMD) || /*(*/ (what==FETCH_CMD) /*)*/) /* && (nMap!=nCopy)*/
         res->data=(void *)p_PermPoly((poly)data,perm,preimage_r,currRing, nMap,par_perm,P);
       else /*if (what==MAP_CMD)*/
       {
@@ -154,7 +153,7 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
         }
       }
       else
-      if ((what==IMAP_CMD) || ((what==FETCH_CMD) /* && (nMap!=nCopy)*/))
+	if ( (what==IMAP_CMD) || /*(*/ (what==FETCH_CMD) /*)*/) /* && (nMap!=nCopy)*/
       {
         for (i=R*C-1;i>=0;i--)
         {

@@ -10,19 +10,19 @@ AC_INIT([omalloc],[0.9.6])
 AC_CONFIG_MACRO_DIR([../m4])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_SRCDIR(om_Alloc.c)
-AC_CONFIG_HEADER(omConfig.h)
+AC_CONFIG_HEADER([_config.h])
 
 SING_RESET_FLAGS()
 
-AM_MAINTAINER_MODE
+AM_MAINTAINER_MODE([enable])
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects]) # -Wno-extra-portability -Werror silent-rules
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 AM_SANITY_CHECK
 
 # Add pre'prefixed config
-AX_PREFIX_CONFIG_H([omConfig.h],[],[omConfig.h])
+AX_PREFIX_CONFIG_H([omConfig.h],[],[_config.h])
 
 # SING_CHECK_SET_ARGS()
 
@@ -165,6 +165,7 @@ dnl Set compiler, linker flags so that we can work with omalloc
 BACKUP_CFLAGS=$CFLAGS
 BACKUP_CXXFLAGS=$CXXFLAGS
 BACKUP_LDFLAGS=$LDFLAGS
+
 CFLAGS="$CFLAGS -I$srcdir"
 CXXFLAGS="$CXXFLAGS -I$srcdir"
 
@@ -177,7 +178,7 @@ AC_TRY_RUN([#include <stdio.h>
 #include <stdlib.h>
 #include "omGetPageSize.h"
 
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
   if (!f) exit(1);
@@ -207,7 +208,7 @@ AC_CACHE_VAL(ac_cv_working_mmap,
 AC_TRY_RUN([
 #include <stdlib.h>
 #include "omMmap.c"
-main()
+int main()
 {
   void* addr = omVallocMmap(128*${ac_cv_pagesize});
   if (addr == 0 || ((unsigned long) addr % ${ac_cv_pagesize}))
@@ -226,7 +227,7 @@ dnl
 AC_CACHE_CHECK(whether alignment needs to be strict, ac_cv_align_need_strict,
 AC_TRY_RUN([
 #include <stdlib.h>
-main()
+int main()
 {
   void* ptr = (void*) malloc(12);
   volatile double* d_ptr;
@@ -302,12 +303,16 @@ AC_TRY_RUN([
 #include "$OM_MALLOC_SOURCE"
 #endif
 
-main()
+int main()
 {
   void* addr = OM_MALLOC_MALLOC(512);
+#ifdef OM_MALLOC_SIZEOF_ADDR 
   if (OM_MALLOC_SIZEOF_ADDR(addr) < 512)
     exit(1);
   exit(0);
+#else
+  exit(1);
+#endif
 }
 ], ac_cv_malloc_sizeof_addr="${OM_MALLOC_HEADER}_${OM_MALLOC_SOURCE}", ac_cv_malloc_sizeof_addr=no, ac_cv_malloc_sizeof_addr=no)
 if test "${ac_cv_malloc_sizeof_addr}" = no; then
@@ -319,12 +324,6 @@ fi
 if test "$ac_cv_malloc_sizeof_addr" != no; then
 AC_DEFINE(OM_MALLOC_PROVIDES_SIZEOF_ADDR,1,"Whether malloc provides SIZEOF_ADDR")
 fi
-
-dnl Restore user-specified CFLAGS, CXXFLAGS, LIBS
-
-CFLAGS=$BACKUP_CFLAGS
-CXXFLAGS=$BACKUP_CXXFLAGS
-LDFLAGS=$BACKUP_LDFLAGS
 
 dnl lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
 dnl check whether valloc is provided and that it works
@@ -342,7 +341,7 @@ AC_TRY_RUN([
 #include "$OM_MALLOC_SOURCE"
 #endif
 
-main()
+int main()
 {
   void* addr = OM_MALLOC_VALLOC(128*${ac_cv_pagesize});
   if (addr == 0 || ((unsigned long) addr % ${ac_cv_pagesize}))
@@ -410,14 +409,17 @@ fi
 dnl lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
 dnl debug and inline
 dnl
+save_cflags="$CFLAGS"
 AC_MSG_CHECKING(whether to disable debugging)
 if test "$with_debug" != no; then
 AC_MSG_RESULT(no)
+CFLAGS="$CFLAGS -g"
 else
 AC_MSG_RESULT(yes)
 AC_DEFINE(OM_NDEBUG,1,"Disable debug")
 with_track=no
 fi
+AM_CONDITIONAL([WANT_DEBUG],[test x"$with_debug" = xyes])
 
 AC_MSG_CHECKING(whether to have tracking debug functionality)
 if test "$with_track" != no; then
@@ -491,8 +493,13 @@ int test_backtrace()
 int main()
 {
    int i;
+   #ifdef __APPLE__
+   /* omGetBackTrace crashes on OsX for i>2 */
+   i=0;
+   #else
    omInitGetBackTrace();
    i = test_backtrace();
+   #endif
    if (i > 0) exit(0);
    else exit(i+10);
 }
@@ -508,10 +515,10 @@ AC_MSG_CHECKING(whether addr2line works)
 AC_CACHE_VAL(ac_cv_prog_addr2line_works,
 AC_TRY_RUN([
 #include <stdlib.h>
-#undef OM_GET_BACKTRACE_WORKS
 #include "omReturn.h"
 #include "omStructs.h"
 #include "omGetBackTrace.h"
+#include "omGetBackTrace.c"
 #include "omRet2Info.c"
 
 int test_Ret_2_Info()
@@ -537,6 +544,8 @@ int main(int argc, char** argv)
    ac_cv_prog_addr2line_works=no,
    ac_cv_prog_addr2line_works=no))
 AC_MSG_RESULT($ac_cv_prog_addr2line_works)
+
+CFLAGS="$save_cflags"
 
 AC_MSG_CHECKING(whether to track return addresses)
 if test "$with_track_return" = no || test "$ac_cv_get_return_addr_works" = no || test "$ac_cv_prog_addr2line_works" != yes; then
@@ -600,10 +609,15 @@ AC_MSG_RESULT(Void_t)
 AC_DEFINE(OM_PROVIDE_MALLOC,0,[Provide NO standard routines!])
 
 
+dnl Restore user-specified CFLAGS, CXXFLAGS, LIBS
+
+CFLAGS=$BACKUP_CFLAGS
+CXXFLAGS=$BACKUP_CXXFLAGS
+LDFLAGS=$BACKUP_LDFLAGS
 
 dnl lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
 dnl wrap it up
 dnl
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile omalloc.pc])
 AC_OUTPUT
 

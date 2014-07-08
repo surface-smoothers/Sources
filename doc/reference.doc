@@ -315,6 +315,7 @@ value of type int is the multiplicity (see @ref{mult})
 @node bareiss, betti, attrib, Functions
 @subsection bareiss
 @cindex bareiss
+@cindex linear algebra
 
 @table @code
 @item @strong{Syntax:}
@@ -660,11 +661,11 @@ See
 @*@code{chinrem (} list, list @code{)}
 @*@code{chinrem (} intvec, intvec @code{)}
 @item @strong{Type:}
-ideal resp. bigint
+the same type as the elements of the first argument
 @item @strong{Purpose:}
 applies chinese remainder theorem to the first argument w.r.t. the moduli given in the second.
-The elements in the first list must be of same type which can be @code{bigint}/@code{int}, @code{ideal},
-@code{module} or @code{matrix}.
+The elements in the first list must be of same type which can be @code{bigint}/@code{int},
+@code{poly}, @code{ideal}, @code{module} or @code{matrix}.
 The moduli, if given by a list, must be of type @code{bigint} or @code{int}.
 @*If data depending on a ring are involved, the coeffcient field must be @code{Q}.
 @item @strong{Example:}
@@ -1830,6 +1831,7 @@ See
 @node factmodd, factorize, facstd, Functions
 @subsection factmodd
 @cindex factmodd
+@cindex Hensel
 
 @table @code
 @item @strong{Syntax:}
@@ -1946,7 +1948,14 @@ See
 @item @strong{Type:}
 type of the first argument
 @item @strong{Purpose:}
-lift the first argument modulo the second to the rationals
+lift the first argument modulo the second to the rationals.@*
+The (coeffients of the) result a/b is the best approximation under the condition
+@ifinfo
+|a|,|b|<=sqrt((N-1)/2)
+@end ifinfo
+@tex
+$|a|,|b|<=\sqrt((N-1)/2)$
+@end tex
 @item @strong{Note:}
 The current coefficient field must be the rationals.
 @item @strong{Example:}
@@ -3059,7 +3068,7 @@ ideal, resp.@: module
 @item @strong{Purpose:}
 computes the intersection of ideals, resp.@: modules.
 @item @strong{Note:}
-If the option @code{returnSB} is enabled then the result is a standard basis.
+If the option @code{prot} is enabled then the result the used method (elimination/syzygies) is displayed.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -3304,6 +3313,8 @@ See
 @node kill, killattrib, kernel, Functions
 @subsection kill
 @cindex kill
+@cindex delete
+@cindex unset
 @table @code
 @item @strong{Syntax:}
 @code{kill } name @code{}
@@ -3338,11 +3349,12 @@ See
 @cindex killattrib
 @table @code
 @item @strong{Syntax:}
-@code{killattrib (} name@code{,} string_expression @code{)}
+@code{killattrib (} name @code{)}
+@*@code{killattrib (} name@code{,} string_expression @code{)}
 @item @strong{Type:}
 none
 @item @strong{Purpose:}
-deletes the attribute given as the second argument.
+deletes all attributes respective the attribute given as the second argument.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -3351,6 +3363,9 @@ deletes the attribute given as the second argument.
   attrib(i,"isSB",1);
   attrib(i);
   killattrib(i,"isSB");
+  attrib(i);
+  attrib(i,"isSB",1);
+  killattrib(i);
   attrib(i);
 @c example
 @end smallexample
@@ -3729,15 +3744,15 @@ See
 @item @strong{Type:}
 none
 @item @strong{Purpose:}
-lists all (user-)defined names in the current namespace:
+lists all (user-)defined names:
 @itemize @bullet
-@item @code{listvar()}: all currently visible names except procedures,
+@item @code{listvar()}: all currently visible names except procedures in the current namespace,
 @item @code{listvar(}type@code{)}: all currently visible names of the given
 type,
 @item @code{listvar(}ring_name@code{)}: all names which belong to the given
 ring,
 @item @code{listvar(}name@code{)}: the object with the given name,
-@item @code{listvar(all)}: all names except procedures.
+@item @code{listvar(all)}: all names except procedures in the current and @code{Top} namespace.
 @end itemize
 The current basering is marked with a @code{*}.  The nesting level of
 variables in procedures is shown in square brackets.
@@ -3850,6 +3865,7 @@ See
 @subsection ludecomp
 @cindex ludecomp
 @cindex LU-decomposition of a matrix of numbers
+@cindex linear algebra
 
 @table @code
 @item @strong{Syntax:}
@@ -3901,6 +3917,7 @@ See
 @subsection luinverse
 @cindex luinverse
 @cindex inverse of a matrix via its LU-decomposition
+@cindex linear algebra
 
 @table @code
 @item @strong{Syntax:}
@@ -3972,6 +3989,7 @@ See
 @subsection lusolve
 @cindex lusolve
 @cindex solve a linear equation system A*x = b via the LU-decomposition of A
+@cindex linear algebra
 
 @table @code
 @item @strong{Syntax:}
@@ -4122,6 +4140,8 @@ the same as the type of the argument
 returns a minimal set of generators of an ideal, resp.@: module, if the
 input is
 either homogeneous or if the ordering is local.
+@item @strong{Note:}
+this command is not available over coefficient rings.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -4414,6 +4434,7 @@ See
 @node mpresmat, mres, monomial, Functions
 @subsection mpresmat
 @cindex mpresmat
+@cindex resultant
 @table @code
 @item @strong{Syntax:}
 @code{mpresmat (} ideal_expression@code{,} int_expression @code{)}
@@ -4538,8 +4559,8 @@ list
 returns a list whose first entry is a standard basis for the ideal, resp.@:
 module, whose second entry is a generating set for the
 ideal, resp.@: module.
-If the ideal/module is homogeneous or the ordering is local,
-this second entry is a minimal generating set.
+If the coefficient ring is a field and  either the ideal/module is homogeneous or 
+the ordering is local, this second entry is a minimal generating set.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -4981,9 +5002,15 @@ to their default values on a change of the current basering.
 @cindex none, option
 turns off all options (including the @code{prompt} option).
 @c ---------
+@item @code{warn}
+@c ---------
+@cindex warn, option
+be aware of pitfalls.
+See @ref{option(warn)}.
+@c ---------
 @item @code{returnSB}
 @cindex returnSB, option
-the functions @code{syz}, @code{intersect}, @code{quotient},
+the functions @code{syz}, @code{intersect} (2 arguments), @code{quotient},
 @code{modulo} return a standard base instead of a generating set if
 @code{returnSB} is set. This option should not be used for @code{lift}.
 @c ---------
@@ -5016,7 +5043,7 @@ which was used in @sc{Singular} version before 2-0
 (and which may lead to faster or slower computations, depending on the example)
 @item @code{length}
 @cindex length, option
-select shorter reduceers in std computations,
+select shorter reducers in std computations,
 @c ---------
 @item @code{notRegularity}
 @cindex notRegularity, option
@@ -6271,6 +6298,9 @@ the quotient ideal.
 @end enumerate
 From a list of such structure, a new ring may be defined by the command @code{ring}
 ( see the following example ).
+@item @strong{Note:} All data which depends on a ring belong to the current ring,
+not to a ring which can be contructed fron a modified list.
+These data will be mapped via fetch to the ring to be constructed.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -6343,7 +6373,7 @@ See
 @table @code
 @item @strong{Syntax:}
 @code{sba (} ideal_expression@code{)}
-@*@code{std (} ideal_expression@code{,} int_expression@code{,} int_expression @code{)}
+@*@code{sba (} ideal_expression@code{,} int_expression@code{,} int_expression @code{)}
 @item @strong{Type:}
 ideal
 @item @strong{Purpose:}
@@ -6352,33 +6382,43 @@ monomial ordering of the basering.
 A standard basis is a set of generators such that
 the leading terms generate the leading ideal, resp.@: module.
 @*Use optional
-second and thirds arguments of type int to determine the respective variant of
+second and third arguments of type @code{int} to determine the respective variant of
 the signature-based standard basis algorithm:
-@*@code{sba(i,1,1)} computes the basis incrementally using an improved version
-of the algorithm described in
-@code{http://dx.doi.org/10.1016/j.jsc.2011.05.004}.
-@*@code{sba(i,1,0)} computes the basis incrementally using an improved version
-of the algorithm described in
-@code{http://dx.doi.org/10.1016/j.jsc.2010.06.019}.
-@*@code{sba(i,0,1)} computes the basis non-incrementally using the induced
-Schreyer order on the signatures together with an improved version
-of the algorithm described in @code{http://dx.doi.org/10.1016/j.jsc.2011.05.004}.
-@*@code{sba(i,0,0)} computes the basis non-incrementally using the induced
-Schreyer order on the signatures together with an improved version
-of the algorithm described in @code{http://dx.doi.org/10.1145/780506.780516}.
-@*@code{sba(i)} corresponds to @code{sba(i,0,1)}.
+@*The second argument specifies the internal module order @code{sba} uses:
+@itemize
+@item
+@code{0}: induced Schreyer order on the signatures, non-incremental computation
+of the basis
+@item
+@code{1}: position over term order, incremental computation of the basis
+@item
+@code{2}: term over position order, non-incremental computation
+@item
+@code{3}: Schreyer-weighted degree over index over leading term
+@end itemize
+@*The third argument specifies the rewrite order @code{sba} uses:
+@itemize
+@item
+@code{0}: using the rewrite order described in
+@code{http://dx.doi.org/10.1016/j.jsc.2010.06.019}
+@item
+@code{1}: using the rewrite order described in
+@code{http://dx.doi.org/10.1016/j.jsc.2011.05.004}
+@end itemize
+@*The standard call of @code{sba(i)} corresponds to @code{sba(i,0,1)}.
 @item @strong{Note:}
 The
 standard basis is computed with an optimized version of known signature-based
 algorithms like Faugere's F5 Algorithm. Whereas the correctness of the
 algorithms is only guaranteed for global orderings, timings for pure
-lexicographical orderings can be slow. In those situation you should try to
+lexicographical orderings can be slow. In this situation you should try to
 compute the basis w.r.t. the graded reverse-lexicographic ordering and then
-convert to a basis for the lexicographical ordering using other methods (see
+convert to a basis for the lexicographical ordering using other methods (
 @pxref{fglm} and @pxref{grwalk_lib}). If the algorithms tend to use too much
-memory, you should try the other implemented standard basis algorithms (see
+memory, you should try the other implemented standard basis algorithms (
 @pxref{std}, @pxref{groebner}, and @pxref{slimgb}).
-
+@* Note that the behaviour of @code{sba} on an example can be rather different
+depending on which variant you choose (second and third argument).
 @item @strong{Example:}
 @smallexample
 @c example
@@ -7592,6 +7632,7 @@ See
 @ref{int};
 @ref{univariate};
 @ref{nvars};
+@ref{rvar};
 @ref{varstr}.
 @c ref
 @c ---------------------------------------
@@ -7947,6 +7988,7 @@ See
 @*List of all supported control structures.
 @end ifinfo
 @menu
+* apply::
 * break::
 * breakpoint::
 * continue::
@@ -7990,7 +8032,37 @@ if ( i>j )
 @end table
 
 @c ---------------------------------------
-@node break, breakpoint, Control structures, Control structures
+@node apply, break, Control structures, Control structures
+@subsection apply
+@cindex apply
+@table @code
+@item @strong{Syntax:}
+@code{apply(} expression @code{,} function @code{);}
+@item @strong{Purpose:}
+applies the function to all elements of the first argument.
+The first argument must be of type
+@code{intvec},
+@code{intmat},
+@c @code{bigintmat},
+@c @code{ideal},
+@c @code{module},
+@c @code{matrix},
+or @code{list}.
+The result will be of the same type as the first argument.
+The function must be a kernel command or a procedure which takes one
+argument and returns a type which can be an element of the result.
+@item @strong{Example:}
+@smallexample
+@c example
+proc p(int x) {return(x^2);}
+intvec v=1,2,3;
+apply(v,p);
+@c example
+@end smallexample
+@end table
+
+@c ---------------------------------------
+@node break, breakpoint, apply, Control structures
 @subsection break
 @cindex break
 @table @code

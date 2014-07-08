@@ -6,23 +6,20 @@
 * ABSTRACT - initialize SINGULARs components, run Script and start SHELL
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
-#include "countedref.h"
 #include <omalloc/omalloc.h>
 
 #include <misc/auxiliary.h>
 #include <misc/options.h>
 
-#ifdef HAVE_FACTORY
-#define SI_DONT_HAVE_GLOBAL_VARS
 #include <factory/factory.h>
-#endif
 
-#include <kernel/febase.h>
-#include <kernel/timer.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
+#include <kernel/oswrapper/timer.h>
 
 // #ifdef HAVE_FANS
 // #include <callgfanlib/bbcone.h>
@@ -42,7 +39,8 @@
 #include "tok.h"
 #include "fegetopt.h"
 
-#include "pyobject_setup.h"
+#include <Singular/countedref.h>
+#include <Singular/pyobject_setup.h>
 
 #include <unistd.h>
 #include <string.h>
@@ -50,21 +48,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
-#ifdef HAVE_SIMPLEIPC
-#include <Singular/links/simpleipc.h>
-#endif
-
-
-
 
 
 extern int siInit(char *);
-
-#if ! defined(LIBSINGULAR)
-
-#ifdef HAVE_FACTORY
-int initializeGMP(){ return 1; }
-#endif
 
 int mmInit( void )
 {
@@ -84,7 +70,7 @@ int main(          /* main entry to Singular */
     int argc,      /* number of parameter */
     char** argv)   /* parameter array */
 {
-  //mmInit();
+  mmInit();
   // Don't worry: ifdef OM_NDEBUG, then all these calls are undef'ed
   omInitRet_2_Info(argv[0]);
   omInitGetBackTrace();
@@ -131,13 +117,6 @@ int main(          /* main entry to Singular */
     if (optc == 'h') exit(0);
   }
 
-// semaphore0: CPUs --------------------------------------------------
-#ifdef HAVE_SIMPLEIPC
-  feOptIndex cpu_opt = feGetOptIndex("cpus");
-  int cpus = (int)(long)feOptValue(FE_OPT_CPUS);
-  sipc_semaphore_init(0, cpus-1);
-#endif
-
   /* say hello */
 
   if (TEST_V_QUIET)
@@ -158,9 +137,7 @@ int main(          /* main entry to Singular */
   }
   else
   {
-#ifdef HAVE_FACTORY
     if (feOptValue(FE_OPT_SORT)) On(SW_USE_NTL_SORT);
-#endif
 #ifdef HAVE_SDB
     sdb_flags = 0;
 #endif
@@ -254,5 +231,4 @@ int main(          /* main entry to Singular */
   m2_end(0);
   return 0;
 }
-#endif // not LIBSINGULAR
 

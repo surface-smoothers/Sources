@@ -1,11 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
 #include <misc/auxiliary.h>
 
-#ifdef HAVE_FACTORY
 #include <factory/factory.h>
-#endif
 
 #include <omalloc/omalloc.h>
 
@@ -25,11 +20,6 @@
 #include <coeffs/rmodulo2m.h>
 #include <coeffs/rintegers.h>
 
-
-#ifdef HAVE_FACTORY
-int initializeGMP(void){ return 1; }
-int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
-#endif
 
 #include <iostream>
 

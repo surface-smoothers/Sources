@@ -15,8 +15,7 @@
 //
 
 /* forward declaration of types */
-class idrec;
-typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
+class idrec; typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
 struct  spolyrec;
 typedef struct spolyrec    polyrec;
 typedef struct spolyrec *         poly;
@@ -343,7 +342,7 @@ ring   rDefault(int ch, int N, char **n,int ord_size, int *ord, int *block0, int
 ring   rDefault(const coeffs cf, int N, char **n,int ord_size, int *ord, int *block0, int *block1, int **wvhdl=NULL);
 
 // #define rIsRingVar(A) r_IsRingVar(A,currRing)
-int    r_IsRingVar(const char *n, ring r);
+int    r_IsRingVar(const char *n, char**names, int N);
 void   rWrite(ring r, BOOLEAN details = FALSE);
 ring   rCopy(ring r);
 ring   rCopy0(const ring r, BOOLEAN copy_qideal = TRUE, BOOLEAN copy_ordering = TRUE);
@@ -415,16 +414,16 @@ BOOLEAN rRing_has_CompLastBlock(ring r);
 
 #ifdef HAVE_RINGS
 static inline BOOLEAN rField_is_Ring_2toM(const ring r)
-{ assume(r != NULL); assume(r->cf != NULL); return ( getCoeffType(r->cf) == n_Z2m && nCoeff_is_Ring_2toM(r->cf) ); }
+{ assume(r != NULL); assume(r->cf != NULL); return ( nCoeff_is_Ring_2toM(r->cf) ); }
 
 static inline BOOLEAN rField_is_Ring_ModN(const ring r)
-{ assume(r != NULL); assume(r->cf != NULL); return ( getCoeffType(r->cf) == n_Zn && nCoeff_is_Ring_ModN(r->cf) ); }
+{ assume(r != NULL); assume(r->cf != NULL); return ( nCoeff_is_Ring_ModN(r->cf) ); }
 
 static inline BOOLEAN rField_is_Ring_PtoM(const ring r)
-{ assume(r != NULL); assume(r->cf != NULL); return (getCoeffType(r->cf) == n_Znm && nCoeff_is_Ring_PtoM(r->cf) ); }
+{ assume(r != NULL); assume(r->cf != NULL); return ( nCoeff_is_Ring_PtoM(r->cf) ); }
 
 static inline BOOLEAN rField_is_Ring_Z(const ring r)
-{ assume(r != NULL); assume(r->cf != NULL); return (getCoeffType(r->cf) == n_Z && nCoeff_is_Ring_Z(r->cf) ); }
+{ assume(r != NULL); assume(r->cf != NULL); return ( nCoeff_is_Ring_Z(r->cf) ); }
 
 static inline BOOLEAN rField_is_Ring(const ring r)
 { assume(r != NULL); assume(r->cf != NULL); return nCoeff_is_Ring(r->cf); }
@@ -562,7 +561,7 @@ static inline int rPar(const ring r)
 
 
 /// (r->cf->parameter)
-static inline char const * const * rParameter(const ring r)
+static inline char const ** rParameter(const ring r)
 {
   assume(r != NULL);
   const coeffs C = r->cf;
@@ -731,6 +730,7 @@ ring   rAssure_TDeg(const ring r, int start_var, int end_var, int &pos);
 int rGetMaxSyzComp(int i, const ring r);
 
 BOOLEAN rHasSimpleOrder(const ring r);
+BOOLEAN rHas_c_Ordering(const ring r);
 
 /// returns TRUE, if simple lp or ls ordering
 BOOLEAN rHasSimpleLexOrder(const ring r);
@@ -793,7 +793,7 @@ void rDebugPrint(ring r);
 void p_DebugPrint(poly p, const ring r);
 #endif
 
-#ifndef NDEBUG
+#ifndef SING_NDEBUG
 /// debug-print at most nTerms (2 by default) terms from poly/vector p,
 /// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
 void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms = 2);

@@ -7,16 +7,14 @@
 
 #define HAVE_WALK 1
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <misc/auxiliary.h>
+#include <misc/sirandom.h>
 
-#ifdef HAVE_FACTORY
-// #define SI_DONT_HAVE_GLOBAL_VARS
 #include <factory/factory.h>
-#endif
 
 
 #include <stdlib.h>
@@ -56,6 +54,7 @@
 #include "coeffs/OPAEQ.h"
 
 
+#include <resources/feResource.h>
 #include <polys/monomials/ring.h>
 #include <kernel/polys.h>
 
@@ -69,19 +68,23 @@
 
 #include <kernel/fast_mult.h>
 #include <kernel/digitech.h>
-#include <kernel/stairc.h>
-#include <kernel/febase.h>
+#include <kernel/GBEngine/stairc.h>
 #include <kernel/ideals.h>
-#include <kernel/kstd1.h>
-#include <kernel/syz.h>
-#include <kernel/kutil.h>
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/GBEngine/syz.h>
+#include <kernel/GBEngine/kutil.h>
 
-#include <kernel/shiftgb.h>
-#include <kernel/linearAlgebra.h>
+#include <kernel/GBEngine/shiftgb.h>
+#include <kernel/linear_algebra/linearAlgebra.h>
+
+#include <kernel/combinatorics/hutil.h>
 
 // for tests of t-rep-GB
-#include <kernel/tgb.h>
+#include <kernel/GBEngine/tgb.h>
 
+#include <kernel/linear_algebra/minpoly.h>
+
+#include <numeric/mpr_base.h>
 
 #include "tok.h"
 #include "ipid.h"
@@ -93,7 +96,6 @@
 #include "fehelp.h"
 #include "distrib.h"
 
-#include "minpoly.h"
 #include "misc_ip.h"
 
 #include "attrib.h"
@@ -101,15 +103,16 @@
 #include "links/silink.h"
 #include "walk.h"
 #include <Singular/newstruct.h>
+#include <Singular/blackbox.h>
 #include <Singular/pyobject_setup.h>
 
 
 #ifdef HAVE_RINGS
-#include <kernel/ringgb.h>
+#include <kernel/GBEngine/ringgb.h>
 #endif
 
 #ifdef HAVE_F5
-#include <kernel/f5gb.h>
+#include <kernel/GBEngine/f5gb.h>
 #endif
 
 #ifdef HAVE_WALK
@@ -118,22 +121,17 @@
 
 
 #ifdef HAVE_SPECTRUM
-#include <kernel/spectrum.h>
+#include <kernel/spectrum/spectrum.h>
 #endif
-
-#if defined(HPUX_10) || defined(HPUX_9)
-extern "C" int setenv(const char *name, const char *value, int overwrite);
-#endif
-
 
 #ifdef HAVE_PLURAL
 #include <polys/nc/nc.h>
 #include <polys/nc/ncSAMult.h> // for CMultiplier etc classes
 #include <polys/nc/sca.h>
-#include <kernel/nc.h>
+#include <kernel/GBEngine/nc.h>
 #include "ipconv.h"
 #ifdef HAVE_RATGRING
-#include <kernel/ratgring.h>
+#include <kernel/GBEngine/ratgring.h>
 #endif
 #endif
 
@@ -151,16 +149,8 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #define HAVE_EXTENDED_SYSTEM 1
 #endif
 
-#ifdef HAVE_FACTORY
-#define SI_DONT_HAVE_GLOBAL_VARS
-
-#ifdef HAVE_LIBFAC
-//#include <factory/libfac/libfac.h>
-#endif
-
 #include <polys/clapconv.h>
-#include <kernel/kstdfac.h>
-#endif
+#include <kernel/GBEngine/kstdfac.h>
 
 #include <polys/clapsing.h>
 
@@ -198,8 +188,6 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #ifndef MAKE_DISTRIBUTION
 static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h);
 #endif
-
-extern BOOLEAN jjJanetBasis(leftv res, leftv v);
 
 #ifdef ix86_Win  /* PySingular initialized? */
 static int PyInitialized = 0;
@@ -440,10 +428,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           #ifdef HAVE_DLD
             TEST_FOR("DLD")
           #endif
-          #ifdef HAVE_FACTORY
-            TEST_FOR("factory")
+            //TEST_FOR("factory")
             //TEST_FOR("libfac")
-          #endif
           #ifdef HAVE_READLINE
             TEST_FOR("readline")
           #endif
@@ -464,7 +450,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           #ifdef OM_NDEBUG
             TEST_FOR("om_ndebug")
           #endif
-          #ifdef NDEBUG
+          #ifdef SING_NDEBUG
             TEST_FOR("ndebug")
           #endif
             {};
@@ -639,9 +625,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         {
           siRandomStart=(int)((long)h->Data());
           siSeed=siRandomStart;
-  #ifdef HAVE_FACTORY
           factoryseed(siRandomStart);
-  #endif
           return FALSE;
         }
         else if (h != NULL)
@@ -694,7 +678,9 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           return TRUE;
         }
         res->rtyp=INT_CMD;
-        res->data=(void*)getGMPFloatDigits();
+        res->data=(void*)(long)gmp_output_digits;
+	//if (gmp_output_digits!=getGMPFloatDigits())
+	//{ Print("%d, %d\n",getGMPFloatDigits(),gmp_output_digits);}
         return FALSE;
       }
   /*==================== mpz_t loader ======================*/
@@ -983,10 +969,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       }
   /*==================== neworder =============================*/
   // should go below
-  #ifdef HAVE_FACTORY
       if(strcmp(sys_cmd,"neworder")==0)
       {
-#if defined(HAVE_LIBFAC)
         if ((h!=NULL) &&(h->Typ()==IDEAL_CMD))
         {
           res->rtyp=STRING_CMD;
@@ -995,13 +979,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         }
         else
           WerrorS("ideal expected");
-#else
-  Werror("Sorry: not yet re-factored: see libpolys/polys/clapsing.cc");
-  return FALSE;
-#endif
       }
       else
-  #endif
   //#ifndef HAVE_DYNAMIC_LOADING
   /*==================== pcv ==================================*/
   #ifdef HAVE_PCV
@@ -2185,14 +2164,14 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         intvec* arg2 = (intvec*) h->next->Data();
         intvec* arg3 = (intvec*) h->next->next->Data();
         int arg4 = (int)(long) h->next->next->next->Data();
-        
+
         ideal result = (ideal) Mfrwalk(arg1, arg2, arg3, arg4);
 
         res->rtyp = IDEAL_CMD;
         res->data =  result;
 
         return FALSE;
-      } 
+      }
       else
 
   #ifdef TRAN_Orig
@@ -2339,14 +2318,14 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 
 #ifdef HAVE_EXTENDED_SYSTEM
   // You can put your own system calls here
-#  include <kernel/fglmcomb.cc>
-#  include <kernel/fglm.h>
+#  include <kernel/fglm/fglmcomb.cc>
+#  include <kernel/fglm/fglm.h>
 #  ifdef HAVE_NEWTON
 #    include <hc_newton.h>
 #  endif
 #  include <polys/mod_raw.h>
 #  include <polys/monomials/ring.h>
-#  include <kernel/shiftgb.h>
+#  include <kernel/GBEngine/shiftgb.h>
 
 static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
 {
@@ -2518,6 +2497,20 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           return FALSE;
         }
         else
+  /*==================== setsyzcomp ==================================*/
+      if(strcmp(sys_cmd,"setsyzcomp")==0)
+      {
+      
+      if ((h!=NULL) && (h->Typ()==INT_CMD))
+         {
+           int k = (int)(long)h->Data();
+           if ( currRing->order[0] == ringorder_s )
+           {
+                rSetSyzComp(k, currRing);
+           }
+          }
+      
+      }
   /*==================== ring debug ==================================*/
         if(strcmp(sys_cmd,"r")==0)
         {
@@ -2690,21 +2683,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
 //            WerrorS("ideal expected");
 //       }
 //       else
-  /*==================== isSqrFree =============================*/
-  #ifdef HAVE_FACTORY
-      if(strcmp(sys_cmd,"isSqrFree")==0)
-      {
-        if ((h!=NULL) &&(h->Typ()==POLY_CMD))
-        {
-          res->rtyp=INT_CMD;
-          res->data=(void *)(long) singclap_isSqrFree((poly)h->Data(), currRing);
-          return FALSE;
-        }
-        else
-          WerrorS("poly expected");
-      }
-      else
-  #endif
   /*==================== pDivStat =============================*/
   #if defined(PDEBUG) || defined(PDIV_DEBUG)
       if(strcmp(sys_cmd,"pDivStat")==0)
@@ -2751,7 +2729,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       }
       else
   #endif
-  #ifdef HAVE_FACTORY
   /*==================== fastcomb =============================*/
       if(strcmp(sys_cmd,"fastcomb")==0)
       {
@@ -2794,7 +2771,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           WerrorS("ideal expected");
       }
       else
-  #endif
   #if 0 /* debug only */
   /*==================== listall ===================================*/
       if(strcmp(sys_cmd,"listall")==0)
@@ -3106,7 +3082,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       else
   #endif
   /*==================== facstd_debug ==================================*/
-  #if !defined(NDEBUG)
+  #if !defined(SING_NDEBUG)
       if(strcmp(sys_cmd,"facstd")==0)
       {
         extern int strat_nr;
@@ -3167,6 +3143,18 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       }
       else
   #endif
+  /*==================== Roune Hilb  =================*/
+       if (strcmp(sys_cmd, "hilbroune") == 0)
+       {
+         ideal I;
+         if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
+         {
+           I=(ideal)h->CopyD();
+           slicehilb(I);
+         }
+         else return TRUE;
+         return FALSE;
+       }
   /*==================== minor =================*/
       if (strcmp(sys_cmd, "minor")==0)
       {
@@ -3495,7 +3483,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         {
           lV=(int)((long)(h->Data()));
           res->rtyp = INT_CMD;
-          res->data = (void*)pLastVblock(p, lV);
+          res->data = (void*)(long)pLastVblock(p, lV);
         }
         else return TRUE;
         return FALSE;
@@ -3599,14 +3587,11 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       }
       else
   /*==================== gcd-varianten =================*/
-  #ifdef HAVE_FACTORY
       if (strcmp(sys_cmd, "gcd") == 0)
       {
         if (h==NULL)
         {
 #ifdef HAVE_PLURAL
-          Print("NTL_0:%d (use NTL for gcd of polynomials in char 0)\n",isOn(SW_USE_NTL_GCD_0));
-          Print("NTL_p:%d (use NTL for gcd of polynomials in char p)\n",isOn(SW_USE_NTL_GCD_P));
           Print("EZGCD:%d (use EZGCD for gcd of polynomials in char 0)\n",isOn(SW_USE_EZGCD));
           Print("EZGCD_P:%d (use EZGCD_P for gcd of polynomials in char p)\n",isOn(SW_USE_EZGCD_P));
           Print("CRGCD:%d (use chinese Remainder for gcd of polynomials in char 0)\n",isOn(SW_USE_CHINREM_GCD));
@@ -3622,8 +3607,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           int d=(int)(long)h->next->Data();
           char *s=(char *)h->Data();
 #ifdef HAVE_PLURAL
-          if (strcmp(s,"NTL_0")==0) { if (d) On(SW_USE_NTL_GCD_0); else Off(SW_USE_NTL_GCD_0); } else
-          if (strcmp(s,"NTL_p")==0) { if (d) On(SW_USE_NTL_GCD_P); else Off(SW_USE_NTL_GCD_P); } else
           if (strcmp(s,"EZGCD")==0) { if (d) On(SW_USE_EZGCD); else Off(SW_USE_EZGCD); } else
           if (strcmp(s,"EZGCD_P")==0) { if (d) On(SW_USE_EZGCD_P); else Off(SW_USE_EZGCD_P); } else
           if (strcmp(s,"CRGCD")==0) { if (d) On(SW_USE_CHINREM_GCD); else Off(SW_USE_CHINREM_GCD); } else
@@ -3636,7 +3619,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         else return TRUE;
       }
       else
-  #endif
   /*==================== subring =================*/
       if (strcmp(sys_cmd, "subring") == 0)
       {
@@ -3651,7 +3633,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       }
       else
   /*==================== HNF =================*/
-  #ifdef HAVE_FACTORY
   #ifdef HAVE_NTL
       if (strcmp(sys_cmd, "HNF") == 0)
       {
@@ -3725,7 +3706,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         else return TRUE;
       }
       else
-      #endif
   /*================= probIrredTest ======================*/
       if (strcmp (sys_cmd, "probIrredTest") == 0)
       {
@@ -3736,7 +3716,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           double error= atof (s);
           int irred= probIrredTest (F, error);
           res->rtyp= INT_CMD;
-          res->data= (void*)irred;
+          res->data= (void*)(long)irred;
           return FALSE;
         }
         else return TRUE;
@@ -3807,7 +3787,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         int v=1;
         if ((h->next->next!=NULL)&& (h->next->next->Typ()==INT_CMD))
           v=(int)(long)h->next->next->Data();
-        res->data=(char *)simpleipc_cmd((char *)h->Data(),(int)(long)h->next->Data(),v);
+        res->data=(char *)(long)simpleipc_cmd((char *)h->Data(),(int)(long)h->next->Data(),v);
         res->rtyp=INT_CMD;
         return FALSE;
       }
@@ -3838,9 +3818,35 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
     {
       return newstruct_set_proc((char*)h->Data(),(char*)h->next->Data(),
                                 (int)(long)h->next->next->next->Data(),
-				(procinfov)h->next->next->Data());
+                                (procinfov)h->next->next->Data());
     }
     return TRUE;
+  }
+  else
+  if (strcmp(sys_cmd,"newstruct")==0)
+  {
+    if ((h!=NULL) && (h->Typ()==STRING_CMD))
+    {
+      int id=0;
+      blackboxIsCmd((char*)h->Data(),id);
+      if (id>0)
+      {
+        blackbox *bb=getBlackboxStuff(id);
+	if (BB_LIKE_LIST(bb))
+	{
+          newstruct_desc desc=(newstruct_desc)bb->data;
+          newstructShow(desc);
+          return FALSE;
+	}
+      }
+    }
+    return TRUE;
+  }
+  else
+  if (strcmp(sys_cmd,"blackbox")==0)
+  {
+    printBlackboxTypes();
+    return FALSE;
   }
   else
 /*==================== reserved port =================*/
@@ -3863,7 +3869,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
   else
   if (strcmp(sys_cmd,"reservedLink")==0)
   {
-    si_link ssiCommandLink();
+    extern si_link ssiCommandLink();
     res->rtyp=LINK_CMD;
     si_link p=ssiCommandLink();
     res->data=(void*)p;
@@ -3931,7 +3937,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
     number erg=n_Add(a,b,AEp);
     p_poly* h= reinterpret_cast<p_poly*> (erg);
     h->p_poly_print();
-   
+
     return FALSE;
   }
   else

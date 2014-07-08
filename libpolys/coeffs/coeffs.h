@@ -1,39 +1,39 @@
-#ifndef COEFFS_H
-#define COEFFS_H
+/*!
+ \file coeffs/coeffs.h Coeff. Rings and Fields (interface)
+*/
 /****************************************
 *  Computer Algebra System SINGULAR     *
 ****************************************/
-/*
-* ABSTRACT
-*/
+
+#ifndef COEFFS_H
+#define COEFFS_H
 
 #include <misc/auxiliary.h>
 /* for assume: */
 #include <reporter/reporter.h>
+#include <reporter/s_buff.h>
 
 #include <coeffs/si_gmp.h>
 
 #include <coeffs/Enumerator.h>
 
-#ifdef HAVE_FACTORY
 class CanonicalForm;
-#endif
 
 enum n_coeffType
 {
   n_unknown=0,
-  n_Zp, /**< \F{p < ?} */
+  n_Zp, /**< \F{p < 2^31} */
   n_Q,  /**< rational (GMP) numbers */
   n_R,  /**< single prescision (6,6) real numbers */
-  n_GF, /**< \GF{p^n < 32001?} */
-  n_long_R, /**< real (GMP) numbers */
+  n_GF, /**< \GF{p^n < 2^16} */
+  n_long_R, /**< real floating point (GMP) numbers */
   n_algExt,  /**< used for all algebraic extensions, i.e.,
                 the top-most extension in an extension tower
                 is algebraic */
   n_transExt,  /**< used for all transcendental extensions, i.e.,
                   the top-most extension in an extension tower
                   is transcendental */
-  n_long_C, /**< complex (GMP) numbers */
+  n_long_C, /**< complex floating point (GMP) numbers */
   n_Z, /**< only used if HAVE_RINGS is defined: ? */
   n_Zn, /**< only used if HAVE_RINGS is defined: ? */
   n_Znm, /**< only used if HAVE_RINGS is defined: ? */
@@ -76,7 +76,7 @@ typedef void (*nCoeffsEnumeratorFunc)(ICoeffsEnumerator& numberCollectionEnumera
 
 
 /// Creation data needed for finite fields
-typedef struct 
+typedef struct
 {
   int GFChar;
   int GFDegree;
@@ -92,13 +92,12 @@ typedef struct
 
 struct n_Procs_s
 {
+   // administration of coeffs:
    coeffs next;
-   /*unsigned int ringtype;   =0 => coefficient field,
-                             !=0 => coeffs from one of the rings:
-                              =1 => Z/2^mZ
-                              =2 => Z/nZ, n not a prime
-                              =3 => Z/p^mZ
-                              =4 => Z */
+   int     ref;
+   n_coeffType type;
+   /// how many variables of factory are already used by this coeff
+   int     factoryVarOffset;
 
    // general properties:
    /// TRUE, if nNew/nDelete/nCopy are dummies
@@ -107,11 +106,19 @@ struct n_Procs_s
    /// if false, then a gcd routine is used for a content computation
    BOOLEAN has_simple_Inverse;
 
+   /// TRUE, if cf is a field
+   BOOLEAN is_field;
+   /// TRUE, if cf is a domain
+   BOOLEAN is_domain;
+
    // tests for numbers.cc:
    BOOLEAN (*nCoeffIsEqual)(const coeffs r, n_coeffType n, void * parameter);
 
    /// output of coeff description via Print
    void (*cfCoeffWrite)(const coeffs r, BOOLEAN details);
+
+   /// string output of coeff description
+   char* (*cfCoeffString)(const coeffs r);
 
    // ?
    // initialisation:
@@ -121,27 +128,38 @@ struct n_Procs_s
    void (*cfSetChar)(const coeffs r); // initialisations after each ring change
                                 // or NULL
    // general stuff
-   numberfunc cfMult, cfSub ,cfAdd ,cfDiv, cfIntDiv, cfIntMod, cfExactDiv;
-   
+   //   if the ring has a meaningful Euclidean structure, hopefully
+   //   supported by cfQuotRem, then
+   //     IntMod, Div should give the same result
+   //     Div(a,b) = QuotRem(a,b, &IntMod(a,b))
+   //   if the ring is not Euclidean or a field, then IntMod should return 0
+   //   and Div the exact quotient. It is assumed that the function is
+   //   ONLY called on Euclidean rings or in the case of an exact division.
+   //
+   //   cfDiv does an exact division, but has to handle illegal input
+   //   cfExactDiv does an exact division, but no error checking
+   //   (I'm not sure I understant and even less that this makes sense)
+   numberfunc cfMult, cfSub ,cfAdd ,cfDiv, cfIntMod, cfExactDiv;
+
    /// init with an integer
    number  (*cfInit)(long i,const coeffs r);
 
    /// init with a GMP integer
    number  (*cfInitMPZ)(mpz_t i, const coeffs r);
-   
+
    /// how complicated, (0) => 0, or positive
    int     (*cfSize)(number n, const coeffs r);
-   
+
    /// convertion to int, 0 if impossible
    int     (*cfInt)(number &n, const coeffs r);
 
    /// Converts a non-negative number n into a GMP number, 0 if impossible
    void     (*cfMPZ)(mpz_t result, number &n, const coeffs r);
-   
+
    /// changes argument  inline: a:= -a
    /// return -a! (no copy is returned)
-   /// the result should be assigned to the original argument: e.g. a = n_Neg(a,r)
-   number  (*cfNeg)(number a, const coeffs r);
+   /// the result should be assigned to the original argument: e.g. a = n_InpNeg(a,r)
+   number  (*cfInpNeg)(number a, const coeffs r);
    /// return 1/a
    number  (*cfInvers)(number a, const coeffs r);
    /// return a copy of a
@@ -151,38 +169,78 @@ struct n_Procs_s
 
    /// print a given number (long format)
    void    (*cfWriteLong)(number &a, const coeffs r);
-   
+
    /// print a given number in a shorter way, if possible
    /// e.g. in K(a): a2 instead of a^2
    void    (*cfWriteShort)(number &a, const coeffs r);
-   
-   const char *  (*cfRead)(const char * s, number * a, const coeffs r);
-   void    (*cfNormalize)(number &a, const coeffs r);
-   
-#ifdef HAVE_RINGS
-   int     (*cfDivComp)(number a,number b,const coeffs r);
-   BOOLEAN (*cfIsUnit)(number a,const coeffs r);
-   number  (*cfGetUnit)(number a,const coeffs r);
-   BOOLEAN (*cfDivBy)(number a, number b, const coeffs r);
-#endif
 
-   
+   // it is legal, but not always useful to have cfRead(s, a, r)
+   //   just return s again.
+   // Useful application (read constants which are not an projection
+   // from int/bigint:
+   // Let ring r = R,x,dp;
+   // where R is a coeffs having "special" "named" elements (ie.
+   // the primitive element in some algebraic extension).
+   // If there is no interpreter variable of the same name, it is
+   // difficult to create non-trivial elements in R.
+   // Hence one can use the string to allow creation of R-elts using the
+   // unbound name of the special element.
+   const char *  (*cfRead)(const char * s, number * a, const coeffs r);
+
+   void    (*cfNormalize)(number &a, const coeffs r);
+
    BOOLEAN (*cfGreater)(number a,number b, const coeffs r),
             /// tests
            (*cfEqual)(number a,number b, const coeffs r),
            (*cfIsZero)(number a, const coeffs r),
            (*cfIsOne)(number a, const coeffs r),
            (*cfIsMOne)(number a, const coeffs r),
+       //GreaterZero is used for printing of polynomials:
+       //  a "+" is only printed in front of a coefficient
+       //  if the element is >0. It is assumed that any element
+       //  failing this will start printing with a leading "-"
            (*cfGreaterZero)(number a, const coeffs r);
 
    void    (*cfPower)(number a, int i, number * result, const coeffs r);
    number  (*cfGetDenom)(number &n, const coeffs r);
    number  (*cfGetNumerator)(number &n, const coeffs r);
+   //CF: a Euclidean ring is a commutative, unitary ring with an Euclidean
+   //  function f s.th. for all a,b in R, b ne 0, we can find q, r s.th.
+   //  a = qb+r and either r=0 or f(r) < f(b)
+   //  Note that neither q nor r nor f(r) are unique.
    number  (*cfGcd)(number a, number b, const coeffs r);
+   number  (*cfSubringGcd)(number a, number b, const coeffs r);
    number  (*cfExtGcd)(number a, number b, number *s, number *t,const coeffs r);
+   //given a and b in a Euclidean setting, return s,t,u,v sth.
+   //  sa + tb = gcd
+   //  ua + vb = 0
+   //  sv + tu = 1
+   //  ie. the 2x2 matrix (s t | u v) is unimodular and maps (a,b) to (g, 0)
+   //CF: note, in general, this cannot be derived from ExtGcd due to
+   //    zero divisors
+   number  (*cfXExtGcd)(number a, number b, number *s, number *t, number *u, number *v, const coeffs r);
+   //in a Euclidean ring, return the Euclidean norm as a bigint (of type number)
+   number  (*cfEucNorm)(number a, const coeffs r);
+   //in a principal ideal ring (with zero divisors): the annihilator
+   // NULL otherwise
+   number  (*cfAnn)(number a, const coeffs r);
+   //find a "canonical representative of a modulo the units of r
+   //return NULL if a is already normalized
+   //otherwise, the factor.
+   //(for Z: make positive, for z/nZ make the gcd with n
+   //aparently it is GetUnit!
+   //in a Euclidean ring, return the quotient and compute the remainder
+   //rem can be NULL
+   number  (*cfQuotRem)(number a, number b, number *rem, const coeffs r);
    number  (*cfLcm)(number a, number b, const coeffs r);
    void    (*cfDelete)(number * a, const coeffs r);
+
+   //CF: tries to find a canonical map from src -> dst
    nMapFunc (*cfSetMap)(const coeffs src, const coeffs dst);
+
+   /// io via ssi:
+   void    (*cfWriteFd)(number a, FILE *f, const coeffs r);
+   number  (*cfReadFd)( s_buff f, const coeffs r);
 
    /// For extensions (writes into global string buffer)
    char *  (*cfName)(number n, const coeffs r);
@@ -198,11 +256,17 @@ struct n_Procs_s
    /// TODO: to be exchanged with a map!!!
    number  (*cfInit_bigint)(number i, const coeffs dummy, const coeffs dst);
 
-   /// rational reconstruction: best rational with mod p=n
+   /// rational reconstruction: "best" rational a/b with a/b = p mod n
+   //  or a = bp mod n
+   //  CF: no idea what this would be in general
+   //     it seems to be extended to operate coefficient wise in extensions.
+   //     I presume then n in coeffs_BIGINT while p in coeffs
    number  (*cfFarey)(number p, number n, const coeffs);
 
    /// chinese remainder
    /// returns X with X mod q[i]=x[i], i=0..rl-1
+   //CF: by the looks of it: q[i] in Z (coeffs_BIGINT)
+   //    strange things happen in naChineseRemainder for example.
    number  (*cfChineseRemainder)(number *x, number *q,int rl, BOOLEAN sym,const coeffs);
 
    /// degree for coeffcients: -1 for 0, 0 for "constants", ...
@@ -210,38 +274,26 @@ struct n_Procs_s
 
    /// create i^th parameter or NULL if not possible
    number  (*cfParameter)(const int i, const coeffs r);
-       
+
    /// function pointer behind n_ClearContent
    nCoeffsEnumeratorFunc cfClearContent;
 
    /// function pointer behind n_ClearDenominators
    nCoeffsEnumeratorFunc cfClearDenominators;
 
-#ifdef HAVE_FACTORY
+   /// conversion to CanonicalForm(factory) to number
    number (*convFactoryNSingN)( const CanonicalForm n, const coeffs r);
    CanonicalForm (*convSingNFactoryN)( number n, BOOLEAN setChar, const coeffs r );
-#endif
 
-
-#ifdef LDEBUG
-   /// Test: is "a" a correct number?
-   BOOLEAN (*cfDBTest)(number a, const char *f, const int l, const coeffs r);
-#endif
 
    /// the 0 as constant, NULL by default
-   number nNULL; 
-   int     char_flag;
-   int     ref;
-   /// how many variables of factort are already used by this coeff
-   int     factoryVarOffset;
-   n_coeffType type;
-
+   number nNULL;
 
    /// Number of Parameters in the coeffs (default 0)
    int iNumberOfParameters;
 
    /// array containing the names of Parameters (default NULL)
-   char const * const * pParameterNames;
+   char const **  pParameterNames;
    // NOTE that it replaces the following:
 // char* complex_parameter; //< the name of sqrt(-1) in n_long_C , i.e. 'i' or 'j' etc...?
 // char * m_nfParameter; //< the name of parameter in n_GF
@@ -259,8 +311,49 @@ struct n_Procs_s
   //                     //< extRing->qideal->[0]
 
 
+  int        ch;  /* characteristic, set by the local *InitChar methods;
+                     In field extensions or extensions towers, the
+                     characteristic can be accessed from any of the
+                     intermediate extension fields, i.e., in this case
+                     it is redundant along the chain of field extensions;
+                     CONTRARY to SINGULAR as it was, we do NO LONGER use
+                     negative values for ch;
+                     for rings, ch will also be set and is - per def -
+                     the smallest number of 1's that sum up to zero;
+                     however, in this case ch may not fit in an int,
+                     thus ch may contain a faulty value */
+
+  short      float_len; /* additional char-flags, rInit */
+  short      float_len2; /* additional char-flags, rInit */
+
+//  BOOLEAN   CanShortOut; //< if the elements can be printed in short format
+//                       // this is set to FALSE if a parameter name has >2 chars
+//  BOOLEAN   ShortOut; //< if the elements should print in short format
+
+// ---------------------------------------------------
+  // for n_GF
+
+  int m_nfCharQ;  ///< the number of elements: q
+  int m_nfM1;       ///< representation of -1
+  int m_nfCharP;  ///< the characteristic: p
+  int m_nfCharQ1; ///< q-1
+  unsigned short *m_nfPlus1Table;
+  int *m_nfMinPoly;
+
+// ---------------------------------------------------
+// for Zp:
+  unsigned short *npInvTable;
+  unsigned short *npExpTable;
+  unsigned short *npLogTable;
+   //   int npPrimeM; // NOTE: npPrimeM is deprecated, please use ch instead!
+  int npPminus1M; ///< characteristic - 1
 //-------------------------------------------
 #ifdef HAVE_RINGS
+   int     (*cfDivComp)(number a,number b,const coeffs r);
+   BOOLEAN (*cfIsUnit)(number a,const coeffs r);
+   number  (*cfGetUnit)(number a,const coeffs r);
+   //CF: test if b divides a
+   BOOLEAN (*cfDivBy)(number a, number b, const coeffs r);
   /* The following members are for representing the ring Z/n,
      where n is not a prime. We distinguish four cases:
      1.) n has at least two distinct prime factors. Then
@@ -284,47 +377,17 @@ struct n_Procs_s
   unsigned long modExponent;
   int_number    modNumber;
   unsigned long mod2mMask;
+  //returns coeffs with updated ch, modNumber and modExp
+  coeffs (*cfQuot1)(number c, const coeffs r);
 #endif
-  int        ch;  /* characteristic, set by the local *InitChar methods;
-                     In field extensions or extensions towers, the
-                     characteristic can be accessed from any of the
-                     intermediate extension fields, i.e., in this case
-                     it is redundant along the chain of field extensions;
-                     CONTRARY to SINGULAR as it was, we do NO LONGER use
-                     negative values for ch;
-                     for rings, ch will also be set and is - per def -
-                     the smallest number of 1's that sum up to zero;
-                     however, in this case ch may not fit in an int,
-                     thus ch may contain a faulty value */
 
-  short      float_len; /* additional char-flags, rInit */
-  short      float_len2; /* additional char-flags, rInit */
-
-//  BOOLEAN   CanShortOut; //< if the elements can be printed in short format
-//		       // this is set to FALSE if a parameter name has >2 chars
-//  BOOLEAN   ShortOut; //< if the elements should print in short format
-
-// ---------------------------------------------------
-  // for n_GF
-
-  int m_nfCharQ;  ///< the number of elements: q
-  int m_nfM1;       ///< representation of -1
-  int m_nfCharP;  ///< the characteristic: p
-  int m_nfCharQ1; ///< q-1
-  unsigned short *m_nfPlus1Table;
-  int *m_nfMinPoly;
-  
-// ---------------------------------------------------
-// for Zp:
-#ifdef HAVE_DIV_MOD
-  unsigned short *npInvTable;
+  /*CF: for blackbox rings */
+  void * data;
+#ifdef LDEBUG
+   // must be last entry:
+   /// Test: is "a" a correct number?
+   BOOLEAN (*cfDBTest)(number a, const char *f, const int l, const coeffs r);
 #endif
-#if !defined(HAVE_DIV_MOD) || !defined(HAVE_MULT_MOD)
-  unsigned short *npExpTable;
-  unsigned short *npLogTable;
-#endif
-   //   int npPrimeM; // NOTE: npPrimeM is deprecated, please use ch instead!
-  int npPminus1M; ///< characteristic - 1
 };
 //
 // test properties and type
@@ -442,8 +505,13 @@ static inline BOOLEAN n_IsUnit(number n, const coeffs r)
 ///                                   is co-prime with k
 /// in Z/2^kZ: largest odd divisor of n (taken in Z)
 /// other cases: not implemented
+// CF: shold imply that n/GetUnit(n) is normalized in Z/kZ
+//   it would make more sense to return the inverse...
 static inline number n_GetUnit(number n, const coeffs r)
 { assume(r != NULL); assume(r->cfGetUnit!=NULL); return r->cfGetUnit(n,r); }
+
+static inline coeffs n_CoeffRingQuot1(number c, const coeffs r)
+{ assume(r != NULL); assume(r->cfQuot1 != NULL); return r->cfQuot1(c, r); }
 #endif
 
 /// a number representing i in the given coeff field/ring r
@@ -465,9 +533,9 @@ static inline void n_MPZ(mpz_t result, number &n,       const coeffs r)
 
 
 /// in-place negation of n
-/// MUST BE USED: n = n_Neg(n) (no copy is returned)
-static inline number n_Neg(number n,     const coeffs r)
-{ assume(r != NULL); assume(r->cfNeg!=NULL); return r->cfNeg(n,r); }
+/// MUST BE USED: n = n_InpNeg(n) (no copy is returned)
+static inline number n_InpNeg(number n,     const coeffs r)
+{ assume(r != NULL); assume(r->cfInpNeg!=NULL); return r->cfInpNeg(n,r); }
 
 /// return the multiplicative inverse of 'a';
 /// raise an error if 'a' is not invertible
@@ -491,6 +559,7 @@ static inline void   n_Normalize(number& n, const coeffs r)
 { assume(r != NULL); assume(r->cfNormalize!=NULL); r->cfNormalize(n,r); }
 
 /// write to the output buffer of the currently used reporter
+//CF: the "&" should be removed, as one wants to write constants as well
 static inline void   n_WriteLong(number& n,  const coeffs r)
 { assume(r != NULL); assume(r->cfWriteLong!=NULL); r->cfWriteLong(n,r); }
 
@@ -503,9 +572,7 @@ static inline void   n_Write(number& n,  const coeffs r, const BOOLEAN bShortOut
 { if (bShortOut) n_WriteShort(n, r); else n_WriteLong(n, r); }
 
 
-/// @todo: Describe me!!! --> Hans
-///
-/// !!! Recommendation: This method is to cryptic to be part of the user-
+/// !!! Recommendation: This method is too cryptic to be part of the user-
 /// !!!                 interface. As defined here, it is merely a helper
 /// !!!                 method for parsing number input strings.
 static inline const char *n_Read(const char * s, number * a, const coeffs r)
@@ -552,23 +619,15 @@ static inline number n_Add(number a, number b, const coeffs r)
 static inline number n_Div(number a, number b, const coeffs r)
 { assume(r != NULL); assume(r->cfDiv!=NULL); return r->cfDiv(a,b,r); }
 
-/// in Z: largest c such that c*b <= a
-/// in Z/nZ, Z/2^kZ: computed as in the case Z (from integers representing
-///                  'a' and 'b')
-/// in Z/pZ: return a/b
-/// in K(a)/<p(a)>: return a/b
-/// in K(t_1, ..., t_n): return a/b
-/// other fields: not implemented
-static inline number n_IntDiv(number a, number b, const coeffs r)
-{ assume(r != NULL); assume(r->cfIntDiv!=NULL); return r->cfIntDiv(a,b,r); }
-
+/// for r a field, return n_Init(0,r)
+/// otherwise: n_Div(a,b,r)*b+n_IntMod(a,b,r)==a
 static inline number n_IntMod(number a, number b, const coeffs r)
-{ assume(r != NULL); assume(r->cfIntMod!=NULL); return r->cfIntMod(a,b,r); }
-/// @todo: Describe me!!!
-///
-/// What is the purpose of this method, especially in comparison with
-/// n_Div?
-/// !!! Recommendation: remove this method from the user-interface.
+{ assume(r != NULL); return r->cfIntMod(a,b,r); }
+
+/// assume that there is a canonical subring in cf and we know
+/// that division is possible for these a and b in the subring,
+/// n_ExactDiv performs it, may skip additional tests.
+/// Can always be substituted by n_Div at the cost of larger  computing time.
 static inline number n_ExactDiv(number a, number b, const coeffs r)
 { assume(r != NULL); assume(r->cfExactDiv!=NULL); return r->cfExactDiv(a,b,r); }
 
@@ -580,11 +639,24 @@ static inline number n_ExactDiv(number a, number b, const coeffs r)
 /// in K(t_1, ..., t_n): not implemented
 static inline number n_Gcd(number a, number b, const coeffs r)
 { assume(r != NULL); assume(r->cfGcd!=NULL); return r->cfGcd(a,b,r); }
+static inline number n_SubringGcd(number a, number b, const coeffs r)
+{ assume(r != NULL); assume(r->cfSubringGcd!=NULL); return r->cfSubringGcd(a,b,r); }
 
 /// beware that ExtGCD is only relevant for a few chosen coeff. domains
 /// and may perform something unexpected in some cases...
 static inline number n_ExtGcd(number a, number b, number *s, number *t, const coeffs r)
 { assume(r != NULL); assume(r->cfExtGcd!=NULL); return r->cfExtGcd (a,b,s,t,r); }
+static inline number n_XExtGcd(number a, number b, number *s, number *t, number *u, number *v, const coeffs r)
+{ assume(r != NULL); assume(r->cfXExtGcd!=NULL); return r->cfXExtGcd (a,b,s,t,u,v,r); }
+static inline number  n_EucNorm(number a, const coeffs r)
+{ assume(r != NULL); assume(r->cfEucNorm!=NULL); return r->cfEucNorm (a,r); }
+/// if r is a ring with zero divisors, return an annihilator!=0 of b
+/// otherwise return NULL
+static inline number  n_Ann(number a, const coeffs r)
+{ assume(r != NULL); return r->cfAnn (a,r); }
+static inline number  n_QuotRem(number a, number b, number *q, const coeffs r)
+{ assume(r != NULL); assume(r->cfQuotRem!=NULL); return r->cfQuotRem (a,b,q,r); }
+
 
 /// in Z: return the lcm of 'a' and 'b'
 /// in Z/nZ, Z/2^kZ: computed as in the case Z
@@ -607,9 +679,9 @@ static inline BOOLEAN n_DBTest(number n, const char *filename, const int linenum
 static inline BOOLEAN n_DBTest(number, const char*, const int, const coeffs)
 #endif
 {
-  assume(r != NULL); 
+  assume(r != NULL);
 #ifdef LDEBUG
-  assume(r->cfDBTest != NULL); 
+  assume(r->cfDBTest != NULL);
   return r->cfDBTest(n, filename, linenumber, r);
 #else
   return TRUE;
@@ -634,17 +706,13 @@ static inline BOOLEAN nCoeff_is_Ring_Z(const coeffs r)
 { assume(r != NULL); return (getCoeffType(r)==n_Z); }
 
 static inline BOOLEAN nCoeff_is_Ring(const coeffs r)
-{ assume(r != NULL); return ((getCoeffType(r)==n_Z) || (getCoeffType(r)==n_Z2m) || (getCoeffType(r)==n_Zn) || (getCoeffType(r)==n_Znm)); }
+{ assume(r != NULL); return (r->is_field==0); }
 
-/// returns TRUE, if r is not a field and r has no zero divisors (i.e is a domain)
+/// returns TRUE, if r is a field or r has no zero divisors (i.e is a domain)
 static inline BOOLEAN nCoeff_is_Domain(const coeffs r)
 {
-  assume(r != NULL); 
-#ifdef HAVE_RINGS
-  return (getCoeffType(r)==n_Z || ((getCoeffType(r)!=n_Z2m) && (getCoeffType(r)!=n_Zn) && (getCoeffType(r)!=n_Znm)));
-#else
-  return TRUE;
-#endif
+  assume(r != NULL);
+  return (r->is_domain);
 }
 
 /// test whether 'a' is divisible 'b';
@@ -678,15 +746,15 @@ static inline number n_Farey(number a, number b, const coeffs r)
 }
 
 static inline int n_ParDeg(number n, const coeffs r)
-{ 
-  assume(r != NULL); assume(r->cfParDeg != NULL); return r->cfParDeg(n,r); 
+{
+  assume(r != NULL); assume(r->cfParDeg != NULL); return r->cfParDeg(n,r);
 }
 
 /// Returns the number of parameters
 static inline int n_NumberOfParameters(const coeffs r){ return r->iNumberOfParameters; }
 
 /// Returns a (const!) pointer to (const char*) names of parameters
-static inline char const * const * n_ParameterNames(const coeffs r){ return r->pParameterNames; }
+static inline char const * * n_ParameterNames(const coeffs r){ return r->pParameterNames; }
 
 
 /// return the (iParameter^th) parameter as a NEW number
@@ -696,25 +764,24 @@ static inline number n_Param(const int iParameter, const coeffs r)
   assume(r != NULL);
   assume((iParameter >= 1) || (iParameter <= n_NumberOfParameters(r)));
   assume(r->cfParameter != NULL);
-  return r->cfParameter(iParameter, r);  
+  return r->cfParameter(iParameter, r);
 }
 
-
 static inline number  n_Init_bigint(number i, const coeffs dummy,
-		const coeffs dst)
+                const coeffs dst)
 {
-  assume(dummy != NULL && dst != NULL); assume(dst->cfInit_bigint!=NULL); 
+  assume(dummy != NULL && dst != NULL); assume(dst->cfInit_bigint!=NULL);
   return dst->cfInit_bigint(i, dummy, dst);
 }
 
 static inline number  n_RePart(number i, const coeffs cf)
 {
-  assume(cf != NULL); assume(cf->cfRePart!=NULL); 
+  assume(cf != NULL); assume(cf->cfRePart!=NULL);
   return cf->cfRePart(i,cf);
 }
 static inline number  n_ImPart(number i, const coeffs cf)
 {
-  assume(cf != NULL); assume(cf->cfImPart!=NULL); 
+  assume(cf != NULL); assume(cf->cfImPart!=NULL);
   return cf->cfImPart(i,cf);
 }
 
@@ -877,9 +944,12 @@ static inline void n_ClearDenominators(ICoeffsEnumerator& numberCollectionEnumer
   n_Delete(&d, r);
 }
 
+
 /// print a number (BEWARE of string buffers!)
 /// mostly for debugging
 void   n_Print(number& a,  const coeffs r);
 
 #endif
+
+
 

@@ -10,14 +10,16 @@
 #ifndef DERROR_C
 #define DERROR_C
 
+#include <misc/auxiliary.h>
+
+#include <omalloc/omalloc.h>
+
+#include <reporter/reporter.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
-
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
 
 static inline void malloc_free( void * ptr )
 {
@@ -37,21 +39,16 @@ static inline void malloc_free( void * ptr )
 #endif
 
 
-#include <reporter/reporter.h>
-
-#ifdef HAVE_CONFIG_H
-#include <omalloc/omalloc.h>
-#endif
-
-
 extern "C" 
 {
 
 int dReportError(const char* fmt, ...)
 {
+#if 0
 #ifdef HAVE_EXECINFO_H
 #define SIZE 50
   void *buffer[SIZE+1]; int ret; 
+#endif
 #endif
 
   va_list ap;
@@ -59,12 +56,11 @@ int dReportError(const char* fmt, ...)
 #ifndef MAKE_DISTRIBUTION
   fprintf(stderr, "\n// ***dError: ");
   vfprintf(stderr, fmt, ap);
-#if 0
-    if !defined(OM_NDEBUG) && defined(HAVE_CONFIG_H)
-#endif
-#if  defined(HAVE_CONFIG_H)
+#if !defined(OM_NDEBUG)
+  #ifdef omPrintCurrentBackTraceMax
   fprintf(stderr, " occured at: \n");
   omPrintCurrentBackTraceMax(stderr, 8);
+  #endif
 #endif
 
 #if 0
@@ -128,7 +124,7 @@ int dReportError(const char* fmt, ...)
   
   dErrorBreak();
 #else
-  fprintf(stderr, "\n// !!! YOU HAVE FOUND A BUG IN SINGULAR::Spielwiese.");
+  fprintf(stderr, "\n// !!! YOU HAVE FOUND A BUG IN SINGULAR.");
   fprintf(stderr, "// !!! Please, email the input\n// and the following error message to singular@mathematik.uni-kl.de")
   vfprintf(stderr, fmt, ap);
 #endif
