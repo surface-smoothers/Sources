@@ -7429,6 +7429,8 @@ static proc testPrimary_i(int patchPrimaryDecomposition,list pr, ideal k)
 
    for (i=2;i<=size(pr) div 2;i++)
    {
+       //dbprint(printlevel-voice,"intersect(j,pr[2*i-1]), j=",j);
+       //dbprint(printlevel-voice,"intersect(j,pr[2*i-1]), pr[2*i-1]=",pr[2*i-1]);
        j=intersect(j,pr[2*i-1]);
    }
    return(idealsEqual(j,k));
