@@ -7429,6 +7429,8 @@ static proc testPrimary_i(int patchPrimaryDecomposition,list pr, ideal k)
 
    for (i=2;i<=size(pr) div 2;i++)
    {
+       //dbprint(printlevel-voice,"intersect(j,pr[2*i-1]), j=",j);
+       //dbprint(printlevel-voice,"intersect(j,pr[2*i-1]), pr[2*i-1]=",pr[2*i-1]);
        j=intersect(j,pr[2*i-1]);
    }
    return(idealsEqual(j,k));
@@ -7449,7 +7451,7 @@ EXAMPLE: example zerodec; shows an example
 "
 {
   ASSUME(0, not isQuotientRing(basering) ) ;
-  ASSUME(2, dim(groebner(I))==1 );
+  ASSUME(2, dim(groebner(I))==0 );
   if(attrib(basering,"global")!=1)
   {
     ERROR(
