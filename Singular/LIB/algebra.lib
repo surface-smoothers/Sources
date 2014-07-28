@@ -574,18 +574,53 @@ EXAMPLE: example is_injective; shows an example
     j[m]=0;
     A=A,j;
     A=A[1..m];
+    dbprint(1," basering ", basering, "");
+    dbprint(1," tt ", tt, "");
+    dbprint(1," A ", A, "");
     list L = algDependent(A,tt);
+ 
+   list L1 = algDependent(A,tt,1);
+   list L2 = algDependent(A,tt,2);
+   list L3 = algDependent(A,tt,3);
+
+     dbprint(1," algDependent(A,tt,1);", L1, "" );
+      def S = L1[2];
+      setring S;
+      dbprint(1,"S,  ker :", ker , "");
+
+      dbprint(1," algDependent(A,tt,2);", L2, "" );
+      def S = L2[2];
+      setring S;
+      dbprint(1,"S,  ker :", ker , "");
+ 
+      dbprint(1," algDependent(A,tt,3);", L3 , "" );
+      def S = L3[2];
+      setring S;
+      dbprint(1,"S,  ker :", ker , "");
+
+      setring bsr;
+
     L[1] = L[1]==0;
 // the preimage ring may be a quotient ring, we still have to check whether
 // the kernel is 0 mod ideal of the quotient ring
     setring pr;
+    dbprint(1," pr ", pr, "");
+    dbprint(1," ideal(pr) ", ideal(pr) , "");
     if ( size(ideal(pr)) != 0 )
     { def S = L[2];
+      setring S;
+      dbprint(1,"S,  ker :", ker , "");
+      setring pr;
+      dbprint(1," S ", S , "");
       ideal proj;
       proj [n+1..n+m] = maxideal(1);
+      dbprint(1," proj ", proj, "" );
       map psi = S,proj;
+      dbprint(1, "  psi(ker) )",  psi(ker)  , "" );
+      dbprint(1, "NF( psi(ker),std(0) )", NF( psi(ker) ,std(0) ) , "" );
       L[1] = size(NF(psi(ker),std(0))) == 0;
     }
+    setring bsr;
     if ( defined(pau) != voice )
     {  return (L[1]);
     }

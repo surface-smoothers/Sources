@@ -6620,8 +6620,12 @@ EXAMPLE: example norTest; shows an example
     map Qnormap = QAS,qnormap;    //r/id --> R/norid
 
     //------------------------ check injectivity ---------------------------
+    dbprint(1, "basering:",basering );
+    dbprint(1, "QAS:",string(QAS) );
+    dbprint(1, "Qnormap",Qnormap);
 //"injective:";
     a = is_injective(Qnormap,QAS);          //a. Test for injectivity of Qnormap
+    dbprint(1, "is_injective", a );
     dbprint ( prl, "injective: "+string(a) );
     if ( n==1 )
     {
