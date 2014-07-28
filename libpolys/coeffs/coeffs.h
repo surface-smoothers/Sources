@@ -209,6 +209,7 @@ struct n_Procs_s
    //  a = qb+r and either r=0 or f(r) < f(b)
    //  Note that neither q nor r nor f(r) are unique.
    number  (*cfGcd)(number a, number b, const coeffs r);
+   number  (*cfSubringGcd)(number a, number b, const coeffs r);
    number  (*cfExtGcd)(number a, number b, number *s, number *t,const coeffs r);
    //given a and b in a Euclidean setting, return s,t,u,v sth.
    //  sa + tb = gcd
@@ -638,6 +639,8 @@ static inline number n_ExactDiv(number a, number b, const coeffs r)
 /// in K(t_1, ..., t_n): not implemented
 static inline number n_Gcd(number a, number b, const coeffs r)
 { assume(r != NULL); assume(r->cfGcd!=NULL); return r->cfGcd(a,b,r); }
+static inline number n_SubringGcd(number a, number b, const coeffs r)
+{ assume(r != NULL); assume(r->cfSubringGcd!=NULL); return r->cfSubringGcd(a,b,r); }
 
 /// beware that ExtGCD is only relevant for a few chosen coeff. domains
 /// and may perform something unexpected in some cases...
@@ -793,7 +796,7 @@ static inline BOOLEAN nCoeff_is_Zp(const coeffs r, int p)
 { assume(r != NULL); return ((getCoeffType(r)==n_Zp) && (r->ch == p)); }
 
 static inline BOOLEAN nCoeff_is_Q(const coeffs r)
-{ assume(r != NULL); return getCoeffType(r)==n_Q; }
+{ assume(r != NULL); return getCoeffType(r)==n_Q && (r->is_field); }
 
 static inline BOOLEAN nCoeff_is_numeric(const coeffs r) /* R, long R, long C */
 { assume(r != NULL);  return (getCoeffType(r)==n_R) || (getCoeffType(r)==n_long_R) || (getCoeffType(r)==n_long_C); }

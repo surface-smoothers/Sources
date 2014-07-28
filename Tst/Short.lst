@@ -56,7 +56,7 @@ Short/bug_597.tst
 Short/bug_53.tst
 Short/bug_54.tst
 Short/bug_55.tst
-Short/bug_554.tst
+;; Short/bug_554.tst
 Short/bug_532_s.tst
 Short/bug_538_s.tst
 Short/bug_540.tst
@@ -217,6 +217,7 @@ Short/polylib_s.tst
 Short/primdec2.tst
 ; Short/primdec3.tst ; too long!
 Short/primdec_s.tst
+Short/primdecint_some_special_cases.tst
 Short/primefactors.tst
 Short/primitiv_s.tst
 ;;;;;;;;;;;;;;;;;;;; Short/pyobject.tst
@@ -329,7 +330,3 @@ Short/ncfactor_tsai_s.tst
 ; Short/polybori_s.tst
 Short/realizationMatroids.tst
 ;
-Short/ncfactor_example2_7FromMaster_s.tst
-Short/ncfactor_koepf_s.tst
-Short/ncfactor_koepfShift_s.tst
-Short/ncfactor_tsai_s.tst
