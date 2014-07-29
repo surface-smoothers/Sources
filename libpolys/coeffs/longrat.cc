@@ -145,6 +145,15 @@ number nlMapGMP(number from, const coeffs /*src*/, const coeffs /*dst*/)
   return z;
 }
 
+number nlMapZ(number from, const coeffs src, const coeffs dst)
+{
+  if (SR_HDL(from) & SR_INT)
+  {
+    return from;
+  }
+  return nlMapGMP(from,src,dst);
+}
+
 /*2
 * convert from an machine long
 */
@@ -1242,7 +1251,7 @@ void nlNormalize (number &x, const coeffs r)
 /*2
 * returns in result->z the lcm(a->z,b->n)
 */
-number nlLcm(number a, number b, const coeffs r)
+number nlNormalizeHelper(number a, number b, const coeffs r)
 {
   number result;
   nlTest(a, r);
@@ -1287,8 +1296,8 @@ number nlLcm(number a, number b, const coeffs r)
   return result;
 }
 
-// Map q \in QQ \to Zp
-// src = Q, dst = Zp (or an extension of Zp?)
+// Map q \in QQ or ZZ \to Zp or an extension of it
+// src = Q or Z, dst = Zp (or an extension of Zp)
 number nlModP(number q, const coeffs Q, const coeffs Zp)
 {
   const int p = n_GetChar(Zp);
@@ -2167,28 +2176,32 @@ number nlCopyMap(number a, const coeffs src, const coeffs dst)
 
 nMapFunc nlSetMap(const coeffs src, const coeffs dst)
 {
-  if (getCoeffType(src)==n_Q /*nCoeff_is_Q(src) or coeffs_BIGINT*/)
+  if (src->rep==n_rep_gap_rat)  /*Q, coeffs_BIGINT */
   {
     return ndCopyMap;
   }
-  if (nCoeff_is_Zp(src))
+  if ((src->rep==n_rep_int) && nCoeff_is_Zp(src))
   {
     return nlMapP;
   }
-  if (nCoeff_is_R(src))
+  if ((src->rep==n_rep_float) && nCoeff_is_R(src))
   {
     return nlMapR;
   }
-  if (nCoeff_is_long_R(src))
+  if ((src->rep==n_rep_gmp_float) && nCoeff_is_long_R(src))
   {
     return nlMapLongR; /* long R -> Q */
   }
 #ifdef HAVE_RINGS
-  if (nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
+  if (src->rep==n_rep_gmp) // nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
   {
     return nlMapGMP;
   }
-  if (nCoeff_is_Ring_2toM(src))
+  if (src->rep==n_rep_gap_gmp)
+  {
+    return nlMapZ;
+  }
+  if ((src->rep==n_rep_int) && nCoeff_is_Ring_2toM(src))
   {
     return nlMapMachineInt;
   }
@@ -3014,17 +3027,24 @@ BOOLEAN nlCoeffIsEqual(const coeffs r, n_coeffType n, void *p)
   return FALSE;
 }
 
+char * nlCoeffName(const coeffs r)
+{
+  if (r->cfDiv==nlDiv) return (char*)"QQ";
+  else                 return (char*)"ZZ";
+}
 
 
 BOOLEAN nlInitChar(coeffs r, void*p)
 {
   r->is_domain=TRUE;
+  r->rep=n_rep_gap_rat;
 
   //const int ch = (int)(long)(p);
 
   r->nCoeffIsEqual=nlCoeffIsEqual;
   r->cfKillChar = ndKillChar; /* dummy */
   r->cfCoeffString=nlCoeffString;
+  r->cfCoeffName=nlCoeffName;
 
   r->cfInitMPZ = nlInitMPZ;
   r->cfMPZ  = nlMPZ;
@@ -3076,13 +3096,12 @@ BOOLEAN nlInitChar(coeffs r, void*p)
   r->cfGetDenom = nlGetDenom;
   r->cfGetNumerator = nlGetNumerator;
   r->cfExtGcd = nlExtGcd; // only for ring stuff and Z
-  r->cfLcm  = nlLcm;
+  r->cfNormalizeHelper  = nlNormalizeHelper;
   r->cfDelete= nlDelete;
   r->cfSetMap = nlSetMap;
   //r->cfName = ndName;
   r->cfInpMult=nlInpMult;
   r->cfInpAdd=nlInpAdd;
-  r->cfInit_bigint=nlCopyMap;
   r->cfCoeffWrite=nlCoeffWrite;
 
   r->cfClearContent = nlClearContent;
