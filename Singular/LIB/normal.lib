@@ -1115,7 +1115,7 @@ RETURN:   a list of rings, say nor, and an integer, the delta-invariant
 EXAMPLE: example normalizationPrimes; shows an example
 "
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
    //Note: this procedure calls itself as long as the test for
    //normality, i.e if R==Hom(J,J), is negative.
 
@@ -2024,7 +2024,7 @@ static proc substpart(ideal endid, ideal endphi, int homo, intvec rw)
 //fj and hence the order does'nt matter when substitutinp xi by fi
 
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
 
    def newRing = basering;
    int ii,jj;
@@ -2132,7 +2132,7 @@ Versuch: subst statt phi
 ///////////////////////////////////////////////////////////////////////////////
 static proc deltaP(ideal I)
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
    def R=basering;
    int c,d,i;
    int n=nvars(R);
@@ -3829,7 +3829,7 @@ example
 
 static proc normalityTest(list mstdid)
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
 
    int y = printlevel-voice+2;
    intvec op = option(get);
@@ -3936,7 +3936,7 @@ static proc normalityTest(list mstdid)
 
 static proc substpartSpecial(ideal endid, ideal endphi)
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
 
    //Note: newRing is of the form (R the original basering):
    //char(R),(T(1..N),X(1..nvars(R))),(dp(N),...);
@@ -4096,7 +4096,7 @@ static proc substpartSpecial(ideal endid, ideal endphi)
 // attempted.
 static proc computeRing(ideal J, ideal I, list #)
 {
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
 
   int i, ii,jj;
   intvec V;                          // to be used for variable weights
@@ -4355,7 +4355,7 @@ static proc normalM(ideal I, int decomp, int withDelta, int denomOption, ideal i
 // denomOption = 0      -> Uses the smallest degree polynomial
 // denomOption = i > 0  -> Uses a polynomial in the i-th variable
 
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
 
   intvec save_opt=option(get);
   option(redSB);
@@ -4655,7 +4655,7 @@ static proc normalMEqui(ideal I, ideal origJ, poly condu, poly D, int withDelta)
 // condu is a non-zerodivisor in the conductor or 0 if it was not computed.
 // If withDelta = 1, computes the delta invariant.
 {
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
   int step = 0;                       // Number of steps. (for debugging)
   int dbg = printlevel - voice + 2;   // dbg = printlevel (default: dbg = 0)
   int i;                              // counter
@@ -4882,7 +4882,6 @@ NOTE:    Works only over rings of two variables.@*
 EXAMPLE: example getOneVar; shows an example
 "
 {
-  ASSUME(0, not isQuotientRing(basering) );
   ASSUME(0, nvars(basering)==2 );
   ASSUME(0, (vari==2) || (vari==1) );
 
@@ -5012,7 +5011,7 @@ static proc getGenerators(ideal J, ideal U, poly c)
 static proc testIdeal(ideal I, ideal U, ideal origJ, poly c, poly D)
 {
 
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
 
 // Internal procedure, used in normalM.
 // Computes the test ideal in the new ring.
@@ -5289,7 +5288,7 @@ static proc checkInclusions(ideal U1, ideal U2)
 
 static proc degSubring(poly p, intvec @v)
 {
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
 // Computes the degree of a polynomial taking only some variables as variables
 // and the others as parameters.
 
@@ -5309,7 +5308,7 @@ static proc degSubring(poly p, intvec @v)
 
 static proc mapBackIdeal(ideal I, poly c, intvec @v)
 {
-   ASSUME(0, not isQuotientRing(basering) );
+   ASSUME(1, not isQuotientRing(basering) );
 
 // Modifies all polynomials in I so that a map x(i) -> y(i)/c can be
 // carried out.
@@ -5328,7 +5327,7 @@ static proc mapBackIdeal(ideal I, poly c, intvec @v)
 
 static proc mapBackPoly(poly p, poly c, intvec @v)
 {
-  ASSUME(0, not isQuotientRing(basering) );
+  ASSUME(1, not isQuotientRing(basering) );
 
 // Multiplies each monomial of p by a power of c so that a map x(i) -> y(i)/c
 // can be carried out.
