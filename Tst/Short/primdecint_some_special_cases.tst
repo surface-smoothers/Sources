@@ -35,7 +35,6 @@ proc reduceZW(poly f,ideal I)
 ring rng = integer,(x,y),dp;
 ideal I = 0,5*x-3;
 ideal J = 0,y-5;
-
 ideal sumIJ = addIdealZ(I,J);
 I+J;
 
