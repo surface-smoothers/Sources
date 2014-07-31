@@ -90,11 +90,28 @@ typedef struct
   const char* par_name; /**< parameter name */
 } LongComplexInfo;
 
+
+enum n_coeffRep
+{
+  n_rep_unknown=0,
+  n_rep_int,      /**< (int), see modulop.h */
+  n_rep_gap_rat,  /**< (number), see longrat.h */
+  n_rep_gap_gmp,  /**< (), see rinteger.h, new impl. */
+  n_rep_poly,     /**< (poly), see algext.h */
+  n_rep_rat_fct,  /**< (fraction), see transext.h */
+  n_rep_gmp,      /**< (mpz_ptr), see rmodulon,h */
+  n_rep_float,    /**< (float), see shortfl.h */
+  n_rep_gmp_float,  /**< (gmp_float), see  */
+  n_rep_gmp_complex,/**< (gmp_complex), see gnumpc.h */
+  n_rep_gf        /**< (int), see ffields.h */
+};
+
 struct n_Procs_s
 {
    // administration of coeffs:
    coeffs next;
    int     ref;
+   n_coeffRep rep;
    n_coeffType type;
    /// how many variables of factory are already used by this coeff
    int     factoryVarOffset;
@@ -119,6 +136,9 @@ struct n_Procs_s
 
    /// string output of coeff description
    char* (*cfCoeffString)(const coeffs r);
+
+   /// default name of cf, should substitue cfCoeffWrite, cfCoeffString
+   char* (*cfCoeffName)(const coeffs r);
 
    // ?
    // initialisation:
@@ -233,6 +253,7 @@ struct n_Procs_s
    //rem can be NULL
    number  (*cfQuotRem)(number a, number b, number *rem, const coeffs r);
    number  (*cfLcm)(number a, number b, const coeffs r);
+   number  (*cfNormalizeHelper)(number a, number b, const coeffs r);
    void    (*cfDelete)(number * a, const coeffs r);
 
    //CF: tries to find a canonical map from src -> dst
@@ -250,11 +271,6 @@ struct n_Procs_s
 
    /// Inplace: a += b
    void    (*cfInpAdd)(number &a, number b, const coeffs r);
-
-   /// maps the bigint i (from dummy == coeffs_BIGINT!!!) into the
-   /// coeffs dst
-   /// TODO: to be exchanged with a map!!!
-   number  (*cfInit_bigint)(number i, const coeffs dummy, const coeffs dst);
 
    /// rational reconstruction: "best" rational a/b with a/b = p mod n
    //  or a = bp mod n
@@ -381,11 +397,13 @@ struct n_Procs_s
   coeffs (*cfQuot1)(number c, const coeffs r);
 #endif
 
-  /*CF: for blackbox rings */
+  /*CF: for blackbox rings, contains data needed to define the ring.
+   * contents depends on the actual example.*/
   void * data;
 #ifdef LDEBUG
    // must be last entry:
    /// Test: is "a" a correct number?
+   // DB as in debug, not data base.
    BOOLEAN (*cfDBTest)(number a, const char *f, const int l, const coeffs r);
 #endif
 };
@@ -661,11 +679,15 @@ static inline number  n_QuotRem(number a, number b, number *q, const coeffs r)
 /// in Z: return the lcm of 'a' and 'b'
 /// in Z/nZ, Z/2^kZ: computed as in the case Z
 /// in Z/pZ, C, R: not implemented
-/// in Q: return the lcm of the numerators of 'a' and the denominator of 'b'
 /// in K(a)/<p(a)>: not implemented
 /// in K(t_1, ..., t_n): not implemented
 static inline number n_Lcm(number a, number b, const coeffs r)
 { assume(r != NULL); assume(r->cfLcm!=NULL); return r->cfLcm(a,b,r); }
+
+/// assume that r is a quotient field (otherwise, return 1)
+/// for arguments (a1/a2,b1/b2) return (lcm(a1,b2)/1)
+static inline number n_NormalizeHelper(number a, number b, const coeffs r)
+{ assume(r != NULL); assume(r->cfNormalizeHelper!=NULL); return r->cfNormalizeHelper(a,b,r); }
 
 /// set the mapping function pointers for translating numbers from src to dst
 static inline nMapFunc n_SetMap(const coeffs src, const coeffs dst)
@@ -765,13 +787,6 @@ static inline number n_Param(const int iParameter, const coeffs r)
   assume((iParameter >= 1) || (iParameter <= n_NumberOfParameters(r)));
   assume(r->cfParameter != NULL);
   return r->cfParameter(iParameter, r);
-}
-
-static inline number  n_Init_bigint(number i, const coeffs dummy,
-                const coeffs dst)
-{
-  assume(dummy != NULL && dst != NULL); assume(dst->cfInit_bigint!=NULL);
-  return dst->cfInit_bigint(i, dummy, dst);
 }
 
 static inline number  n_RePart(number i, const coeffs cf)
