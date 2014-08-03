@@ -979,7 +979,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     && (iiCurrArgs==NULL) /* not in proc header */
     )
     {
-      Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
+      //Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
     }
     if (l->rtyp==IDHDL)
     {
