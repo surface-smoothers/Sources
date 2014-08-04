@@ -95,6 +95,7 @@ Short/bug_quotient.tst
 Short/bug_radcon.tst
 Short/bug_reduce.tst
 Short/bug_rp.tst
+Short/bug_reduceZ.tst
 Short/bug_sres_betti.tst
 Short/bug_sres_cyc5.tst
 Short/bug_sres.tst
