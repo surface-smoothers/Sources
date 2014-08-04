@@ -1285,12 +1285,13 @@ proc reduceZ(poly f, ideal I)
    if(f==0){return(f);}
    if (not attrib(I,"isSB") ) { print ("// ** I is no standard basis"); }
    def R=basering;
+   number n,lcf,lcI;
    execute("ring Rhelp=0,("+varstr(R)+"),dp;");
    ideal I=imap(R,I);
    poly f=imap(R,f);
    int i,j;
    poly m;
-   number n;
+   number n, lcf, lcI ;
    I = simplify(I, 2); // del zero gens (otherwise the following loop may fail with an error (div by 0))
    while(!i)
    {
@@ -1299,21 +1300,32 @@ proc reduceZ(poly f, ideal I)
       while( j<size(I) )
       {
          j++;
-         m=leadmonom(f)/leadmonom(I[j]);
-         if(m!=0)
+         m = leadmonom(f)/leadmonom(I[j]);
+         if ( m!=0 )
          {
-            n=leadcoef(f) mod leadcoef(I[j]);
-            if(n==0)
+            lcf=leadcoef(f);
+            lcI= leadcoef(I[j]);
+            setring R;
+            lcf = fetch(Rhelp,lcf);
+            lcI = fetch(Rhelp,lcI);
+            n = lcf mod lcI;
+            setring Rhelp;
+            n = fetch(R,n);
+            if (n==0)
             {
-               f=f-leadcoef(f)/leadcoef(I[j])*m*I[j];
-               if(f==0){setring R;return(poly(0));}
+               f = f-leadcoef(f)/leadcoef(I[j])*m*I[j];
+               if(f==0) 
+               {
+                  setring R; 
+                  return( poly(0) );
+               }
                i=0;
                break;
             }
-            if(n!=leadcoef(f))
+            if (n != leadcoef(f))
             {
                f=f+(n-leadcoef(f))/leadcoef(I[j])*m*I[j];
-               i=0;
+                i=0;
                break;
             }
          }
