@@ -1004,20 +1004,27 @@ EXAMPLE: example AssEHV; shows an example"
           if(#[2]==0)
             {
               if(size(#) > 3)
-                {
+                { 
+                  dbprint(1, "equiRadEHV(ann,#[1],#[3],#[4])");
+                  dbprint(1, "equiRadEHV(ann,"+string(#[1])+","+string(#[3])+","+string(#[4])+")");
                   K = equiRadEHV(ann,#[1],#[3],#[4]);
+                  dbprint(1,"K",K);
+                  dbprint(1,"equiRadical(ann)",equiRadical(ann) );            
                 }
               if(size(#) > 2)
                 {
+                  dbprint(1, "K = equiRadEHV(ann,#[1],#[3]);");
                   K = equiRadEHV(ann,#[1],#[3]);
                 }
               else
                 {
+                  dbprint(1, "equiRadEHV(ann,#[1])");
                   K = equiRadEHV(ann,#[1]);
                 }
             }
           if(#[2]==1)
             {
+              dbprint(1, "K = equiRadical(ann);");
               K = equiRadical(ann);
             }
           attrib(K,"isEquidimensional",1);
@@ -1028,6 +1035,7 @@ EXAMPLE: example AssEHV; shows an example"
             {
               if(printlevel > 2){"Input already homogeneous.";}
               L = L + equiAssEHV(K);
+              dbprint(1,"equiAssEHV(K):",equiAssEHV(K));  
             }
 
           //...else...
@@ -1047,7 +1055,7 @@ EXAMPLE: example AssEHV; shows an example"
 
               //...compute the associated primes of the homogenization using equiAssEHV,...
               list l = equiAssEHV(homoK);
-
+              dbprint(1,"equiAssEHV:",l);          
               //...and set t=1 in the generators of the associated primes just computed.
               ideal Z;
               for(j=1; j<=size(l); j++)
