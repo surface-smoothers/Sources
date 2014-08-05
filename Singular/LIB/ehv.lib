@@ -690,7 +690,7 @@ EXAMPLE: example decompEHV; shows an example"
           J = quotient1(I,f);
 
           //If f is a zerodivisor modulo I...
-          if( isSubset_assumeSB(J,I) == 0 )
+          if( isSubset(J,I) == 0 )
             {
               //...then use recursion...
               if(printlevel > 2){"We found a zerodivisor -- recursion";}
@@ -980,12 +980,12 @@ EXAMPLE: example AssEHV; shows an example"
   if(printlevel > 2){"Computing resolution.";}
   if(homog(I)==1)
     {
-      list re = sres(J,0);
+      resolution re = sres(J,0);
       re = minres(re);
     }
   else
     {
-      list re = mres(I,0);
+      resolution re = mres(I,0);
     }
   ideal ann;
   int cod;
@@ -994,7 +994,9 @@ EXAMPLE: example AssEHV; shows an example"
   for(int i=0; i<=d; i++)
     {
       if(printlevel > 1){"Are there components of dimension " + string(i) + "?";}
+      dbprint(1, "re",re);
       ann = AnnExtEHV(n-i,re);
+      dbprint(1, "ann",ann);
       cod = n - dim(groebner(ann));
 
       //If there are associated primes of dimension i...
@@ -1004,6 +1006,7 @@ EXAMPLE: example AssEHV; shows an example"
           //...then compute the intersection K of all associated primes of I of dimension i
           if(#[2]==0)
             {
+               dbprint(1, "equiRadical(ann)",equiRadical(ann));
               if(size(#) > 3)
                 { 
                   dbprint(1, "equiRadEHV(ann,#[1],#[3],#[4])");
@@ -1191,7 +1194,7 @@ EXAMPLE: example localize; shows an example"
   //Compute the intersection of all associated primes of I that are not contained in P.
   for(int i=1; i<=s; i++)
     {
-      if(isSubset_assumeSB(l[i],P)!=1)
+      if(isSubset(l[i],P)!=1)
         {
           Intersection = intersect(Intersection,l[i]);
         }
@@ -1264,7 +1267,7 @@ EXAMPLE: example componentEHV; shows an example"
           Q = equidimMax(I+T);
         }
       //...and check if it is a primary component for P.
-      if(isSubset_assumeSB(intersect(IP2,Q),IP)==1)
+      if(isSubset(intersect(IP2,Q),IP)==1)
         {
           isPrimaryComponent = 1;
         }
