@@ -5860,6 +5860,11 @@ BOOLEAN iiApply(leftv res, leftv a, int op, leftv proc)
 
 BOOLEAN iiTestAssume(leftv a, leftv b)
 {
+  /*::Print("\n");
+  ::Print("\n");
+  ::Print("\n");
+  ::Print("\n");
+  //*/
   // assume a: level
   if ((a->Typ()==INT_CMD)&&((long)a->Data()>=0))
   {
@@ -5867,11 +5872,24 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
     char       assume_yylinebuf[80];
     strncpy(assume_yylinebuf,my_yylinebuf,79);
     int lev=(long)a->Data();
+
     int startlev=0;
     idhdl h=ggetid("assumeLevel");
     if ((h!=NULL)&&(IDTYP(h)==INT_CMD)) startlev=(long)IDINT(h);
     if(lev <=startlev)
     {
+      /*
+      ::Print("##command %d\n",((command)b->Data())->op);
+
+      if (((command)b->Data())->arg1.rtyp!=0)
+         ((command)b->Data())->arg1.Print(NULL,2);
+
+      if (((command)b->Data())->arg2.rtyp!=0)
+        ((command)b->Data())->arg2.Print(NULL,2);
+
+      if (((command)b->Data())->arg3.rtyp==0)
+        ((command)b->Data())->arg3.Print(NULL,2);
+      //*/
       BOOLEAN bo=b->Eval();
       if (bo) { WerrorS("syntax error in ASSUME");return TRUE;}
       if (b->Typ()!=INT_CMD) { WerrorS("ASUMME(<level>,<int expr>)");return TRUE; }
