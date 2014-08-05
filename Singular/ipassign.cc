@@ -961,7 +961,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
   }
   if(rt==NONE)
   {
-    WarnS("right side is not a datum, assignment ignored");
+    Werror("assignment: right side is not a datum or index out of bounds!");
     // if (!errorreported)
     //   WerrorS("right side is not a datum");
     //return TRUE;
@@ -979,7 +979,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     && (iiCurrArgs==NULL) /* not in proc header */
     )
     {
-      Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
+      //Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
     }
     if (l->rtyp==IDHDL)
     {

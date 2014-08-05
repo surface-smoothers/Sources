@@ -3849,9 +3849,16 @@ static proc normalityTest(list mstdid)
    attrib(J,"isSB",1);
    if ( y >= 1)
    { "start normality test";  "compute singular locus";}
-
-   ideal M = minor(jacob(I),h,J); //use the command minor modulo J (hence J=0)
-   M = std(M);                    //this makes M much smaller
+   if (h==0) 
+   {
+      ideal M = 1;
+   }
+   else
+   {
+       ideal M = minor(jacob(I),h,J); //use the command minor modulo J (hence J=0)
+       //this makes M much smaller
+   }
+   M = std(M);       
    //keep only minors which are not 0 mod I (!) this is important since we
    //need a nzd mod I
 

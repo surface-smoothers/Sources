@@ -98,6 +98,7 @@ Short/bug_quotient.tst
 Short/bug_radcon.tst
 Short/bug_reduce.tst
 Short/bug_rp.tst
+Short/bug_reduceZ.tst
 Short/bug_sres_betti.tst
 Short/bug_sres_cyc5.tst
 Short/bug_sres.tst
@@ -178,6 +179,7 @@ Short/hilb_weights.tst
 Short/hnoether_s.tst
 Short/homolog_s.tst
 Short/hres_s.tst
+Short/ideal_s.tst
 Short/imap.tst
 Short/intdet_s.tst
 Short/intersect_s.tst
@@ -227,6 +229,7 @@ Short/primitiv_s.tst
 ;;;;;;;;;;;;;;;;;;;; Short/pyobject.tst
 Short/qhw_s.tst
 Short/quotient_s.tst
+Short/randomIdeal.tst
 Short/rcyclic_13_32003_lp.tst
 Short/rcyclic_14_32003_lp.tst
 Short/rcyclic_15_32003_lp.tst
@@ -266,6 +269,8 @@ Short/std_s.tst
 ;MP Short/stratify.tst
 Short/string.tst
 Short/test_c_dp.tst
+Short/test_unit_ideal_decomposition.tst
+Short/test_zero_ideal_decomposition.tst
 Short/triang_s.tst
 ; Short/tropical.tst ;; too long ?
 Short/tst_s.tst

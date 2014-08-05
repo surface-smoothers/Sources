@@ -975,7 +975,6 @@ static proc testIsQuotientRing()
    qring qrng3=1;
    ASSUME(0, isQuotientRing(qrng3) ) ;
 }
-
 proc hasFieldCoefficient( rng )
 "USAGE: hasFieldCoefficient ( rng );
 RETURN:  1 if the coeffcients form a field, 0 otherwise.
@@ -994,6 +993,8 @@ example
   ring rng2 = 0, x, dp;
   hasFieldCoefficient(rng2);  // yes
 }
+
+
 
 proc hasGlobalOrdering (rng)
 "USAGE: hasGlobalOrdering ( rng );

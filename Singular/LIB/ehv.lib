@@ -39,6 +39,7 @@ PROCEDURES:
 ";
 
 LIB "ring.lib";
+LIB "wrappers.lib";
 LIB "general.lib";
 LIB "elim.lib";
 LIB "poly.lib";
@@ -689,7 +690,7 @@ EXAMPLE: example decompEHV; shows an example"
           J = quotient1(I,f);
 
           //If f is a zerodivisor modulo I...
-          if( isSubset(J,I) == 0 )
+          if( isSubset_assumeSB(J,I) == 0 )
             {
               //...then use recursion...
               if(printlevel > 2){"We found a zerodivisor -- recursion";}
@@ -1190,7 +1191,7 @@ EXAMPLE: example localize; shows an example"
   //Compute the intersection of all associated primes of I that are not contained in P.
   for(int i=1; i<=s; i++)
     {
-      if(isSubset(l[i],P)!=1)
+      if(isSubset_assumeSB(l[i],P)!=1)
         {
           Intersection = intersect(Intersection,l[i]);
         }
@@ -1263,7 +1264,7 @@ EXAMPLE: example componentEHV; shows an example"
           Q = equidimMax(I+T);
         }
       //...and check if it is a primary component for P.
-      if(isSubset(intersect(IP2,Q),IP)==1)
+      if(isSubset_assumeSB(intersect(IP2,Q),IP)==1)
         {
           isPrimaryComponent = 1;
         }
@@ -1366,6 +1367,7 @@ example
   list pr = primdecEHV(i);
   pr;
 }
+
 
 
 /////////////////////////////////////////////////////////////////////
