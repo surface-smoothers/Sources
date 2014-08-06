@@ -869,6 +869,14 @@ static proc equiAssEHV(ideal I)
 "USAGE:   equiAssEHV(I); I equidimensional, radical, and homogeneous ideal
 RETURN:  a list, the associated prime ideals of I"
 {
+  dbprint(1,"LIB(\"primdec.lib\");");
+  dbprint(1, "ring rng ="+string(basering)+";");
+  dbprint(1, "ideal I="+string(I)+";");
+  dbprint(1, "radical( I);");
+  dbprint(1, "equidim( I);");
+
+  dbprint(1, "radical(I)",radical(I) );
+  dbprint(1, "equidim(I)",equidim(I) );
   if(printlevel > 2){"Entering equiAssEHV.";}
   if(attrib(basering,"global")==0)
     {
@@ -881,7 +889,10 @@ RETURN:  a list, the associated prime ideals of I"
 
   //Compute the normalization of I.
   if(printlevel > 2){"Entering Normalization.";}
+ // list norOut = normal(I, "noDeco");
   list norOut = normal(I, "noDeco");
+  dbprint(1,"normal(I)",norOut);
+
   list K = norOut[1];
   if(printlevel > 2){"Leaving Normalisation.";}
 
@@ -893,6 +904,8 @@ RETURN:  a list, the associated prime ideals of I"
   def P;
   for(i=1; i<=k; i++)
     {
+      dbprint(1,"i",i);
+      dbprint(1,"K[i]",K[i]);
       P = K[i];
       setring P;
 
@@ -910,8 +923,11 @@ RETURN:  a list, the associated prime ideals of I"
       for(j=1; j<=leng; j++)
         {
           J = l[j];
+          dbprint(1,"J",J);
           setring base;
+          dbprint(1,"preimage(P,normap,J)",preimage(P,normap,J));
           L[size(L)+1] = preimage(P,normap,J);
+
           setring P;
         }
       kill l, leng, J;
