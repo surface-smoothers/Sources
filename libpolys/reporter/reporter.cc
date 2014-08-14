@@ -205,6 +205,7 @@ void Werror(const char *fmt, ...)
   WerrorS(s);
   omFreeSize(s,256);
   va_end(ap);
+  exit(123);
 }
 
 void WarnS(const char *s)
@@ -232,6 +233,7 @@ void WarnS(const char *s)
       fwrite("\n",1,1,feProtFile);
     }
   }
+  exit(123);
 }
 
 void Warn(const char *fmt, ...)
@@ -243,6 +245,7 @@ void Warn(const char *fmt, ...)
   WarnS(s);
   omFreeSize(s,256);
   va_end(ap);
+  exit(123);
 }
 
 
