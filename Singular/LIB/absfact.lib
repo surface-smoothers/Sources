@@ -402,6 +402,7 @@ EXAMPLE: example absFactorize; shows an example
   //takes care about coefficients and possible denominators
   if(pa>0)
   {
+    dbprint(1,"pa>0)");
     poly qh=cleardenom(p);
     if (p==0)
     {
@@ -445,6 +446,7 @@ EXAMPLE: example absFactorize; shows an example
   }
   if (newvar=="a")
   {
+    dbprint(1, "lMP[2]",lMP[2]);
     if(belongTo(newvar, lMP[2])||defined(a)){newvar = "b";}
     if(belongTo(newvar, lMP[2])||defined(b)){newvar = "c";}
     if(belongTo(newvar, lMP[2])||defined(c)){newvar = "@c";}
@@ -453,6 +455,7 @@ EXAMPLE: example absFactorize; shows an example
        newvar = "@" + newvar;
     }
   }
+  dbprint(1, "newvar",newvar);
   lMP[2][n+1] = newvar;
 
   // new ordering
@@ -465,41 +468,58 @@ EXAMPLE: example absFactorize; shows an example
   def MPz = ring(lMP);
   setring(MPz);
   poly p=imap(MP,p);
-
+  dbprint(1, "p",p);
   // special treatment in the homogeneous case, dropping one variable
   // by substituting the first variable by 1
   int ho=homog(p);
   if(ho)
   {
+    dbprint(1, "homogeneous case");
     int dh=deg(p);
     p=subst(p,var(1),1);
+    dbprint(1, "p",p);
     int di=deg(p);
   }
   list rat_facts = factorize(p);
+  dbprint(1, "rat_facts",rat_facts);
   int s = size(rat_facts[1]);
   list tmpf; // absolute factors
   intvec tmpm; // respective multiplicities
+  dbprint(1,"basering",basering);
+  dbprint(1,"string(MP)",string(MP));
+  dbprint(1,"minpoly",minpoly);
+  dbprint(1, "leadcoef(p)",leadcoef(p) );
+  dbprint(1, "p",p );
+  dbprint(1, "imap(MP,p)",imap(MP,p) );
+  dbprint(1, "leadcoef(imap(MP,p))",leadcoef(imap(MP,p)) );
   tmpf[1] = list(var(n+1), leadcoef(imap(MP,p)));
   tmpm[1] = 1;
+  dbprint(1, "tmpf[1]",tmpf[1]);
   poly tmp;
   for(i = 2; i <= s; i++)
   {
     tmp = rat_facts[1][i];
+    dbprint(1, " tmp", tmp);
+    dbprint(1, " tmp / leadcoef(tmp)", tmp / leadcoef(tmp));
     tmp = tmp / leadcoef(tmp);
     tmpf[i] = absFactorizeIrreducible(tmp);
+    dbprint(1, "tmpf[i]= absFactorizeIrreducible(tmp)", absFactorizeIrreducible(tmp));
     tmpm[i] = rat_facts[2][i];
   }
   // the homogeneous case, homogenizing the result
   // the new variable has to have degree 0
   // need to change the ring
+ dbprint(1, "tmpf ",tmpf);
   if(ho)
   {
+    dbprint(1, "homogeneous case");
     list ll=ringlist(MPz);
     vv[size(vv)]=0;
     ll[3][1][2]=vv;
     def MPhelp=ring(ll);
     setring(MPhelp);
     list tmpf=imap(MPz,tmpf);
+    dbprint(1, "tmpf=imap(MPz,tmpf)",tmpf);
     for(i=2;i<=size(tmpf);i++)
     {
       tmpf[i][2]=homog(tmpf[i][2],var(1));
@@ -558,15 +578,20 @@ EXAMPLE: example absFactorize; shows an example
   intvec mults;
   int nfacts;
   number co=1;
+  dbprint(1, "tmpf[1][2]",tmpf[1][2]);
   minpols[1]=tmpf[1][1];
   facts[1]=tmpf[1][2];     //the coefficient
+  dbprint(1, "facts[1]",facts[1]);
   for(i=2;i<=size(tmpf);i++)
   {
     minpols[i]=cleardenom(tmpf[i][1]);
+    dbprint(1, "facts[i]", cleardenom(tmpf[i][2]) );
     facts[i]=cleardenom(tmpf[i][2]);
     co=co*(leadcoef(tmpf[i][2])/leadcoef(facts[i]))^(deg(minpols[i])*tmpm[i]);
   }
+ dbprint(1, "facts[1]*co",facts[1]*co);
   facts[1]=facts[1]*co;
+
   for(i=1;i<=size(tmpm);i++)
   {
     mults[i]=tmpm[i];
