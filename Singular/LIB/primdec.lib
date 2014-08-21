@@ -426,12 +426,18 @@ static proc stdIdealsEqual( ideal k1, ideal k2)
   return(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-
 proc primaryTest (ideal i, poly p)
+{
+   int relativeCallDepth = 1;
+   return ( primaryTest_i(relativeCallDepth,   i,   p));
+}
+
+static proc primaryTest_i (int relativeCallDepth, ideal i, poly p)
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
   int m=1;
   int n=nvars(basering);
   int e,f;
@@ -470,12 +476,12 @@ proc primaryTest (ideal i, poly p)
       f=1;
       if(e mod char(basering)==0)
       {
-        if ( voice >=16 )
+        if ( relativeCallDepth >=15 )
         {
           "// WARNING: The characteristic is perhaps too small to use";
           "// the algorithm of Gianni/Trager/Zacharias.";
           "// This may result in an infinte loop";
-          "// loop in primaryTest, voice:",voice;"";
+          "// loop in primaryTest, relativeCallDepth:",relativeCallDepth;"";
         }
         while(e mod char(basering)==0)
         {
@@ -546,11 +552,12 @@ proc gcdTest(ideal act)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-static proc splitPrimary(list l,ideal ser,int @wr,list sact)
+static proc splitPrimary(int relativeCallDepth, list l,ideal ser,int @wr,list sact)
 {
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
   int i,j,k,s,r,w;
   list keepresult,act,keepprime;
   poly @f;
@@ -718,7 +725,7 @@ static proc splitPrimary(list l,ideal ser,int @wr,list sact)
       }
       else
       {
-        act=zero_decomp(keepprime[i],ideal(0),@wr,1);
+        act=zero_decomp_i(relativeCallDepth,keepprime[i],ideal(0),@wr,1);
         if(size(act)==2)
         {
           l[2*i]=act[2];
@@ -738,11 +745,12 @@ example
    l1;
 }
 ///////////////////////////////////////////////////////////////////////////////
-static proc splitCharp(list l)
+static proc splitCharp(int relativeCallDepth, list l)
 {
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
   if((char(basering)==0)||(npars(basering)>0))
   {
     return(l);
@@ -800,12 +808,12 @@ static proc splitCharp(list l)
           if(sa[1][1]==l[2*i-1][1])
           {
              l[2*i-1]=std(sa[1]);
-             l[2*i]=primaryTest(sa[1],s[1]);
+             l[2*i]=primaryTest_i(relativeCallDepth,sa[1],s[1]);
           }
           else
           {
              l[2*i-1]=std(sa[1]);
-             l[2*i]=primaryTest(sa[1],factorize(sa[1][1],1)[1]);
+             l[2*i]=primaryTest_i(relativeCallDepth,sa[1],factorize(sa[1][1],1)[1]);
           }
         }
         if((size(sact)==1)&&(m==2))
@@ -820,7 +828,7 @@ static proc splitCharp(list l)
           option(redSB);
           t=std(t);
 
-          list sp=zero_decomp(t,0,0);
+          list sp=zero_decomp_i(relativeCallDepth,t,0,0);
 
           setring P;
           rp=imap(RL,sp);
@@ -847,7 +855,7 @@ static proc splitCharp(list l)
       if(deg(keep[i][1])>0)
       {
         l[size(l)+1]=keep[i];
-        l[size(l)+1]=primaryTest(keep[i],factorize(keep[i][1],1)[1]);
+        l[size(l)+1]=primaryTest_i(relativeCallDepth,keep[i],factorize(keep[i][1],1)[1]);
       }
     }
   }
@@ -857,7 +865,6 @@ static proc splitCharp(list l)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 proc zero_decomp (ideal j,ideal ser,int @wr,list #)
 "USAGE:   zero_decomp(j,ser,@wr); j,ser ideals, @wr=0 or 1
          (@wr=0 for primary decomposition, @wr=1 for computation of associated
@@ -871,9 +878,26 @@ NOTE:    Algorithm of Gianni/Trager/Zacharias
 EXAMPLE: example zero_decomp; shows an example
 "
 {
+    int relativeCallDepth = 1;
+    return ( zero_decomp_i(relativeCallDepth, j, ser, @wr, #) );
+}
+example
+{ "EXAMPLE:"; echo = 2;
+   ring  r = 0,(x,y,z),lp;
+   poly  p = z2+1;
+   poly  q = z4+2;
+   ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
+   i=std(i);
+   list  pr= zero_decomp(i,ideal(0),0);
+   pr;
+}
+
+static proc zero_decomp_i (int relativeCallDepth, ideal j,ideal ser,int @wr,list #)
+{
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
 
   def   @P = basering;
   int uytrewq;
@@ -990,7 +1014,7 @@ EXAMPLE: example zero_decomp; shows an example
       }
       else
       {
-        primary[2*@k]   = primaryTest(primary[2*@k-1],act[1][@k]);
+        primary[2*@k]   = primaryTest_i(relativeCallDepth,primary[2*@k-1],act[1][@k]);
       }
     }
   }
@@ -1012,21 +1036,21 @@ EXAMPLE: example zero_decomp; shows an example
     }
     else
     {
-      primary[2]=primaryTest(primary[1],act[1][1]);
+      primary[2]=primaryTest_i(relativeCallDepth,primary[1],act[1][1]);
     }
   }
 
   if(size(#)==0)
   {
-    primary=splitPrimary(primary,ser,@wr,act);
+    primary=splitPrimary(relativeCallDepth,primary,ser,@wr,act);
   }
 
-  if((voice>=7)&&(char(basering)<=181))
+  if((relativeCallDepth>=6)&&(char(basering)<=181))
   {
-    primary=splitCharp(primary);
+    primary=splitCharp(relativeCallDepth,primary);
   }
 
-  if((@wr==2)&&(npars(basering)>0)&&(voice>=7)&&(char(basering)>0))
+  if((@wr==2)&&(npars(basering)>0)&&(relativeCallDepth>=6)&&(char(basering)>0))
   {
   //the prime decomposition of Yokoyama in characteristic p
     list ke,ek;
@@ -1036,7 +1060,7 @@ EXAMPLE: example zero_decomp; shows an example
       @k++;
       if(size(primary[2*@k])==0)
       {
-        ek=insepDecomp_i( int(1), primary[2*@k-1] );
+        ek=insepDecomp_i( int(1),relativeCallDepth, primary[2*@k-1] );
         primary=delete(primary,2*@k);
         primary=delete(primary,2*@k-1);
         @k--;
@@ -1050,13 +1074,13 @@ EXAMPLE: example zero_decomp; shows an example
     }
   }
 
-  if(voice>=9){primary=extF(primary);};
+  if(relativeCallDepth>=8){primary=extF_i(relativeCallDepth,primary);};
 
 //test whether all ideals in the decomposition are primary and
 //in general position
 //if not after a random coordinate transformation of the last
 //variable the corresponding ideal is decomposed again.
-  if((npars(basering)>0)&&(voice>=9))
+  if((npars(basering)>0)&&(relativeCallDepth>=8))
   {
     poly randp;
     for(zz=1;zz<nvars(basering);zz++)
@@ -1094,7 +1118,7 @@ EXAMPLE: example zero_decomp; shows an example
       jmap1=maxideal(1);
       jmap2=maxideal(1);
       @qht=primary[2*@k-1];
-      if((npars(basering)>0)&&(voice>=11))
+      if((npars(basering)>0)&&(relativeCallDepth>=10))
       {
         jmap[size(jmap)]=randp;
       }
@@ -1168,7 +1192,7 @@ EXAMPLE: example zero_decomp; shows an example
 //=============================================================
 
       ser1=phi1(ser);
-      @lh=zero_decomp (@qh,phi(ser1),@wr);
+      @lh=zero_decomp_i (relativeCallDepth, @qh,phi(ser1),@wr);
 
       kill lres0;
       list lres0;
@@ -1320,22 +1344,20 @@ EXAMPLE: example zero_decomp; shows an example
   }
   return(primary);
 }
-example
-{ "EXAMPLE:"; echo = 2;
-   ring  r = 0,(x,y,z),lp;
-   poly  p = z2+1;
-   poly  q = z4+2;
-   ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
-   i=std(i);
-   list  pr= zero_decomp(i,ideal(0),0);
-   pr;
-}
-///////////////////////////////////////////////////////////////////////////////
+
 proc extF(list l,list #)
+{
+   int relativeCallDepth = 1;
+   return (extF_i(relativeCallDepth,l,#) );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+static proc extF_i(int relativeCallDepth, list l,list #)
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
 //zero_dimensional primary decomposition after finite field extension
   def R=basering;
   int p=char(R);
@@ -1374,7 +1396,7 @@ proc extF(list l,list #)
   for(i=1;i<=size(L);i++)
   {
     attrib(L[i],"isSB",1);
-    pr=zero_decomp(L[i],0,0);
+    pr=zero_decomp_i (relativeCallDepth,L[i],0,0);
     keep=keep+pr;
   }
   for(i=1;i<=size(keep);i++)
@@ -1413,7 +1435,7 @@ proc extF(list l,list #)
   list re=imap(RS,L);
   re=re+peek1;
 
-  return(extF(re,ex+1));
+  return(extF_i(relativeCallDepth,re,ex+1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1570,7 +1592,7 @@ proc insepDecomp(ideal I)
 }
 */
 
-proc insepDecomp_i(int patchPrimaryDecomposition, ideal i)
+proc insepDecomp_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i)
 {
 //decomposes i into special ideals
 //computes the prime decomposition of the special ideals
@@ -1581,6 +1603,7 @@ proc insepDecomp_i(int patchPrimaryDecomposition, ideal i)
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
   def R=basering;
   list pr=zeroSp(i);
   int l,k;
@@ -1599,7 +1622,7 @@ proc insepDecomp_i(int patchPrimaryDecomposition, ideal i)
       m[k]=var(k)^(p^wo[2][k]);
     }
     phi=R,m;
-    qr = decomp_i(patchPrimaryDecomposition,wo[1],2);
+    qr = decomp_i(patchPrimaryDecomposition,relativeCallDepth,wo[1],2);
 
     option(redSB);
     for(k=1;k<=size(qr) div 2;k++)
@@ -1968,7 +1991,8 @@ RETURN:  list = the minimal associated prime ideals of I
 EXAMPLE: example minAssPrimesoldE; shows an example
 "
 {
-    return(minAssPrimesold_i(int(1),I,#));
+    int relativeCallDepth = 1;
+    return(minAssPrimesold_i(int(1),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -1989,7 +2013,8 @@ NOTE:    deprecated. Use 'minAssPrimesoldE()'
 EXAMPLE: example minAssPrimesold; shows an example
 "
 {
-    return(minAssPrimesold_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return(minAssPrimesold_i(int(0),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -2002,7 +2027,7 @@ example
    minAssPrimesold(i,1);
 }
 
-static proc minAssPrimesold_i(int patchPrimaryDecomposition, ideal i, list #)
+static proc minAssPrimesold_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i, list #)
 {
 //
 // parameter patchPrimaryDecomposition : if = 1, patch the decomposition( drop unit ideal in the decomposition), 
@@ -2012,6 +2037,7 @@ static proc minAssPrimesold_i(int patchPrimaryDecomposition, ideal i, list #)
    ASSUME(1, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
    ASSUME(0, hasGlobalOrdering(basering) ) ;
+   relativeCallDepth = relativeCallDepth + 1;
    def @P=basering;
    if(size(i)==0) { return(list(ideal(0))); }
    list qr=simplifyIdeal(i);
@@ -2027,7 +2053,7 @@ static proc minAssPrimesold_i(int patchPrimaryDecomposition, ideal i, list #)
    {
       int @wr;
       list tluser,@res;
-      list primary=decomp_i(patchPrimaryDecomposition,i,2);
+      list primary=decomp_i(patchPrimaryDecomposition,relativeCallDepth,i,2);
 
       @res[1]=primary;
 
@@ -2105,7 +2131,7 @@ static proc minAssPrimesold_i(int patchPrimaryDecomposition, ideal i, list #)
      {
         if(pos[j]!=1)
         {
-            @res[j]=decomp_i(patchPrimaryDecomposition,@pr[j],2);
+            @res[j]=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@pr[j],2);
         }
         else
         {
@@ -2120,8 +2146,8 @@ static proc minAssPrimesold_i(int patchPrimaryDecomposition, ideal i, list #)
      {
 //@pr[j];
 //pause();
-        @res[j]=decomp_i(patchPrimaryDecomposition,@pr[j],2);
-//       @res[j]=decomp_i(patchPrimaryDecomposition,@pr[j],2,@pr[j],ser);
+        @res[j]=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@pr[j],2);
+//       @res[j]=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@pr[j],2,@pr[j],ser);
 //       for(k=1;k<=size(@res[j]);k++)
 //       {
 //          ser=intersect(ser,@res[j][k]);
@@ -2170,7 +2196,8 @@ RETURN:  list = the minimal associated prime ideals of I
 EXAMPLE: example minAssPrimesE; shows an example
 "
 {
-    return(minAssPrimes_i(int(1),I,#));
+    int relativeCallDepth = 1;
+    return(minAssPrimes_i(int(1),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -2195,7 +2222,8 @@ NOTE:    deprecated. Use 'minAssPrimesE()'
 EXAMPLE: example minAssPrimes; shows an example
 "
 {
-    return(minAssPrimes_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return(minAssPrimes_i(int(0),relativeCallDepth, I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -2209,7 +2237,7 @@ example
 }
 
 
-static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
+static proc minAssPrimes_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i, list #)
 {
 // parameter  patchPrimaryDecomposition:  1 to patch( remove unit ideal from the decomposition) , 
 //                                        0 for no special action on unit ideal.
@@ -2217,7 +2245,9 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
-  if (size(i) == 0)  {  return(list(ideal(0)));  }
+
+  relativeCallDepth = relativeCallDepth + 1;
+  if(size(i) == 0){return(list(ideal(0)));}
 
   intvec origOp = option(get);
 
@@ -2344,11 +2374,11 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
         // Lines changed
         if (algorithm == "GTZ")
         {
-          qr = decomp_i(patchPrimaryDecomposition,pr[k], 2);
+          qr = decomp_i(patchPrimaryDecomposition,relativeCallDepth,pr[k], 2);
         }
         else
         {
-          qr = minAssSL(pr[k]);
+          qr = minAssSL(relativeCallDepth,pr[k]);
         }
         for(j = 1; j <= size(qr) div 2; j++)
         {
@@ -2371,11 +2401,11 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
   {
     if (algorithm == "GTZ")
     {
-      re[1] = decomp_i(patchPrimaryDecomposition,i, 2);
+      re[1] = decomp_i(patchPrimaryDecomposition,relativeCallDepth,i, 2);
     }
     else
     {
-      re[1] = minAssSL(i);
+      re[1] = minAssSL(relativeCallDepth,i);
     }
     re = union(re);
     option(set, op);
@@ -2416,11 +2446,11 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
     // Lines changed
     if (algorithm == "GTZ")
     {
-      re[j] = decomp_i(patchPrimaryDecomposition,q[j], 2);
+      re[j] = decomp_i(patchPrimaryDecomposition,relativeCallDepth,q[j], 2);
     }
     else
     {
-      re[j] = minAssSL(q[j]);
+      re[j] = minAssSL(relativeCallDepth, q[j]);
     }
     // Debug
     dbprint(printlevel - voice, "Number of components obtained for this component:", size(re[j]) div 2);
@@ -2560,6 +2590,7 @@ EXAMPLE:example equidim; shows an example
       "// Not implemented for this ordering, please change to global ordering."
       );
   }
+
   intvec op ;
   def  P = basering;
   list eq;
@@ -2793,7 +2824,8 @@ static proc islp()
 proc algeDecoE(ideal I, int w)
 {//reduces primery decomposition over algebraic extensions to
 //the other cases
-    return( algeDeco_i( int(1), I, int w) );
+    int relativeCallDepth = 1;
+    return( algeDeco_i( int(1), relativeCallDepth, I, int w) );
 }
 
 //w=0: GTZ
@@ -2803,14 +2835,15 @@ proc algeDecoE(ideal I, int w)
 proc algeDeco(ideal I, int w)
 {//reduces primery decomposition over algebraic extensions to
 //the other cases
-    return( algeDeco_i(int(0), I, int w));
+    int relativeCallDepth = 1;
+    return( algeDeco_i(int(0), relativeCallDepth, I, int w));
 }
 
 
 //w=0: GTZ
 //w=1: SY
 //w=2: minAss
-static proc algeDeco_i(int patchPrimaryDecomposition, ideal i, int w)
+static proc algeDeco_i(int patchPrimaryDecomposition,int relativeCallDepth, ideal i, int w)
 {//reduces primery decomposition over algebraic extensions to
 //the other cases
 // if patchPrimaryDecomposition=1,  drop unit ideal in the decomposition, 
@@ -2819,6 +2852,8 @@ static proc algeDeco_i(int patchPrimaryDecomposition, ideal i, int w)
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
    ASSUME(0, hasGlobalOrdering(basering) ) ;
+
+   relativeCallDepth = relativeCallDepth + 1;
 
 //reduces primery decomposition over algebraic extensions to
 //the other cases
@@ -2909,16 +2944,16 @@ static proc algeDeco_i(int patchPrimaryDecomposition, ideal i, int w)
 
    if(w==0)
    {
-      pr=decomp_i(patchPrimaryDecomposition,i);
+      pr=decomp_i(patchPrimaryDecomposition,relativeCallDepth,i);
    }
    if(w==1)
    {
-      pr=prim_dec_i(patchPrimaryDecomposition,i,1);
+      pr=prim_dec_i(patchPrimaryDecomposition,relativeCallDepth,i,1);
       pr=reconvList(pr);
    }
    if(w==2)
    {
-      pr=minAssPrimes_i(patchPrimaryDecomposition,i);
+      pr=minAssPrimes_i(patchPrimaryDecomposition,relativeCallDepth,i);
    }
    int sizepr = size(pr);
    if(n<nvars(basering))
@@ -2989,7 +3024,8 @@ NOTE:    Algorithm of Gianni/Trager/Zacharias
 EXAMPLE: example decompE; shows an example
 "
 {
-    return(decomp_i(int(1),I,#));
+    int relativeCallDepth = 1;
+    return(decomp_i(int(1),relativeCallDepth, I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -3015,7 +3051,8 @@ NOTE:    deprecated. Use 'decompE()'
 EXAMPLE: example decomp; shows an example
 "
 {
-    return(decomp_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return(decomp_i(int(0),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -3028,7 +3065,7 @@ example
    testPrimary( pr, i);
 }
 
-static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
+static proc decomp_i(int patchPrimaryDecomposition,int relativeCallDepth, ideal i,list #)
 {
 // if patchPrimaryDecomposition=1,  drop unit ideal in the decomposition, 
 // since the unit ideal it is not prime, otherwise take no special action.
@@ -3036,6 +3073,8 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+  relativeCallDepth = relativeCallDepth + 1;
+
   intvec op,@vv;
   def  @P = basering;
   list primary,indep,ltras;
@@ -3254,7 +3293,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       ideal @j= @kappa(@j);
       @j=std(@j);
 
-      list pr=decomp_i(patchPrimaryDecomposition,@j);
+      list pr=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@j);
       if (size(pr)==0)
       {      
             setring @P;
@@ -3323,7 +3362,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   {
     op=option(get);
     option(redSB);
-    list gprimary= zero_decomp(@j,ser,@wr);
+    list gprimary= zero_decomp_i(relativeCallDepth, @j,ser,@wr);
 
     setring @P;
     primary=fetch(gnir,gprimary);
@@ -3554,7 +3593,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       op=option(get);
       option(redSB);
 
-      list uprimary= zero_decomp(@j,ser,@wr);
+      list uprimary= zero_decomp_i(relativeCallDepth,@j,ser,@wr);
 //HIER
       if(abspri)
       {
@@ -3851,7 +3890,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
 
         op=option(get);
         option(redSB);
-        list uprimary= zero_decomp(@j,ser,@wr);
+        list uprimary= zero_decomp_i(relativeCallDepth,@j,ser,@wr);
 //HIER
         if(abspri)
         {
@@ -3994,11 +4033,11 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       {
         if(@wr>0)
         {
-          htprimary=decomp_i(patchPrimaryDecomposition, @j,@wr,peek,ser);
+          htprimary=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@j,@wr,peek,ser);
         }
         else
         {
-          htprimary=decomp_i(patchPrimaryDecomposition,@j,peek,ser);
+          htprimary=decomp_i(patchPrimaryDecomposition,relativeCallDepth,@j,peek,ser);
         }
         // here we collect now both results primary(sat(j,gh))
         // and primary(j,gh^n)
@@ -4899,13 +4938,15 @@ static proc prim_dec(ideal I, int choose)
 }
 */
 
-static proc prim_dec_i(int patchPrimaryDecomposition, ideal I, int choose)
+static proc prim_dec_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal I, int choose)
 {
 // if patchPrimaryDecomposition=1,  drop unit ideal in the decomposition, 
 // since the unit ideal it is not prime, otherwise take no special action.
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+
+  relativeCallDepth  = relativeCallDepth + 1;
   if((choose<0) or (choose>3))
   {
     ERROR("ERROR: <int> must be 0 or 1 or 2 or 3");
@@ -5051,7 +5092,7 @@ static proc prim_dec_i(int patchPrimaryDecomposition, ideal I, int choose)
     {
       if (V[2]==3) // pseudo_prim_dec_special is needed
       {
-        QQ,SRest=pseudo_prim_dec_special_charsets_i(patchPrimaryDecomposition,V[1],V[6],choose);
+        QQ,SRest=pseudo_prim_dec_special_charsets_i(patchPrimaryDecomposition, relativeCallDepth, V[1],V[6],choose);
                          // QQ = quadruples:
                          // standard basis of pseudo-primary component,
                          // standard basis of corresponding prime,
@@ -5062,7 +5103,7 @@ static proc prim_dec_i(int patchPrimaryDecomposition, ideal I, int choose)
       }
       else     // V is the root, pseudo_prim_dec is needed
       {
-        QQ,SRest=pseudo_prim_dec_charsets_i(patchPrimaryDecomposition,I,SI,choose);
+        QQ,SRest=pseudo_prim_dec_charsets_i(patchPrimaryDecomposition, relativeCallDepth, I,SI,choose);
                          // QQ = quadruples:
                          // standard basis of pseudo-primary component,
                          // standard basis of corresponding prime,
@@ -5146,13 +5187,15 @@ static proc pseudo_prim_dec_charsets(ideal I, ideal SI, int choo)
 }
 */
 
-static proc pseudo_prim_dec_charsets_i(int patchPrimaryDecomposition, ideal I, ideal SI, int choo)
+static proc pseudo_prim_dec_charsets_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal I, ideal SI, int choo)
 {
 // if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 // since the unit ideal it is not prime, otherwise take no special action.
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+
+  relativeCallDepth = relativeCallDepth + 1;
 
   list L;          // The list of minimal associated primes,
                    // each one given by a standard basis
@@ -5164,11 +5207,11 @@ static proc pseudo_prim_dec_charsets_i(int patchPrimaryDecomposition, ideal I, i
   {
     if(choo==2)
     {
-      L=minAssPrimes_i(patchPrimaryDecomposition,I);
+      L=minAssPrimes_i(patchPrimaryDecomposition,relativeCallDepth,I);
     }
     else
     {
-      L=minAssPrimes_i(patchPrimaryDecomposition,I,1);
+      L=minAssPrimes_i(patchPrimaryDecomposition,relativeCallDepth,I,1);
     }
     for(int i=size(L);i>=1;i--)
     {
@@ -5212,13 +5255,15 @@ static proc pseudo_prim_dec_special_charsets (ideal SI,list V6, int choo)
 }
 */
 
-static proc pseudo_prim_dec_special_charsets_i (int patchPrimaryDecomposition, ideal SI,list V6, int choo)
+static proc pseudo_prim_dec_special_charsets_i (int patchPrimaryDecomposition, int relativeCallDepth, ideal SI,list V6, int choo)
 {
 // if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 // since the unit ideal it is not prime, otherwise take no special action.
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+
+  relativeCallDepth = relativeCallDepth + 1;
   int i,j,l;
   list m;
   list L;
@@ -5244,11 +5289,11 @@ static proc pseudo_prim_dec_special_charsets_i (int patchPrimaryDecomposition, i
         {
           if(choo==2)
           {
-            m=minAssPrimes_i(patchPrimaryDecomposition,SP);
+            m=minAssPrimes_i(patchPrimaryDecomposition, relativeCallDepth, SP);
           }
           else
           {
-            m=minAssPrimes_i(patchPrimaryDecomposition,SP,1);
+            m=minAssPrimes_i(patchPrimaryDecomposition, relativeCallDepth, SP,1);
           }
           for(j=size(m);j>=1;j=j-1)
             {
@@ -5331,6 +5376,7 @@ static proc pseudo_prim_dec_i_i (int patchPrimaryDecomposition, ideal SI, list L
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+
   list Q;
   if (size(L)==1)               // one minimal associated prime only
                                 // the ideal is already pseudo primary
@@ -5747,7 +5793,8 @@ NOTE:    - Algorithm of Gianni/Trager/Zacharias.
 EXAMPLE: example primdecGTZE; shows an example
 "
 {
-    return (primdecGTZ_i(int(1),I,  #));     
+    int relativeCallDepth = 1;
+    return (primdecGTZ_i(int(1),relativeCallDepth,I,  #));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -5781,7 +5828,8 @@ NOTE:      deprecated. use 'primdecGTZE()'
 EXAMPLE: example primdecGTZ; shows an example
 "
 {
-    return (primdecGTZ_i(int(0), I , #));
+    int relativeCallDepth = 1;
+    return (primdecGTZ_i(int(0), relativeCallDepth, I , #));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -5793,13 +5841,14 @@ example
    pr;
 }
 
-static proc primdecGTZ_i(int patchPrimaryDecomposition,ideal i, list #)
+static proc primdecGTZ_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i, list #)
 {
 // if parameter patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //           since the unit ideal it is not prime, otherwise take no special action.
 // For other parameters see 'primdecGTZ' or 'primdecGTZE'.
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
+   relativeCallDepth = relativeCallDepth + 1;
    if(size(#)>0)
    {
       int keep_comp=1;
@@ -5813,7 +5862,7 @@ static proc primdecGTZ_i(int patchPrimaryDecomposition,ideal i, list #)
       setring s;
       ideal i=imap(r,i);
 // decompose and go back
-      list li=primdecGTZ_i(patchPrimaryDecomposition,i);
+      list li=primdecGTZ_i(patchPrimaryDecomposition,relativeCallDepth,i);
       int sizeli = size(li);
       setring r;
       if (sizeli==0)  
@@ -5838,12 +5887,12 @@ static proc primdecGTZ_i(int patchPrimaryDecomposition,ideal i, list #)
 
    if(minpoly!=0)
    {
-      return(algeDeco_i(patchPrimaryDecomposition,i,0));
+      return(algeDeco_i(patchPrimaryDecomposition,relativeCallDepth,i,0));
       ERROR(
       "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
       );
    }
-  return(convList(decomp_i(patchPrimaryDecomposition,i)));
+  return(convList(decomp_i(patchPrimaryDecomposition,relativeCallDepth,i)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5873,7 +5922,8 @@ SEE ALSO: primdecGTZ; absFactorize
 EXAMPLE: example absPrimdecGTZE; shows an example
 "
 {
-     return(absPrimdecGTZ_i(int(1),I,#));
+     int relativeCallDepth = 1;
+     return(absPrimdecGTZ_i(int(1),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -5913,8 +5963,8 @@ SEE ALSO: primdecGTZ; absFactorize
 EXAMPLE: example absPrimdecGTZ; shows an example
 "
 {
- 
-    return(absPrimdecGTZ_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return(absPrimdecGTZ_i(int(0),relativeCallDepth,I,#));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -5929,13 +5979,15 @@ example
 
 
 
-static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
+static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal I, list #)
 {
 // if parameter patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //           since the unit ideal it is not prime, otherwise take no special action.
 // For other parameters see 'absPrimdecGTZ' or 'absPrimdecGTZE'.
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
+
+  relativeCallDepth  = relativeCallDepth + 1;
   if (char(basering) != 0)
   {
     ERROR("primdec.lib::absPrimdecGTZ is only implemented for "+
@@ -5956,7 +6008,7 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
       def s=changeord(list(list("dp",1:nvars(basering))));
       setring s;
       def I=imap(r,I);
-      def S=absPrimdecGTZ_i(patchPrimaryDecomposition,I);
+      def S=absPrimdecGTZ_i(patchPrimaryDecomposition,relativeCallDepth,I);
       setring S;
       ring r1=char(basering),var(nvars(r)+1),dp;
       def rS=r+r1;
@@ -5995,14 +6047,14 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
   }
   if(minpoly!=0)
   {
-    //return(algeDeco_i(patchPrimaryDecomposition,I,0));
+    //return(algeDeco_i(patchPrimaryDecomposition,relativeCallDepth,I,0));
     ERROR(
       "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
     );
   }
   def R=basering;
   int n=nvars(R);
-  list L=decomp_i(patchPrimaryDecomposition,I,3);
+  list L=decomp_i(patchPrimaryDecomposition,relativeCallDepth,I,3);
   if (patchPrimaryDecomposition && size(L)==0 ) 
   {
      ERROR("will not handle case with unit ideal");
@@ -6099,7 +6151,8 @@ NOTE:    Algorithm of Shimoyama/Yokoyama.
 EXAMPLE: example primdecSY; shows an example
 "
 {
-     return (primdecSY_i(int(1),I,#));
+     int relativeCallDepth = 1;
+     return (primdecSY_i(int(1), relativeCallDepth, I,#));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -6137,7 +6190,8 @@ NOTE:    deprecated. Use 'primdecSYE()'.
 EXAMPLE: example primdecSY; shows an example
 "
 {
-    return (primdecSY_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return (primdecSY_i(int(0), relativeCallDepth, I,#));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -6150,13 +6204,14 @@ example
 }
 
 
-static proc primdecSY_i(int patchPrimaryDecomposition, ideal i, list #)
+static proc primdecSY_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i, list #)
 {
 //           if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //           since the unit ideal it is not prime, otherwise take no special action.
 //           For other paremetes see 'primdecSY' or 'primdecSYE'
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
+   relativeCallDepth = relativeCallDepth + 1;
    if(size(#)>1)
    {
       int keep_comp=1;
@@ -6170,7 +6225,7 @@ static proc primdecSY_i(int patchPrimaryDecomposition, ideal i, list #)
       setring s;
       ideal i=imap(r,i);
 // decompose and go back
-      list li=primdecSY_i(patchPrimaryDecomposition,i);
+      list li=primdecSY_i(patchPrimaryDecomposition,relativeCallDepth,i);
       int sizeli = size(li);
       setring r;
       if (sizeli==0)  { return ( list() ); }
@@ -6202,12 +6257,12 @@ static proc primdecSY_i(int patchPrimaryDecomposition, ideal i, list #)
 
    if(minpoly!=0)
    {
-      return(algeDeco_i(patchPrimaryDecomposition,i,1));
+      return(algeDeco_i(patchPrimaryDecomposition,relativeCallDepth,i,1));
    }
    if (size(#)!=0)
-   { return(prim_dec_i(patchPrimaryDecomposition,i,#[1])); }
+   { return(prim_dec_i(patchPrimaryDecomposition,relativeCallDepth,i,#[1])); }
    else
-   { return(prim_dec_i(patchPrimaryDecomposition,i,1)); }
+   { return(prim_dec_i(patchPrimaryDecomposition,relativeCallDepth,i,1)); }
 }
 
 
@@ -6231,7 +6286,8 @@ NOTE:    - Designed for characteristic 0, works also in char k > 0 based
 EXAMPLE: example minAssGTZE; shows an example
 "
 {
-    list result = minAssGTZ_i(int(1),I,#);
+    int relativeCallDepth = 1;
+    list result = minAssGTZ_i(int(1),relativeCallDepth, I,#);
     return(result);
      
 }
@@ -6270,7 +6326,8 @@ NOTE:    deprecated. Use 'minAssGTZE()'.
 EXAMPLE: example minAssGTZ; shows an example
 "
 {
-    list result = minAssGTZ_i(int(0),I,#);
+    int relativeCallDepth = 1;
+    list result = minAssGTZ_i(int(0),relativeCallDepth, I,#);
     return(result);
 }
 example
@@ -6285,13 +6342,16 @@ example
 
 
 ///////////////////////////////////////////////////////////////////////////////
-static proc minAssGTZ_i(int patchPrimaryDecomposition, ideal i,list #)
+static proc minAssGTZ_i(int patchPrimaryDecomposition, int relativeCallDepth, ideal i,list #)
  {
 //           if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //           since the unit ideal it is not prime, otherwise take no special action.
 //           For other parameters see 'minAssGTZ' or 'minAssGTZE'
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
+
+   relativeCallDepth  = relativeCallDepth + 1;
+
    if(size(#)>0)
    {
       int keep_comp=1;
@@ -6306,7 +6366,7 @@ static proc minAssGTZ_i(int patchPrimaryDecomposition, ideal i,list #)
       setring s;
       ideal i=imap(r,i);
 // decompose and go back
-      list li=minAssGTZ_i(patchPrimaryDecomposition,i);
+      list li=minAssGTZ_i(patchPrimaryDecomposition,relativeCallDepth,i);
       int sizeli = size(li);
       setring r;
       if (sizeli==0) { return(list()); }
@@ -6367,10 +6427,10 @@ static proc minAssGTZ_i(int patchPrimaryDecomposition, ideal i,list #)
 
   if(minpoly!=0)
   {
-    return(algeDeco_i(patchPrimaryDecomposition,i,2));
+    return(algeDeco_i(patchPrimaryDecomposition,relativeCallDepth,i,2));
   }
 
-  list result = minAssPrimes_i(patchPrimaryDecomposition,i, facstdOption, algorithm);
+  list result = minAssPrimes_i(patchPrimaryDecomposition,relativeCallDepth , i, facstdOption, algorithm);
   return(result);
 }
 
@@ -6437,9 +6497,9 @@ proc minAssChar_i(int patchPrimaryDecomposition, ideal i, list #)
 //           if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //           since the unit ideal it is not prime, otherwise take no special action.
 //           For other parameters see 'minAssChar' or 'minAssCharE'
+   ASSUME(0,size(#)<3);
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
-   ASSUME(0,size(#)<3);
    if(size(#)>1)
    {
       int keep_comp=1;
@@ -7473,6 +7533,7 @@ static proc testPrimary_i(int patchPrimaryDecomposition,list pr, ideal k)
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
    ASSUME(0, hasGlobalOrdering(basering) ) ;
+
    int i;
    pr=reconvList(pr);
    if (patchPrimaryDecomposition==1)
@@ -7506,9 +7567,12 @@ NOTE:    The algorithm (of Monico), works well only for a small total number
 EXAMPLE: example zerodec; shows an example
 "
 {
+
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
+
   ASSUME(2, dim(groebner(I))==1 );
+
   if(attrib(basering,"global")!=1)
   {
     ERROR(
@@ -7614,21 +7678,77 @@ example
 
 
 static proc newDecompStepE(ideal I, list #)
+"USAGE:  newDecompStepE( I); I ideal  (for primary decomposition)
+         newDecompStepE( I,1);        (for the associated primes of dimension of i)
+         newDecompStepE( I,2);        (for the minimal associated primes)
+         newDecompStepE( I,3);        (for the absolute primary decomposition (not tested!))
+         "oneIndep";        (for using only one max indep set)
+         "intersect";        (returns alse the intersection of the components founded)
+
+RETURN:  list = list of primary ideals and their associated primes
+         (at even positions in the list)
+         (resp. a list of the minimal associated primes)
+NOTE:    Algorithm of Gianni/Trager/Zacharias
+         Drops the unit ideal in the decomposition,
+         since the unit ideal it is not prime.
+EXAMPLE: example newDecompStep; shows an example
+"
 {
-   return(newDecompStep_i(int(1),I,#));
+   int relativeCallDepth = 1;
+   return(newDecompStep_i(int(1),relativeCallDepth,I,#));
+}
+example
+{ "EXAMPLE:"; echo = 2;
+   ring  r = 32003,(x,y,z),lp;
+   poly  p = z2+1;
+   poly  q = z4+2;
+   ideal I = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
+   int patchDecomposition = 1;
+   list pr = newDecompStepE(I);
+   pr;
+   testPrimary( pr, I);
 }
 
+
+
 static proc newDecompStep(ideal I, list #)
+"USAGE:  newDecompStep(patchPrimaryDecomposition, I); I ideal  (for primary decomposition)
+         newDecompStep(patchPrimaryDecomposition, I,1);        (for the associated primes of dimension of i)
+         newDecompStep(patchPrimaryDecomposition, I,2);        (for the minimal associated primes)
+         newDecompStep(patchPrimaryDecomposition, I,3);        (for the absolute primary decomposition (not tested!))
+         "oneIndep";        (for using only one max indep set)
+         "intersect";        (returns alse the intersection of the components founded)
+
+RETURN:  list = list of primary ideals and their associated primes
+         (at even positions in the list)
+         (resp. a list of the minimal associated primes)
+NOTE:    deprecated. Use newDecompStepE instead.
+         Algorithm of Gianni/Trager/Zacharias
+         Takes no special action for unit ideal input.
+EXAMPLE: example newDecompStep; shows an example
+"
 {
-    return(newDecompStep_i(int(0),I,#));
+    int relativeCallDepth = 1;
+    return(newDecompStep_i(int(0),relativeCallDepth,I,#));
+}
+example
+{ "EXAMPLE:"; echo = 2;
+   ring  r = 32003,(x,y,z),lp;
+   poly  p = z2+1;
+   poly  q = z4+2;
+   ideal I = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
+   int patchDecomposition = 1;
+   list pr = newDecompStep( I);
+   pr;
+   testPrimary( pr, I);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-static proc newDecompStep_i(int patchPrimaryDecomposition, ideal i, list #)
-"USAGE:  newDecompStep_i(patchPrimaryDecomposition, I); I ideal  (for primary decomposition)
-         newDecompStep_i(patchPrimaryDecomposition, I,1);        (for the associated primes of dimension of i)
-         newDecompStep_i(patchPrimaryDecomposition, I,2);        (for the minimal associated primes)
-         newDecompStep_i(patchPrimaryDecomposition, I,3);        (for the absolute primary decomposition (not tested!))
+static proc newDecompStep_i(int patchPrimaryDecomposition,int relativeCallDepth, ideal i, list #)
+"USAGE:  newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth, I); I ideal  (for primary decomposition)
+         newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth, I,1);        (for the associated primes of dimension of i)
+         newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth, I,2);        (for the minimal associated primes)
+         newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth, I,3);        (for the absolute primary decomposition (not tested!))
          "oneIndep";        (for using only one max indep set)
          "intersect";        (returns alse the intersection of the components founded)
 
@@ -7638,12 +7758,13 @@ RETURN:  list = list of primary ideals and their associated primes
 NOTE:    Algorithm of Gianni/Trager/Zacharias
          if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
          since the unit ideal it is not prime, otherwise take no special action.
-EXAMPLE: example newDecompStep; shows an example
 "
 {
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
+
+  relativeCallDepth = relativeCallDepth+1;
 
   intvec op@P, op,@vv;
   def  @P = basering;
@@ -7877,7 +7998,7 @@ EXAMPLE: example newDecompStep; shows an example
       ideal @j= @kappa(@j);
       @j=simplify(@j, 2);
       attrib(@j,"isSB",1);
-      result = newDecompStep_i(patchPrimaryDecomposition, @j, indepOption, intersectOption, @wr);
+      result = newDecompStep_i(patchPrimaryDecomposition, relativeCallDepth, @j, indepOption, intersectOption, @wr);
       if (intersectOption == "intersect")
       {
        list pr = result[1];
@@ -8005,7 +8126,7 @@ EXAMPLE: example newDecompStep; shows an example
   {
     op=option(get);
     option(redSB);
-    list gprimary= newZero_decomp(@j,ser,@wr);
+    list gprimary= newZero_decomp_i(relativeCallDepth,@j,ser,@wr);
 
     setring @P;
     primary=fetch(gnir,gprimary);
@@ -8115,7 +8236,7 @@ EXAMPLE: example newDecompStep; shows an example
   for(@m=1; @m<=size(indep); @m++)
   {
     data[1] = indep[@m];
-    result = newReduction(@j, ser, @hilb, @w, jdim, abspri, @wr, data);
+    result = newReduction_i(relativeCallDepth, @j, ser, @hilb, @w, jdim, abspri, @wr, data);
     quprimary = quprimary + result[1];
     if(abspri)
     {
@@ -8334,7 +8455,7 @@ EXAMPLE: example newDecompStep; shows an example
 
            op=option(get);
            option(redSB);
-           list uprimary= newZero_decomp(@j,ser,@wr);
+           list uprimary= newZero_decomp_i(relativeCallDepth, @j,ser,@wr);
 //HIER
            if(abspri)
            {
@@ -8483,13 +8604,13 @@ EXAMPLE: example newDecompStep; shows an example
            if(@wr>0)
            {
               // The following line was dropped to avoid the recursion step:
-              //htprimary=newDecompStep_i(patchPrimaryDecomposition, @j,@wr,peek,ser);
+              //htprimary=newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth, @j,@wr,peek,ser);
               htprimary = list();
            }
            else
            {
               // The following line was dropped to avoid the recursion step:
-              //htprimary=newDecompStep_i(patchPrimaryDecomposition,@j,peek,ser);
+              //htprimary=newDecompStep_i(patchPrimaryDecomposition,relativeCallDepth,@j,peek,ser);
               htprimary = list();
            }
            // here we collect now both results primary(sat(j,gh))
@@ -8535,17 +8656,6 @@ EXAMPLE: example newDecompStep; shows an example
     return(primary);
   }
 }
-example
-{ "EXAMPLE:"; echo = 2;
-   ring  r = 32003,(x,y,z),lp;
-   poly  p = z2+1;
-   poly  q = z4+2;
-   ideal I = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
-   int patchDecomposition = 1;
-   list pr = newDecompStep_i(patchDecomposition, I);
-   pr;
-   testPrimary( pr, I);
-}
 
 // This was part of proc decomp.
 // In proc newDecompStep, used for the computation of the minimal associated primes,
@@ -8554,11 +8664,22 @@ example
 // This is not yet implemented, since the reduction is not exactly the same and some changes should be made.
 static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim, int abspri, int @wr, list data)
 {
+    int relativeCallDepth=1;
+    return( newReduction_i(relativeCallDepth,  @j,  ser,  @hilb,  @w,  jdim,  abspri,  @wr,  data) );
+}
+
+// This was part of proc decomp.
+// In proc newDecompStep, used for the computation of the minimal associated primes,
+// this part was separated as a soubrutine to make the code more clear.
+// Also, since the reduction is performed twice in proc newDecompStep, it should use both times this routine.
+// This is not yet implemented, since the reduction is not exactly the same and some changes should be made.
+static proc newReduction_i(int relativeCallDepth, ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim, int abspri, int @wr, list data)
+{
    ASSUME(1, hasFieldCoefficient(basering) );
    ASSUME(1, not isQuotientRing(basering) ) ;
    ASSUME(1, hasGlobalOrdering(basering) ) ;
 
-
+   relativeCallDepth = relativeCallDepth + 1;
    string @va;
    string quotring;
    intvec op;
@@ -8701,7 +8822,7 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
 
      int zeroMinAss = @wr;
      if (@wr == 2) {zeroMinAss = 1;}
-     list uprimary= newZero_decomp(@j, ser, zeroMinAss);
+     list uprimary= newZero_decomp_i (relativeCallDepth,@j, ser, zeroMinAss);
 
 //HIER
      if(abspri)
@@ -8865,12 +8986,13 @@ example
    pr;
 }
 
-static proc minAss_i(int patchPrimaryDecomposition,ideal I,list #)
+static proc minAss_i(int patchPrimaryDecomposition, ideal I,list #)
 {
 //         if patchPrimaryDecomposition=1,  drop the unit ideal in the decomposition, 
 //         since the unit ideal it is not prime, otherwise take no special action.
 //         For other parameters see 'minAss' or 'minAssE'
-  return(minAssGTZ_i(patchPrimaryDecomposition,I,#));
+  int relativeCallDepth = 1;
+  return(minAssGTZ_i(patchPrimaryDecomposition,relativeCallDepth,I,#));
 }
 
 
@@ -8883,7 +9005,7 @@ static proc minAss_i(int patchPrimaryDecomposition,ideal I,list #)
 // decomp, with some modifications to avoid the recursion.
 //
 
-static proc minAssSL(ideal I)
+static proc minAssSL(int relativeCallDepth, ideal I)
 // Input = I, ideal
 // Output = primaryDec where primaryDec is the list of the minimal
 // associated primes and the primary components corresponding to these primes.
@@ -8892,6 +9014,7 @@ static proc minAssSL(ideal I)
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
 
+  relativeCallDepth = relativeCallDepth + 1;
   ideal P = 1;
   list pd = list();
   int k;
@@ -8902,7 +9025,7 @@ static proc minAssSL(ideal I)
   {
     // Debug
     dbprint(printlevel - voice, "// We call minAssSLIteration to find new prime ideals!");
-    pd = minAssSLIteration(I, P);
+    pd = minAssSLIteration(relativeCallDepth, I, P);
     // Debug
     dbprint(printlevel - voice, "// Output of minAssSLIteration:");
     dbprint(printlevel - voice, pd);
@@ -8930,12 +9053,13 @@ static proc minAssSL(ideal I)
 // associated to I), it calculates new minimal prime ideals associated to I
 // which were not used to calculate P. P = 1 represents empty intersetion.
 // This version uses Primary Decomposition in the zerodimensional case.
-static proc minAssSLIteration(ideal I, ideal P);
+static proc minAssSLIteration(int relativeCallDepth, ideal I, ideal P);
 {
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
 
+  relativeCallDepth = relativeCallDepth +1;
   int k = 1;
   int good  = 0;
   list primaryDec = list();
@@ -8962,7 +9086,7 @@ static proc minAssSLIteration(ideal I, ideal P);
   // Debug
   dbprint(printlevel - voice, "// We do the reduction to the zerodimensional case, via decomp.");
 
-  primaryDec = newDecompStep_i( int(1), J, "oneIndep", "intersect", 2);
+  primaryDec = newDecompStep_i( int(1),relativeCallDepth, J, "oneIndep", "intersect", 2);
   // Debug
   dbprint(printlevel - voice, "// Proc decomp has found", size(primaryDec) div 2, "new primary components.");
 
@@ -9075,7 +9199,6 @@ example
 
 
 ///////////////////////////////////////////////////////////////////////////////
-
 proc newZero_decomp (ideal j, ideal ser, int @wr, list #)
 "USAGE:   newZero_decomp(j,ser,@wr); j,ser ideals, @wr=0 or 1
          (@wr=0 for primary decomposition, @wr=1 for computation of associated
@@ -9092,10 +9215,27 @@ NOTE:    Algorithm of Gianni/Trager/Zacharias
 EXAMPLE: example newZero_decomp; shows an example
 "
 {
+    int relativeCallDepth = 1;
+    return (newZero_decomp_i ( relativeCallDepth,  j,  ser,  @wr,  #) );
+}
+example
+{ "EXAMPLE:"; echo = 2;
+   ring  r = 0,(x,y,z),lp;
+   poly  p = z2+1;
+   poly  q = z4+2;
+   ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
+   i=std(i);
+   list  pr= newZero_decomp(i,ideal(0),0);
+   pr;
+}
+
+static proc newZero_decomp_i (int relativeCallDepth, ideal j, ideal ser, int @wr, list #)
+{
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
 
+  relativeCallDepth = relativeCallDepth+1;
   def   @P = basering;
   int uytrewq;
   int nva = nvars(basering);
@@ -9229,7 +9369,7 @@ EXAMPLE: example newZero_decomp; shows an example
       }
       else
       {
-        primary[2*@k]   = primaryTest(primary[2*@k-1],act[1][@k]);
+        primary[2*@k]   = primaryTest_i(relativeCallDepth,primary[2*@k-1],act[1][@k]);
       }
     }
   }
@@ -9251,21 +9391,21 @@ EXAMPLE: example newZero_decomp; shows an example
     }
     else
     {
-      primary[2]=primaryTest(primary[1],act[1][1]);
+      primary[2]=primaryTest_i(relativeCallDepth,primary[1],act[1][1]);
     }
   }
 
   if(size(#)==0)
   {
-    primary=splitPrimary(primary,ser,@wr,act);
+    primary=splitPrimary(relativeCallDepth,primary,ser,@wr,act);
   }
 
-  if((voice>=7)&&(char(basering)<=181))
+  if((relativeCallDepth>=6)&&(char(basering)<=181))
   {
-    primary=splitCharp(primary);
+    primary=splitCharp(relativeCallDepth,primary);
   }
 
-  if((@wr==2)&&(npars(basering)>0)&&(voice>=7)&&(char(basering)>0))
+  if((@wr==2)&&(npars(basering)>0)&&(relativeCallDepth>=6)&&(char(basering)>0))
   {
   //the prime decomposition of Yokoyama in characteristic p
     list ke,ek;
@@ -9275,7 +9415,7 @@ EXAMPLE: example newZero_decomp; shows an example
       @k++;
       if(size(primary[2*@k])==0)
       {
-        ek=insepDecomp_i(int(1), primary[2*@k-1]);
+        ek=insepDecomp_i(int(1), relativeCallDepth, primary[2*@k-1]);
         primary=delete(primary,2*@k);
         primary=delete(primary,2*@k-1);
         @k--;
@@ -9289,7 +9429,7 @@ EXAMPLE: example newZero_decomp; shows an example
     }
   }
 
-  if(nestLevel > 1){primary=extF(primary);}
+  if(nestLevel > 1){primary=extF_i(relativeCallDepth, primary);}
 
 //test whether all ideals in the decomposition are primary and
 //in general position
@@ -9407,7 +9547,7 @@ EXAMPLE: example newZero_decomp; shows an example
 //=============================================================
 
       ser1=phi1(ser);
-      @lh=newZero_decomp (@qh,phi(ser1),@wr, list("nest", nestLevel + 1));
+      @lh=newZero_decomp_i (relativeCallDepth, @qh,phi(ser1),@wr, list("nest", nestLevel + 1));
 
       kill lres0;
       list lres0;
@@ -9560,16 +9700,7 @@ EXAMPLE: example newZero_decomp; shows an example
   }
   return(primary);
 }
-example
-{ "EXAMPLE:"; echo = 2;
-   ring  r = 0,(x,y,z),lp;
-   poly  p = z2+1;
-   poly  q = z4+2;
-   ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
-   i=std(i);
-   list  pr= newZero_decomp(i,ideal(0),0);
-   pr;
-}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////

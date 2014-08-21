@@ -64,8 +64,8 @@ proc primdecSYNoOptimalOrdering  (I) {    return ( primdecSY (I,0) );           
 proc minAssCharENoOptimalOrdering(I) {    return ( minAssCharE(I,0) );               }
 proc minAssCharNoOptimalOrdering (I) {    return ( minAssChar (I,0) );               }
 
-proc primdecEUsingMinAssChar  (I)    {    return ( Primdec::prim_dec_i( int(1),I,0) );        }
-proc primdecUsingMinAssChar   (I)    {    return ( Primdec::prim_dec_i( int(0),I,0) );        }
+proc primdecEUsingMinAssChar  (I)    {    return ( Primdec::prim_dec_i( int(1),1, I,0) );        }
+proc primdecUsingMinAssChar   (I)    {    return ( Primdec::prim_dec_i( int(0),1,I,0) );        }
 
 
 proc minAssPrimesNew  (I)           {    return ( Primdec::minAssPrimesE(I) );        }
