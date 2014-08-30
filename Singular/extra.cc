@@ -948,25 +948,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         res->data=(char*)ll;
         return FALSE;
       }
-  /*==================== forking experiments ======================*/
-      if(strcmp(sys_cmd, "waitforssilinks")==0)
-      {
-        if ((h != NULL) && (h->Typ() == LIST_CMD) &&
-            (h->next != NULL) && (h->next->Typ() == INT_CMD))
-        {
-          lists L = (lists)h->Data();
-          int timeMillisec = (int)(long)h->next->Data();
-          int n = slStatusSsiL(L, timeMillisec * 1000);
-          res->rtyp = INT_CMD;
-          res->data = (void*)(long)n;
-          return FALSE;
-        }
-        else
-        {
-          Werror( "expected list of open ssi links and timeout");
-          return TRUE;
-        }
-      }
+      else
   /*==================== neworder =============================*/
   // should go below
       if(strcmp(sys_cmd,"neworder")==0)
@@ -2668,19 +2650,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
       }
       else
 #endif
-  /*==================== naIdeal ==================================*/
-//       // This seems to be obsolette with the new Frank's alg.ext field...
-//       if(strcmp(sys_cmd,"naIdeal")==0)
-//       {
-//         if ((h!=NULL) &&(h->Typ()==IDEAL_CMD))
-//         {
-//           naSetIdeal((ideal)h->Data());
-//           return FALSE;
-//         }
-//         else
-//            WerrorS("ideal expected");
-//       }
-//       else
   /*==================== pDivStat =============================*/
   #if defined(PDEBUG) || defined(PDIV_DEBUG)
       if(strcmp(sys_cmd,"pDivStat")==0)
@@ -3153,32 +3122,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
          else return TRUE;
          return FALSE;
        }
-  /*==================== minor =================*/
-      if (strcmp(sys_cmd, "minor")==0)
-      {
-        matrix a = (matrix) h->Data();
-        h = h->next;
-        int ar = (int)(long) h->Data();
-        h = h->next;
-        int which = (int)(long) h->Data();
-        h = h->next;
-        ideal R = NULL;
-        if (h != NULL)
-        {
-          R = (ideal) h->Data();
-        }
-        res->data=(poly) idMinor(a, ar, (unsigned long) which, R);
-        if (res->data == (poly) 1)
-        {
-          res->rtyp=INT_CMD;
-          res->data = 0;
-        }
-        else
-        {
-          res->rtyp=POLY_CMD;
-        }
-        return(FALSE);
-      }
       else
   /*==================== F5 Implementation =================*/
   #ifdef HAVE_F5
@@ -3872,71 +3815,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
     si_link p=ssiCommandLink();
     res->data=(void*)p;
     return (p==NULL);
-  }
-  else
-  /*==================== Test Boos Epure ==================================*/
-  if (strcmp(sys_cmd, "Hallo")==0)
-  {
-    n_coeffType nae=nRegister(n_unknown,n_AEInitChar);
-    coeffs AE=nInitChar(nae,NULL);
-    ring r=currRing;
-    rUnComplete(r);
-    r->cf=AE;
-    rComplete(r,TRUE);
-    /*
-    // Ab hier wird gespielt
-    int_poly* f=new int_poly;
-    f->poly_insert();
-    int_poly* g=new int_poly;
-    g->poly_insert();
-    // Ab hier gerechnet
-    number a=reinterpret_cast<number> (f);
-    number b=reinterpret_cast<number> (g);
-    number erg=n_Gcd(a,b,AE);
-    int_poly* h= reinterpret_cast<int_poly*> (erg);
-    h->poly_print();
-*/
-    return FALSE;
-  }
-  else
-  /*==================== Test Boos Epure 2 ==================================*/
-  if (strcmp(sys_cmd, "Hallo2")==0)
-  {
-    n_coeffType naeq=nRegister(n_unknown,n_QAEInitChar);
-    coeffs AEQ=nInitChar(naeq,NULL);
-    ring r=currRing;
-    rUnComplete(r);
-    r->cf=AEQ;
-    rComplete(r,TRUE);
-
-    return FALSE;
-  }
-  else
-  /*==================== Test Boos Epure 3==================================*/
-  if (strcmp(sys_cmd, "Hallo3")==0)
-  {
-    n_coeffType naep=nRegister(n_unknown,n_pAEInitChar);
-    coeffs AEp=nInitChar(naep,NULL);
-    ring r=currRing;
-    rUnComplete(r);
-    r->cf=AEp;
-    rComplete(r,TRUE);
-    //JETZT WOLLEN WIR DOCH MAL SPIELEN
-
-    // Ab hier wird gespielt
-    p_poly* f=new p_poly;
-    f->p_poly_insert();
-
-    p_poly* g=new p_poly;
-    g->p_poly_insert();
-    // Ab hier gerechnet
-    number a=reinterpret_cast<number> (f);
-    number b=reinterpret_cast<number> (g);
-    number erg=n_Add(a,b,AEp);
-    p_poly* h= reinterpret_cast<p_poly*> (erg);
-    h->p_poly_print();
-
-    return FALSE;
   }
   else
 /*==================== Error =================*/
