@@ -2103,9 +2103,9 @@ static void rRenameVars(ring R)
     {
       for(j=i+1;j<R->N;j++)
       {
-        Werror("error: same name `%s` for ring variables  var(%d) and var(%d): ; ",R->names[i], i+1, j+1);
         if (strcmp(R->names[i],R->names[j])==0)
         {
+          Werror("error: same name `%s` for ring variables  var(%d) and var(%d): ; ",R->names[i], i+1, j+1);
           ch=TRUE;
           Warn("name conflict var(%d) and var(%d): `%s`, rename to `@%s`",i+1,j+1,R->names[i],R->names[i]);
           omFree(R->names[j]);
