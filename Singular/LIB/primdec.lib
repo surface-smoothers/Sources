@@ -3420,8 +3420,8 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
 
   if(homo==1)
   {
-    if((ordstr(@P)[3]=="d")||(ordstr(@P)[1]=="d")||(ordstr(@P)[1]=="w")
-       ||(ordstr(@P)[3]=="w"))
+    if(((ordstr(@P)[3]=="d")||(ordstr(@P)[1]=="d")||(ordstr(@P)[1]=="w")
+       ||(ordstr(@P)[3]=="w"))&&(size(ringlist(@P)[3])==2))
     {
       ideal jwork=imap(@P,tras);
       attrib(jwork,"isSB",1);
