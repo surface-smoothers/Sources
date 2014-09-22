@@ -15,8 +15,16 @@
 # include <misc/auxiliary.h>
 
 #define SINGULAR_MAJOR_VERSION 4
+
+/*#define SINGULAR_4_1*/
+
+#ifdef SINGULAR_4_1
+#define SINGULAR_MINOR_VERSION 1
+#define SINGULAR_SUB_VERSION 0
+#else
 #define SINGULAR_MINOR_VERSION 0
 #define SINGULAR_SUB_VERSION 0
+#endif
 #define S_ROOT_DIR ""
 
 /*******************************************************************
@@ -87,9 +95,12 @@
 #define ALIGN_8
 #endif
 
+#ifdef SINGULAR_4_1
+#define SINGULAR_VERSION 4100
+#else
 #define SINGULAR_PATCHLEVEL 1
 #define SINGULAR_VERSION ((SINGULAR_MAJOR_VERSION*1000 + SINGULAR_MINOR_VERSION*100 + SINGULAR_SUB_VERSION*10)+SINGULAR_PATCHLEVEL)
-
+#endif
 /*******************************************************************
  * Miscellanous Defines
  ******************************************************************/

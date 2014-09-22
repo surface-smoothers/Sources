@@ -264,11 +264,6 @@ number    nAESetMap        (number a, const coeffs)
         return a;
 }
 */
-char*    nAEName       (number, const coeffs)
-{       char *c=new char;
-        *c='c';
-        return c;
-}
 
 void    nAEInpMult       (number &, number, const coeffs)
 {
@@ -338,9 +333,7 @@ BOOLEAN n_AEInitChar(coeffs r, void *)
     r->cfLcm  = nAELcm; // ZU BEARBEITEN
     r->cfDelete= nAEDelete;
     r->cfSetMap = npSetMap;
-    r->cfName = nAEName;
     r->cfInpMult=nAEInpMult; //????
-    r->cfInit_bigint= NULL; // nAEMap0;
     r->cfCoeffWrite=nAECoeffWrite; //????
 
 
