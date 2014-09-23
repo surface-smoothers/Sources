@@ -35,7 +35,7 @@
 #include <kernel/GBEngine/kutil.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/khstd.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 //#include "cntrlc.h"
 #include <kernel/ideals.h>
 //#include "../Singular/ipid.h"
@@ -1743,7 +1743,7 @@ loop_count = 1;
     if (strat->kHEdgeFound)
     {
       if ((TEST_OPT_FINDET)
-      || ((TEST_OPT_MULTBOUND) && (scMult0Int((strat->Shdl)) < Kstd1_mu)))
+      || ((TEST_OPT_MULTBOUND) && (scMult0Int(strat->Shdl,NULL,strat->tailRing) < Kstd1_mu)))
       {
         // obachman: is this still used ???
         /*
