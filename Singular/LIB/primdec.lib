@@ -30,7 +30,6 @@ PROCEDURES:
  primdecSY(I...);  complete primary decomposition via Shimoyama-Yokoyama
  minAssGTZ(I);     the minimal associated primes via Gianni,Trager,Zacharias (with modifications by Laplagne)
  minAssChar(I...); the minimal associated primes using characteristic sets
- testPrimary(L,k); tests the result of the primary decomposition
  radical(I);       computes the radical of I via Krick/Logar (with modifications by Laplagne) and Kemper
  radicalEHV(I);    computes the radical of I via Eisenbud,Huneke,Vasconcelos
  equiRadical(I);   the radical of the equidimensional part of the ideal I
@@ -52,11 +51,38 @@ LIB "matrix.lib";
 LIB "triang.lib";
 LIB "absfact.lib";
 LIB "ring.lib";
+LIB "primdecutils.lib";
 ///////////////////////////////////////////////////////////////////////////////
 //
 //                      Gianni/Trager/Zacharias
 //
 ///////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////
+// proc specialIdealsEqual
+// input: standard bases of ideal k1 and k2 such that
+// k1 is contained in k2, or k2 is contained ink1
+// output: 1, if k1 equals k2, 0 otherwise
+//////////////////////////////////////////////////
+static proc specialIdealsEqual( ideal k1, ideal k2)
+{
+  int j;
+
+  if(size(k1)==size(k2))
+  {
+    for(j=1;j<=size(k1);j++)
+    {
+      if(leadexp(k1[j])!=leadexp(k2[j]))
+      {
+        return(0);
+      }
+    }
+    return(1);
+  }
+  return(0);
+}
+
+
 
 static proc sat1 (ideal id, poly p)
 "USAGE:   sat1(id,j);  id ideal, j polynomial
@@ -269,28 +295,7 @@ static proc quotMin(list tsil)
   return(l);
 }
 
-///////////////////////////////////////////////////////////////////////////////
 
-static proc testFactor(list act,poly p)
-{
-  ASSUME(1, hasFieldCoefficient(basering) );
-  ASSUME(1, not isQuotientRing(basering) ) ;
-  ASSUME(1, hasGlobalOrdering(basering) ) ;
-  poly keep=p;
-
-  int i;
-  poly q=act[1][1]^act[2][1];
-  for(i=2;i<=size(act[1]);i++)
-  {
-    q=q*act[1][i]^act[2][i];
-  }
-  q=1/leadcoef(q)*q;
-  p=1/leadcoef(p)*p;
-  if(p-q!=0)
-  {
-    "ERROR IN FACTOR, please inform the authors";
-  }
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 static proc factor(poly p)
@@ -335,7 +340,7 @@ EXAMPLE: example factor; shows an example
             @i=@i+ideal(@l[1][@j]);
             if(size(@i)==pleh)
             {
-              "//factorization error";
+              ERROR("//factorization error");
               @l;
               @k--;
               @v[@k]=@v[@k]+@l[2][@j];
@@ -372,49 +377,6 @@ example
 
 ///////////////////////////////////////////////////////////////////////////////
 
-proc idealsEqual( ideal k, ideal j)
-{
-  return(stdIdealsEqual(std(k),std(j)));
-}
-
-static proc specialIdealsEqual( ideal k1, ideal k2)
-{
-  int j;
-
-  if(size(k1)==size(k2))
-  {
-    for(j=1;j<=size(k1);j++)
-    {
-      if(leadexp(k1[j])!=leadexp(k2[j]))
-      {
-        return(0);
-      }
-    }
-    return(1);
-  }
-  return(0);
-}
-
-static proc stdIdealsEqual( ideal k1, ideal k2)
-{
-  int j;
-  if(size(k1)==size(k2))
-  {
-    for(j=1;j<=size(k1);j++)
-    {
-      if(leadexp(k1[j])!=leadexp(k2[j]))
-      {
-        return(0);
-      }
-    }
-    attrib(k2,"isSB",1);
-    if(size(reduce(k1,k2,1))==0)
-    {
-      return(1);
-    }
-  }
-  return(0);
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 proc primaryTest (ideal i, poly p)
@@ -943,7 +905,7 @@ EXAMPLE: example zero_decomp; shows an example
   if(deg(j[1])>0)
   {
     act=factor(j[1]);
-    testFactor(act,j[1]);
+    testFactorPoly(act,j[1]);
   }
   else
   {
@@ -2718,7 +2680,7 @@ proc algeDeco(ideal i, int w)
    if(w==1)
    {
       pr=prim_dec(i,1);
-      pr=reconvList(pr);
+      pr=flattenPrimaryDecompList(pr);
    }
    if(w==2)
    {
@@ -2752,7 +2714,7 @@ proc algeDeco(ideal i, int w)
    }
    else
    {
-      re=convList(pr);
+      re=convListToPrimaryDecompFormat(pr);
    }
    option( set, op );
    return( re );
@@ -4143,35 +4105,7 @@ RETURN:  ideal, the annihilator of Ext^n(R/I,R) with given
   ideal ann = ideal(1);
   return(ann);
 }
-///////////////////////////////////////////////////////////////////////////////
 
-static proc analyze(list pr)
-{
-   ASSUME(1, hasFieldCoefficient(basering) );
-   ASSUME(1, not isQuotientRing(basering) ) ;
-   ASSUME(1, hasGlobalOrdering(basering) ) ;
-
-   int ii,jj;
-   for(ii=1;ii<=size(pr) div 2;ii++)
-   {
-      dim(std(pr[2*ii]));
-      idealsEqual(pr[2*ii-1],pr[2*ii]);
-      "===========================";
-   }
-
-   for(ii=size(pr) div 2;ii>1;ii--)
-   {
-      for(jj=1;jj<ii;jj++)
-      {
-         if(size(reduce(pr[2*jj],std(pr[2*ii],1)))==0)
-         {
-            "eingebette Komponente";
-            jj;
-            ii;
-         }
-      }
-   }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -5130,7 +5064,7 @@ static proc minsat(ideal SI, poly p)
     {
       return(quotM[1],f0,f,fac);
     }
-  while(special_ideals_equal(iold,quotM[1])==0)
+  while(specialIdealsEqual(iold,quotM[1])==0)
     {
       f=f*quotM[3];
       iold=quotM[1];
@@ -5179,7 +5113,7 @@ static proc minsat_ppd(ideal SI, ideal fac)
     {
       return(quotM[1],f0,f,fac);
     }
-  while(special_ideals_equal(iold,quotM[1])==0)
+  while(specialIdealsEqual(iold,quotM[1])==0)
   {
     f=f*quotM[3];
     iold=quotM[1];
@@ -5220,7 +5154,7 @@ static proc minquot(list tsil)
    option(returnSB);
    ideal star=quotient(laedi,f);
    option(set,op);
-   if(special_ideals_equal(laedi,star)==1)
+   if(specialIdealsEqual(laedi,star)==1)
      {
        return(laedi,ideal(1),1);
      }
@@ -5249,7 +5183,7 @@ static proc minquot(list tsil)
          option(returnSB);
          verg=quotient(laedi,g);
          option(set,op);
-         if(special_ideals_equal(verg,star)==1)
+         if(specialIdealsEqual(verg,star)==1)
          {
             f=g;
             fac[i]=0;
@@ -5265,57 +5199,9 @@ static proc minquot(list tsil)
    l=star,fac,f;
    return(l);
 }
-/////////////////////////////////////////////////
-// proc special_ideals_equal
-// input: standard bases of ideal k1 and k2 such that
-// k1 is contained in k2, or k2 is contained ink1
-// output: 1, if k1 equals k2, 0 otherwise
-//////////////////////////////////////////////////
-
-static proc special_ideals_equal( ideal k1, ideal k2)
-{
-   int j;
-   if(size(k1)==size(k2))
-   {
-      for(j=1;j<=size(k1);j++)
-      {
-         if(leadexp(k1[j])!=leadexp(k2[j]))
-         {
-            return(0);
-         }
-      }
-      return(1);
-   }
-   return(0);
-}
 
 
-///////////////////////////////////////////////////////////////////////////////
 
-static proc convList(list l)
-{
-   int i;
-   list re,he;
-   for(i=1;i<=size(l) div 2;i++)
-   {
-      he=l[2*i-1],l[2*i];
-      re[i]=he;
-   }
-   return(re);
-}
-///////////////////////////////////////////////////////////////////////////////
-
-static proc reconvList(list l)
-{
-   int i;
-   list re;
-   for(i=1;i<=size(l);i++)
-   {
-      re[2*i-1]=l[i][1];
-      re[2*i]=l[i][2];
-   }
-   return(re);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -5381,7 +5267,7 @@ EXAMPLE: example primdecGTZ; shows an example
       "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
       );
    }
-  return(convList(decomp(i)));
+  return(convListToPrimaryDecompFormat(decomp(i)));
 }
 example
 { "EXAMPLE:";  echo = 2;
@@ -6765,35 +6651,7 @@ example
    equidimMaxEHV(i);
 }
 
-proc testPrimary(list pr, ideal k)
-"USAGE:   testPrimary(pr,k); pr a list, k an ideal.
-ASSUME:  pr is the result of primdecGTZ(k) or primdecSY(k).
-RETURN:  int, 1 if the intersection of the ideals in pr is k, 0 if not
-EXAMPLE: example testPrimary; shows an example
-"
-{
-   ASSUME(0, hasFieldCoefficient(basering) );
-   ASSUME(0, not isQuotientRing(basering) ) ;
-   ASSUME(0, hasGlobalOrdering(basering) ) ;
 
-   int i;
-   pr=reconvList(pr);
-   ideal j=pr[1];
-   for (i=2;i<=size(pr) div 2;i++)
-   {
-       j=intersect(j,pr[2*i-1]);
-   }
-   return(idealsEqual(j,k));
-}
-example
-{ "EXAMPLE:";  echo = 2;
-   ring  r = 32003,(x,y,z),dp;
-   poly  p = z2+1;
-   poly  q = z4+2;
-   ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
-   list pr = primdecGTZ(i);
-   testPrimary(pr,i);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 proc zerodec(ideal I)
@@ -6859,7 +6717,7 @@ EXAMPLE: example zerodec; shows an example
   {
     time = timer;
     list fac=factor(charpol);
-    testFactor(fac,charpol);
+    testFactorPoly(fac,charpol);
     dbprint(printlevel-voice+2,"// time for factorizing char poly: "+
             string(timer-time));
     int f=size(fac[1]);
@@ -8441,7 +8299,7 @@ EXAMPLE: example newZero_decomp; shows an example
   if(deg(j[1])>0)
   {
     act=factor(j[1]);
-    testFactor(act,j[1]);
+    testFactorPoly(act,j[1]);
   }
   else
   {

@@ -33,9 +33,6 @@ PROCEDURES:
                                       in the localization w.r.t P
   componentEHV(I,P,L [,Strategy]);    a P-primary component for I
   primdecEHV(I [,Strategy]);          a minimal primary decomposition of I
-  primDecsAreEquivalent(L, K);        procedure for comparing the output of
-                                      primary decomposition algorithms (checks
-                                      if the computed associated primes coincide)
 ";
 
 LIB "ring.lib";
@@ -47,6 +44,7 @@ LIB "inout.lib";
 LIB "matrix.lib";
 LIB "algebra.lib";
 LIB "normal.lib";
+LIB "primdecutils.lib";
 
 
 /////////////////////////////////////////////////////////////////////
@@ -1360,114 +1358,4 @@ example
 }
 
 
-/////////////////////////////////////////////////////////////////////
-//                                                                 //
-//        A L G O R I T H M S   F O R   T E S T I N G              //
-//                                                                 //
-/////////////////////////////////////////////////////////////////////
-proc removeRedundantComponents(list primdecResult)
-"USAGE:   removeRedundantComponents(L); L a primary decomposition 
-RETURN:  an irredundant primary decomposition.
-EXAMPLE: example removeRedundantComponents; shows an example"
-proc removeRedundantComponents(list primdecResult)
-{
-   int i,j;
 
-   i = 1;
-   j = 1;
-   while  ( i<=size(primdecResult) ) 
-   {  
-     ASSUME(1, i>0 &&  i<=size(primdecResult) );
-     ASSUME(1, j>0 &&  j<=size(primdecResult) );
-
-      if (i!=j)
-      {
-          if ( isSubset( std(primdecResult[j][1]) , std(primdecResult[i][1]) ) )
-          { 
-              primdecResult[i] =  primdecResult[j];
-              primdecResult = delete(primdecResult,j);
-              j = j - 1; /*correct j due to deletion */
-              if ( j<i )  {    i = i -1;   } /*correct i */
-          }
-      } 
-      j = j + 1;
-      if ( j > size(primdecResult) )
-      {
-         i = i + 1;
-         j = 1;
-      }
-   }
-
-   return (primdecResult);
-}
-example
-{
-  "EXAMPLE:";
-  ring rng = 0,(x,y),dp;
-  def L1 = list(list(ideal(x-1),ideal(x-1)),list(ideal(x-1),ideal(x-1)),list(ideal(y-2),ideal(y-2)));
-  def L2 = list(list(ideal(x-1),ideal(x-1)),list(ideal(y-2),ideal(y-2)));
-  L1;
-  L2;
-  ASSUME(0, primDecsAreEquivalent( L1, L2 ) );
-}
-
-/////////////////////////////////////////////////////////////////////
-proc primDecsAreEquivalent(list L, list K)
-"USAGE:   primDecsAreEquivalent(L,K); L,K list of ideals
-RETURN:  integer, 1 if the lists are the same up to ordering and redundant components; 0 otherwise
-EXAMPLE: example primDecsAreEquivalent; shows an example"
-{
-  L = removeRedundantComponents(L);
-  K = removeRedundantComponents(K);
-  int s1 = size(L);
-  int s2 = size(K);
-  if(s1!=s2)
-    {
-      return(0);
-    }
-  list L1, K1;
-  int i,j,t;
-  list N;
-  for(i=1; i<=s1; i++)
-    {
-      L1[i]=std(L[i][2]);
-      K1[i]=std(K[i][2]);
-    }
-  for(i=1; i<=s1; i++)
-    {
-      for(j=1; j<=s1; j++)
-        {
-          if(isSubset(L1[i],K1[j]))
-            {
-              if(isSubset(K1[j],L1[i]))
-                {
-                  for(t=1; t<=size(N); t++)
-                    {
-                      if(N[t]==j)
-                        {
-                          return(0);
-                        }
-                    }
-                  N[size(N)+1]=j;
-                }
-
-            }
-        }
-    }
-  if ( size(N) != s1 )
-  {
-     return(0);
-  }
-  return(1);
-}
-
-example
-{
-  "EXAMPLE:";
-  echo = 2;
-  ring  r = 0,(x,y),dp;
-  ideal i = x2,xy;
-  list L1 = primdecGTZ(i);
-  list L2 = primdecEHV(i);
-  primDecsAreEquivalent(L1,L2);
-}
