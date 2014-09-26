@@ -14,6 +14,8 @@ proc gcdEqual(gcda,gcdb)
    return( (gcda==gcdb) || (-gcda==gcdb) );
 }
 
+
+//test based on gcd() properties
 proc gcdTest(poly a, poly b, poly c)
 {
        poly   ab, bc, gcd_a_c, gcd_a_b, gcd_b_c, gcd_ab_bc, b_times_gcd_a_c;
