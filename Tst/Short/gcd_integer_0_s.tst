@@ -1,18 +1,8 @@
 //
 // gcd_integer_0_s.tst - short tests for gcd calculations in Z.
 //
-// All univariate non-trivial examples come from gcdUniv0Std.fex or
-// gcdUniv0Alpha.fex.  Some of the examples are multiplied with elements
-// from Q to test clearing of denominators.
 //
-// The examples in variables `u' and `v' came from `coprasse(2/0/1)'
-// in stdMultiv0Gcd.in.
 //
-// To Do:
-//
-// o multivariate gcd calculations with parameters
-// o algrebraic extensions of char 0 not implemented yet
-//   (but tests already exist)
 //
 
 LIB "tst.lib";
@@ -158,7 +148,6 @@ gcdTest(f,g,f*g);
 
 
 tst_ignore( "ring r3=integer,(u,v),dp;" );
-kill r4;
 ring r4=integer,(u,v),dp;
 
 poly f;
