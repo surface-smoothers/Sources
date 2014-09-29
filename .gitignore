@@ -25,15 +25,12 @@ _config.h.in
 /doc/NTL
 /doc/uname.texi
 /doc/version.texi
-/dyn_modules/modgen/modgen
-/dyn_modules/modgen/pathnames.h
 /factory/factory.h
 /factory/factoryconf.h
 /factory/ftest/GNUmakefile
 /factory/gengftables
 /factory/GNUmakefile
 /factory/readcf.cc
-/factory/test
 /factory/ylwrap
 /IntegerProgramming/change_cost
 /IntegerProgramming/gen_test
@@ -43,8 +40,6 @@ _config.h.in
 /ix86-Linux/*
 /ix86-Win/*
 /ix86Mac-darwin/*
-/kernel/test
-/libpolys/coeffs/test
 /libpolys/libpolys-config
 /libpolys/libpolysconfig.h
 /libpolys/libpolysconfig.h.in
@@ -117,4 +112,8 @@ singularconfig.h
 singularconfig.h.in
 stamp-h*
 tags
+test
 test-driver
+test-suite.log
+test.log
+ylwrap

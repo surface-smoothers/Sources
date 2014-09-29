@@ -7,9 +7,9 @@
  *  Author:  obachman (Olaf Bachmann)
  *  Created: 8/00
  *******************************************************************/
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <factory/factory.h>
@@ -73,7 +73,7 @@ static poly _p_Mult_q_Bucket(poly p, const int lp,
   assume(p != NULL && pNext(p) != NULL && q != NULL && pNext(q) != NULL);
   pAssume1(! pHaveCommonMonoms(p, q));
 #ifdef HAVE_RINGS
-  assume(!rField_is_Ring(r));
+  assume(!rField_is_Ring(r) || rField_is_Domain(r));
 #endif
   assume(lp >= 1 && lq >= 1);
   p_Test(p, r);

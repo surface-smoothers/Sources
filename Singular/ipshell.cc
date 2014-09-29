@@ -4,9 +4,9 @@
 /*
 * ABSTRACT:
 */
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <misc/auxiliary.h>
 
@@ -14,7 +14,6 @@
 #include <misc/options.h>
 #include <misc/mylimits.h>
 
-#define SI_DONT_HAVE_GLOBAL_VARS
 #include <factory/factory.h>
 
 #include <Singular/maps_ip.h>
@@ -23,33 +22,34 @@
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <coeffs/numbers.h>
 #include <polys/prCopy.h>
 #include <kernel/ideals.h>
 #include <polys/matpol.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <polys/monomials/ring.h>
 #include <Singular/subexpr.h>
+#include <Singular/fevoices.h>
+#include <kernel/oswrapper/feread.h>
 #include <polys/monomials/maps.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 #include <coeffs/numbers.h>
 //#include <polys/ext_fields/longalg.h>
 #include <Singular/lists.h>
 #include <Singular/attrib.h>
 #include <Singular/ipconv.h>
 #include <Singular/links/silink.h>
-#include <kernel/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <polys/weight.h>
-#include <kernel/semic.h>
-#include <kernel/splist.h>
-#include <kernel/spectrum.h>
+#include <kernel/spectrum/semic.h>
+#include <kernel/spectrum/splist.h>
+#include <kernel/spectrum/spectrum.h>
 ////// #include <coeffs/gnumpfl.h>
 //#include <kernel/mpr_base.h>
 ////// #include <coeffs/ffields.h>
 #include <polys/clapsing.h>
-#include <kernel/hutil.h>
+#include <kernel/combinatorics/hutil.h>
 #include <polys/monomials/ring.h>
 #include <Singular/ipshell.h>
 #include <polys/ext_fields/algext.h>
@@ -70,9 +70,13 @@
 #define FAST_MAP
 
 #ifdef FAST_MAP
-#include <kernel/fast_maps.h>
+#include <kernel/maps/fast_maps.h>
 #endif
 
+#ifdef SINGULAR_4_1
+#include <Singular/number2.h>
+#include <libpolys/coeffs/bigintmat.h>
+#endif
 leftv iiCurrArgs=NULL;
 idhdl iiCurrProc=NULL;
 const char *lastreserved=NULL;
@@ -220,6 +224,20 @@ static void list1(const char* s, idhdl h,BOOLEAN c, BOOLEAN fullname)
                      Print(" <%lx>",(long)(IDRING(h)));
 #endif
                    break;
+#ifdef SINGULAR_4_1
+    case CNUMBER_CMD:
+                   {  number2 n=(number2)IDDATA(h);
+                      Print(" (%s)",n->cf->cfCoeffName(n->cf));
+                      break;
+                   }
+    case CMATRIX_CMD:
+                   {  bigintmat *b=(bigintmat*)IDDATA(h);
+                      Print(" %d x %d (%s)",
+                        b->rows(),b->cols(),
+                        b->basecoeffs()->cfCoeffName(b->basecoeffs()));
+                      break;
+                   }
+#endif
     /*default:     break;*/
   }
   PrintLn();
@@ -387,10 +405,10 @@ void killlocals(int v)
   }
   if (changed)
   {
-    currRingHdl=rFindHdl(cr,NULL,NULL);
+    currRingHdl=rFindHdl(cr,NULL);
     if (currRingHdl==NULL)
       currRing=NULL;
-    else
+    else if(cr!=currRing)
       rChangeCurrRing(cr);
   }
 
@@ -401,6 +419,7 @@ void killlocals(int v)
 
 void list_cmd(int typ, const char* what, const char *prefix,BOOLEAN iterate, BOOLEAN fullname)
 {
+  package savePack=currPack;
   idhdl h,start;
   BOOLEAN all = typ<0;
   BOOLEAN really_all=FALSE;
@@ -428,18 +447,23 @@ void list_cmd(int typ, const char* what, const char *prefix,BOOLEAN iterate, BOO
         {
           h=IDRING(h)->idroot;
         }
-        else if((IDTYP(h)==PACKAGE_CMD) || (IDTYP(h)==POINTER_CMD))
+        else if(IDTYP(h)==PACKAGE_CMD)
         {
-          //Print("list_cmd:package or pointer\n");
+          currPack=IDPACKAGE(h);
+          //Print("list_cmd:package\n");
           all=TRUE;typ=PROC_CMD;fullname=TRUE;really_all=TRUE;
           h=IDPACKAGE(h)->idroot;
         }
         else
+        {
+          currPack=savePack;
           return;
+        }
       }
       else
       {
         Werror("%s is undefined",what);
+        currPack=savePack;
         return;
       }
     }
@@ -454,8 +478,12 @@ void list_cmd(int typ, const char* what, const char *prefix,BOOLEAN iterate, BOO
   start=h;
   while (h!=NULL)
   {
-    if ((all && (IDTYP(h)!=PROC_CMD) &&(IDTYP(h)!=PACKAGE_CMD))
+    if ((all
+      && (IDTYP(h)!=PROC_CMD)
+      &&(IDTYP(h)!=PACKAGE_CMD)
+      && (IDTYP(h)!=CRING_CMD))
     || (typ == IDTYP(h))
+    || ((typ==RING_CMD) &&(IDTYP(h)==CRING_CMD))
     || ((IDTYP(h)==QRING_CMD) && (typ==RING_CMD)))
     {
       list1(prefix,h,start==currRingHdl, fullname);
@@ -475,6 +503,7 @@ void list_cmd(int typ, const char* what, const char *prefix,BOOLEAN iterate, BOO
     }
     h = IDNEXT(h);
   }
+  currPack=savePack;
 }
 
 void test_cmd(int i)
@@ -999,7 +1028,7 @@ lists scIndIndset(ideal S, BOOLEAN all, ideal Q)
   indset save;
   lists res=(lists)omAlloc0Bin(slists_bin);
 
-  hexist = hInit(S, Q, &hNexist);
+  hexist = hInit(S, Q, &hNexist, currRing);
   if (hNexist == 0)
   {
     intvec *iv=new intvec(rVar(currRing));
@@ -1155,16 +1184,26 @@ BOOLEAN iiParameter(leftv p)
     return TRUE;
   }
   leftv h=iiCurrArgs;
+  leftv rest=h->next; /*iiCurrArgs is not NULL here*/
+  BOOLEAN is_default_list=FALSE;
   if (strcmp(p->name,"#")==0)
+  {
+    is_default_list=TRUE;
+    rest=NULL;
+  }
+  else
+  {
+    h->next=NULL;
+  }
+  BOOLEAN res=iiAssign(p,h);
+  if (is_default_list)
   {
     iiCurrArgs=NULL;
   }
   else
   {
-    iiCurrArgs=h->next;
-    h->next=NULL;
+    iiCurrArgs=rest;
   }
-  BOOLEAN res=iiAssign(p,h);
   h->CleanUp();
   omFreeBin((ADDRESS)h, sleftv_bin);
   return res;
@@ -1195,6 +1234,11 @@ BOOLEAN iiAlias(leftv p)
   idhdl pp=(idhdl)p->data;
   switch(pp->typ)
   {
+#ifdef SINGULAR_4_1
+      case CRING_CMD:
+        nKillChar((coeffs)pp);
+        break;
+#endif
       case INT_CMD:
         break;
       case INTVEC_CMD:
@@ -1452,7 +1496,7 @@ poly    iiHighCorner(ideal I, int ak)
   poly po=NULL;
   if (rHasLocalOrMixedOrdering_currRing())
   {
-    scComputeHC(I,currQuotient,ak,po);
+    scComputeHC(I,currRing->qideal,ak,po);
     if (po!=NULL)
     {
       pGetCoeff(po)=nInit(1);
@@ -1523,8 +1567,6 @@ idhdl rDefault(const char *s)
   r->order[1]  = ringorder_C;
   /* the last block: everything is 0 */
   r->order[2]  = 0;
-  /*polynomial ring*/
-  r->OrdSgn    = 1;
 
   /* complete ring intializations */
   rComplete(r);
@@ -1532,7 +1574,7 @@ idhdl rDefault(const char *s)
   return currRingHdl;
 }
 
-idhdl rFindHdl(ring r, idhdl n, idhdl)
+idhdl rFindHdl(ring r, idhdl n)
 {
   idhdl h=rSimpleFindHdl(r,IDROOT,n);
   if (h!=NULL)  return h;
@@ -1744,6 +1786,11 @@ lists rDecompose(const ring r)
     L->Init(4);
   // ----------------------------------------
   // 0: char/ cf - ring
+#ifdef SINGULAR_4_1
+  // 0: char/ cf - ring
+  L->m[0].rtyp=CRING_CMD;
+  L->m[0].data=(char*)r->cf; r->cf->ref++;
+#else
   if (rField_is_numeric(r))
   {
     rDecomposeC(&(L->m[0]),r);
@@ -1801,6 +1848,7 @@ lists rDecompose(const ring r)
     L->m[0].rtyp=INT_CMD;
     L->m[0].data=(void *)(long)r->cf->ch;
   }
+#endif
   // ----------------------------------------
   // 1: list (var)
   lists LL=(lists)omAlloc0Bin(slists_bin);
@@ -2047,19 +2095,26 @@ void rComposeRing(lists L, ring R)
 static void rRenameVars(ring R)
 {
   int i,j;
-  for(i=0;i<R->N-1;i++)
+  BOOLEAN ch;
+  do
   {
-    for(j=i+1;j<R->N;j++)
+    ch=0;
+    for(i=0;i<R->N-1;i++)
     {
-      if (strcmp(R->names[i],R->names[j])==0)
+      for(j=i+1;j<R->N;j++)
       {
-        Warn("name conflict var(%d) and var(%d): `%s`, rename to `@(%d)`",i+1,j+1,R->names[i],j+1);
-        omFree(R->names[j]);
-        R->names[j]=(char *)omAlloc(10);
-        sprintf(R->names[j],"@(%d)",j+1);
+        if (strcmp(R->names[i],R->names[j])==0)
+        {
+          ch=TRUE;
+          Warn("name conflict var(%d) and var(%d): `%s`, rename to `@%s`",i+1,j+1,R->names[i],R->names[i]);
+          omFree(R->names[j]);
+          R->names[j]=(char *)omAlloc(2+strlen(R->names[i]));
+          sprintf(R->names[j],"@%s",R->names[i]);
+        }
       }
     }
   }
+  while (ch);
   for(i=0;i<rPar(R); i++)
   {
     for(j=0;j<R->N;j++)
@@ -2100,6 +2155,14 @@ ring rCompose(const lists  L, const BOOLEAN check_comp)
 
   // ------------------------------------------------------------------
   // 0: char:
+#ifdef SINGULAR_4_1
+  if (L->m[0].Typ()==CRING_CMD)
+  {
+    R->cf=(coeffs)L->m[0].Data();
+    R->cf->ref++;
+  }
+  else
+#endif
   if (L->m[0].Typ()==INT_CMD)
   {
     int ch = (int)(long)L->m[0].Data();
@@ -2198,6 +2261,11 @@ ring rCompose(const lists  L, const BOOLEAN check_comp)
   {
     lists v=(lists)L->m[1].Data();
     R->N = v->nr+1;
+    if (R->N<=0)
+    {
+      WerrorS("no ring variables");
+      goto rCompose_err;
+    }
     R->names   = (char **)omAlloc0(R->N * sizeof(char_ptr));
     int i;
     for(i=0;i<R->N;i++)
@@ -2243,7 +2311,6 @@ ring rCompose(const lists  L, const BOOLEAN check_comp)
     for (j=0; j < n-1; j++)
       R->order[j] = (int) ringorder_unspec;
     // orderings
-    R->OrdSgn=1;
     for(j=0;j<n-1;j++)
     {
     // todo: a(..), M
@@ -3428,7 +3495,7 @@ spectrumState   spectrumCompute( poly h,lists *L,int fast )
   #endif
   #endif
 
-  ideal stdJ = kStd(J,currQuotient,isNotHomog,NULL);
+  ideal stdJ = kStd(J,currRing->qideal,isNotHomog,NULL);
   idSkipZeroes( stdJ );
 
   #ifdef SPECTRUM_DEBUG
@@ -3495,7 +3562,7 @@ spectrumState   spectrumCompute( poly h,lists *L,int fast )
 
   poly hc = (poly)NULL;
 
-  scComputeHC( stdJ,currQuotient, 0,hc );
+  scComputeHC( stdJ,currRing->qideal, 0,hc );
 
   if( hc!=(poly)NULL )
   {
@@ -5011,7 +5078,12 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
   assume( pn != NULL );
   const int P = pn->listLength();
 
-  if (pn->Typ()==INT_CMD)
+  if ((pn->Typ()==CRING_CMD)&&(P==1))
+  {
+    cf=(coeffs)pn->CopyD();
+    assume( cf != NULL );
+  }
+  else if (pn->Typ()==INT_CMD)
   {
     int ch = (int)(long)pn->Data();
 
@@ -5052,11 +5124,11 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
       }
       else // (0/p, a, b, ..., z)
       {
-	if ((ch!=0) && (ch!=IsPrime(ch)))
-	{
-	  WerrorS("too many parameters");
-	  goto rInitError;
-	}
+        if ((ch!=0) && (ch!=IsPrime(ch)))
+        {
+          WerrorS("too many parameters");
+          goto rInitError;
+        }
 
         char ** names = (char**)omAlloc0(pars * sizeof(char_ptr));
 
@@ -5069,11 +5141,11 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
         TransExtInfo extParam;
 
         extParam.r = rDefault( ch, pars, names); // Q/Zp [ p_1, ... p_pars ]
-	for(int i=pars-1; i>=0;i--)
-	{
-	  omFree(names[i]);
-	}
-	omFree(names);
+        for(int i=pars-1; i>=0;i--)
+        {
+          omFree(names[i]);
+        }
+        omFree(names);
 
         cf = nInitChar(n_transExt, &extParam);
       }
@@ -5153,7 +5225,7 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
       {
         number p=(number)pn->next->CopyD();
         nlGMP(p,(number)modBase,coeffs_BIGINT);
-	nlDelete(&p,coeffs_BIGINT);
+        nlDelete(&p,coeffs_BIGINT);
       }
     }
     else
@@ -5506,11 +5578,11 @@ void rKill(ring r)
     }
     int j;
 #ifdef USE_IILOCALRING
-    for (j=0;j<iiRETURNEXPR_len;j++)
+    for (j=0;j<myynest;j++)
     {
       if (iiLocalRing[j]==r)
       {
-        if (j<myynest) Warn("killing the basering for level %d",j);
+        if (j+1==myynest) Warn("killing the basering for level %d",j);
         iiLocalRing[j]=NULL;
       }
     }
@@ -5539,10 +5611,6 @@ void rKill(ring r)
     if (r==currRing)
     {
       // all dependend stuff is done, clean global vars:
-      if (r->qideal!=NULL)
-      {
-        currQuotient=NULL;
-      }
       if ((currRing->ppNoether)!=NULL) pDelete(&(currRing->ppNoether));
       if (sLastPrinted.RingDependend())
       {
@@ -5578,7 +5646,7 @@ void rKill(idhdl h)
     if (ref<=0) { currRing=NULL; currRingHdl=NULL;}
     else
     {
-      currRingHdl=rFindHdl(r,currRingHdl,NULL);
+      currRingHdl=rFindHdl(r,currRingHdl);
     }
   }
 }
@@ -5806,6 +5874,7 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
   // assume a: level
   if ((a->Typ()==INT_CMD)&&((long)a->Data()>=0))
   {
+    if ((TEST_V_ALLWARN) && (myynest==0)) WarnS("ASSUME at top level is of no use: see documentation");
     char       assume_yylinebuf[80];
     strncpy(assume_yylinebuf,my_yylinebuf,79);
     int lev=(long)a->Data();
@@ -5820,8 +5889,81 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
       if (b->Data()==NULL) { Werror("ASSUME failed:%s",assume_yylinebuf);return TRUE;}
     }
   }
-  else
-     b->CleanUp();
+  b->CleanUp();
   a->CleanUp();
   return FALSE;
 }
+
+#include "libparse.h"
+
+BOOLEAN iiARROW(leftv r, char* a, char *s)
+{
+  char *ss=(char*)omAlloc(strlen(a)+strlen(s)+30); /* max. 27 currently */
+  // find end of s:
+  int end_s=strlen(s);
+  while ((end_s>0) && ((s[end_s]<=' ')||(s[end_s]==';'))) end_s--;
+  s[end_s+1]='\0';
+  char *name=(char *)omAlloc(strlen(a)+strlen(s)+30);
+  sprintf(name,"%s->%s",a,s);
+  // find start of last expression
+  int start_s=end_s-1;
+  while ((start_s>=0) && (s[start_s]!=';')) start_s--;
+  if (start_s<0) // ';' not found
+  {
+    sprintf(ss,"parameter def %s;return(%s);\n",a,s);
+  }
+  else // s[start_s] is ';'
+  {
+    s[start_s]='\0';
+    sprintf(ss,"parameter def %s;%s;return(%s);\n",a,s,s+start_s+1);
+  }
+  memset(r,0,sizeof(*r));
+  // now produce procinfo for PROC_CMD:
+  r->data = (void *)omAlloc0Bin(procinfo_bin);
+  ((procinfo *)(r->data))->language=LANG_NONE;
+  iiInitSingularProcinfo((procinfo *)r->data,"",name,0,0);
+  ((procinfo *)r->data)->data.s.body=ss;
+  omFree(name);
+  r->rtyp=PROC_CMD;
+  //r->rtyp=STRING_CMD;
+  //r->data=ss;
+  return FALSE;
+}
+
+BOOLEAN iiAssignCR(leftv r, leftv arg)
+{
+  int t=arg->Typ();
+  char* ring_name=(char*)r->Name();
+  ring_name=omStrDup(ring_name);
+  if ((t==RING_CMD) ||(t==QRING_CMD))
+  {
+    sleftv tmp;
+    memset(&tmp,0,sizeof(tmp));
+    tmp.rtyp=IDHDL;
+    tmp.data=(char*)rDefault(ring_name);
+    if (tmp.data!=NULL)
+    {
+      BOOLEAN b=iiAssign(&tmp,arg);
+      if (b) return TRUE;
+      rSetHdl(ggetid(ring_name));
+      omFree(ring_name);
+      return FALSE;
+    }
+    else
+      return TRUE;
+  }
+  else if (t==CRING_CMD)
+  {
+    sleftv tmp;
+    sleftv n;
+    memset(&n,0,sizeof(n));
+    n.name=ring_name;
+    if (iiDeclCommand(&tmp,&n,myynest,CRING_CMD,&IDROOT)) return TRUE;
+    if (iiAssign(&tmp,arg)) return TRUE;
+    //Print("create %s\n",r->Name());
+    //Print("from %s(%d)\n",Tok2Cmdname(arg->Typ()),arg->Typ());
+    return FALSE;
+  }
+  return TRUE;// not handled -> error for now
+}
+

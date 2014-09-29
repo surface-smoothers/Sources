@@ -9,8 +9,17 @@
 #ifdef HAVE_RINGS
 #include <coeffs/coeffs.h>
 
-extern int nrzExp;
-extern NATNUMBER nrzModul;
+#if SI_INTEGER_VARIANT == 3
+#define SR_HDL(A) ((long)(A))
+#define SR_INT    1L
+#define INT_TO_SR(INT)  ((number) (((long)INT << 2) + SR_INT))
+#define SR_TO_INT(SR)   (((long)SR) >> 2)
+#define n_Z_IS_SMALL(A)     (SR_HDL(A) & SR_INT)
+#define INT_IS_SMALL(A) ( ((A << 1) >> 1) == A )
+#endif
+
+//extern int nrzExp;
+//extern NATNUMBER nrzModul;
 
 BOOLEAN nrzInitChar    (coeffs r,  void * parameter);
 number  nrzCopy        (number a, const coeffs r);
@@ -29,7 +38,7 @@ BOOLEAN nrzIsMOne      (number a, const coeffs r);
 BOOLEAN nrzIsUnit      (number a, const coeffs r);
 number  nrzGetUnit     (number a, const coeffs r);
 number  nrzDiv         (number a, number b, const coeffs r);
-number  nrzIntDiv      (number a, number b, const coeffs r);
+number  nrzExactDiv    (number a, number b, const coeffs r);
 number  nrzIntMod      (number a, number b, const coeffs r);
 number  nrzNeg         (number c, const coeffs r);
 number  nrzInvers      (number c, const coeffs r);
@@ -51,6 +60,10 @@ BOOLEAN nrzDBTest      (number a, const char *f, const int l, const coeffs r);
 void    nrzSetExp(int c, coeffs r);
 void    nrzInitExp(int c, coeffs r);
 void    nrzDelete(number *a, const coeffs r);
+coeffs  nrzQuot1(number c, const coeffs r);
+
+//CanonicalForm nrzConvSingNFactoryN(number n, BOOLEAN setChar, const coeffs /*r*/);
+//number nrzConvFactoryNSingN(const CanonicalForm n, const coeffs r);
 
 number nrzMapQ(number from, const coeffs src, const coeffs dst);
 #endif

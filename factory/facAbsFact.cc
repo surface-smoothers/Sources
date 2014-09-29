@@ -8,9 +8,9 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "timing.h"
 #include "debug.h"
@@ -26,6 +26,7 @@
 #include "cf_primes.h"
 #include "cf_algorithm.h"
 #include "cfModResultant.h"
+#include "cfUnivarGcd.h"
 #ifdef HAVE_FLINT
 #include "FLINTconvert.h"
 #endif
@@ -237,6 +238,15 @@ evalPoints4AbsFact (const CanonicalForm& F, CFList& eval, Evaluation& E,
     iter= eval;
     iter++;
     CanonicalForm contentx= content (iter.getItem(), x);
+    if (degree (contentx) > 0)
+    {
+      result= CFList();
+      eval= CFList();
+      LCFeval= CFList();
+      E.nextpoint();
+      continue;
+    }
+    contentx= content (iter.getItem());
     if (degree (contentx) > 0)
     {
       result= CFList();
@@ -459,6 +469,23 @@ CFAFList absFactorizeMain (const CanonicalForm& G)
     minFactorsLength= biFactors.length();
   else if (biFactors.length() > minFactorsLength)
     refineBiFactors (A, biFactors, Aeval2, evaluation, minFactorsLength);
+  minFactorsLength= tmin (minFactorsLength, biFactors.length());
+
+  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
+
+  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, biFactors, evaluation);
+
+  minFactorsLength= tmin (minFactorsLength, biFactors.length());
+
+  if (minFactorsLength == 1)
+  {
+    factors.append (CFAFactor (A, 1, 1));
+    decompress (factors, N);
+    if (isOn (SW_RATIONAL))
+      normalize (factors);
+    delete [] Aeval2;
+    return factors;
+  }
 
   bool found= false;
   if (differentSecondVar == lengthAeval2)
@@ -501,10 +528,6 @@ CFAFList absFactorizeMain (const CanonicalForm& G)
       //TODO case where factors.length() > 0
     }
   }
-
-  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
-
-  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, evaluation);
 
   CFList * oldAeval= new CFList [lengthAeval2];
   for (int i= 0; i < lengthAeval2; i++)

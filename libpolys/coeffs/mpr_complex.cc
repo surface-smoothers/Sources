@@ -10,9 +10,9 @@
 
 // WARNING! ALWAYS use omAlloc and FreeL when alloc. memory for some char* !!
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+#include <misc/auxiliary.h>
+
 //#ifdef HAVE_MPR
 #include <coeffs/coeffs.h>
 #include <reporter/reporter.h>
@@ -69,11 +69,6 @@ void setGMPFloatDigits( size_t digits, size_t rest )
   mpf_set_prec(*gmpRel->_mpfp(),32);
   mpf_set_d(*gmpRel->_mpfp(),0.1);
   mpf_pow_ui(*gmpRel->_mpfp(),*gmpRel->_mpfp(),digits);
-}
-
-size_t getGMPFloatDigits()
-{
-  return gmp_output_digits;
 }
 
 #if 1
@@ -381,7 +376,15 @@ gmp_float numberToFloat( number num, const coeffs src)
     {
       if (SR_HDL(num) & SR_INT)
       {
-        r= SR_TO_INT(num);
+        //n_Print(num, src);printf("\n");
+        int nn = SR_TO_INT(num);
+        if((long)nn == SR_TO_INT(num))
+            r = SR_TO_INT(num);
+        else
+            r = gmp_float(SR_TO_INT(num));
+        //int dd = 20;
+        //gmp_printf("\nr = %.*Ff\n",dd,*r.mpfp());
+        //getchar();
       }
       else
       {
@@ -440,7 +443,7 @@ gmp_float numberFieldToFloat( number num, int k, const coeffs src)
     {
       if (SR_HDL(num) & SR_INT)
       {
-        r= SR_TO_INT(num);
+        r = gmp_float(SR_TO_INT(num));
       }
       else
       {
@@ -450,7 +453,7 @@ gmp_float numberFieldToFloat( number num, int k, const coeffs src)
         }
         if (SR_HDL(num) & SR_INT)
         {
-          r= SR_TO_INT(num);
+          r = gmp_float(SR_TO_INT(num));
         }
         else
         {
@@ -710,7 +713,7 @@ char *complexToStr( gmp_complex & c, const unsigned int oprec, const coeffs src 
 {
   const char * complex_parameter = "I";
   int N = 1; // strlen(complex_parameter);
-   
+
   if (nCoeff_is_long_C(src))
   {
     complex_parameter = n_ParameterNames(src)[0];
@@ -718,7 +721,7 @@ char *complexToStr( gmp_complex & c, const unsigned int oprec, const coeffs src 
   }
 
   assume( complex_parameter != NULL && N > 0);
-  
+
   char *out,*in_imag,*in_real;
 
   c.SmallToZero();

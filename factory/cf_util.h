@@ -3,19 +3,13 @@
 #ifndef INCL_CF_UTIL_H
 #define INCL_CF_UTIL_H
 
-//{{{ docu
-//
-// cf_util.h - header to cf_util.cc.
-//
-//}}}
-
 // #include "config.h"
 
-int ipower ( int b, int n );
 int ilog2 (int a);
-int igcd (int a, int b);
 
 /*BEGINPUBLIC*/
+int igcd (int a, int b);
+int ipower ( int b, int n );
 void factoryError_intern(const char *s);
 extern void (*factoryError)(const char *s);
 /*ENDPUBLIC*/

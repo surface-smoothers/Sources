@@ -1,7 +1,7 @@
 #include <stdio.h>
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #ifdef HAVE_SVD
@@ -11,7 +11,6 @@
 #include <kernel/polys.h>
 #include <polys/matpol.h>
 #include <Singular/lists.h>
-#include <kernel/febase.h>
 
 template class std::vector< amp::mpfr_record* >;
 
@@ -79,7 +78,7 @@ lists testsvd(matrix M)
     ap::template_2d_array< amp::ampf<Precision> > u;
     ap::template_2d_array< amp::ampf<Precision> > vt;
     ap::template_1d_array< amp::ampf<Precision> > w;
-    svd::svddecomposition<Precision>(a, max_i, max_j, 2, 2, 2, w, u, vt);        
+    svd::svddecomposition<Precision>(a, max_i, max_j, 2, 2, 2, w, u, vt);
     matrix Mu,Mw,Mvt;
     Mu=mpNew(max_i,max_i);
     Mw=mpNew(max_i,max_j);

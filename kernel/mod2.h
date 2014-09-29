@@ -9,18 +9,22 @@
 #ifndef MOD2_H
 #define MOD2_H
 
+/* please include singularconfig.h exclusively via <kernel/mod2.h> and before any other header */
+# include <singularconfig.h>
 
-#ifdef HAVE_CONFIG_H
-/* config.h is a private header that will not be installed and thus cannot be unconditionally included */
-# include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-
-
-#include <misc/auxiliary.h>
+# include <misc/auxiliary.h>
 
 #define SINGULAR_MAJOR_VERSION 4
+
+/*#define SINGULAR_4_1*/
+
+#ifdef SINGULAR_4_1
+#define SINGULAR_MINOR_VERSION 1
+#define SINGULAR_SUB_VERSION 0
+#else
 #define SINGULAR_MINOR_VERSION 0
 #define SINGULAR_SUB_VERSION 0
+#endif
 #define S_ROOT_DIR ""
 
 /*******************************************************************
@@ -31,7 +35,6 @@
 #define HAVE_GETTIMEOFDAY 1
 #define TIME_WITH_SYS_TIME 1
 #define HAVE_SYS_TIME_H 1
-#define PROC_BUG 1
 /* Default value for timer resolution in ticks per second */
 /* set to 10 for resolution of tenth of a second, etc */
 #define TIMER_RESOLUTION 1
@@ -92,9 +95,12 @@
 #define ALIGN_8
 #endif
 
-#define SINGULAR_PATCHLEVEL 1
+#ifdef SINGULAR_4_1
+#define SINGULAR_VERSION 4100
+#else
+#define SINGULAR_PATCHLEVEL 0
 #define SINGULAR_VERSION ((SINGULAR_MAJOR_VERSION*1000 + SINGULAR_MINOR_VERSION*100 + SINGULAR_SUB_VERSION*10)+SINGULAR_PATCHLEVEL)
-
+#endif
 /*******************************************************************
  * Miscellanous Defines
  ******************************************************************/

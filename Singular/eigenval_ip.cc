@@ -5,14 +5,13 @@
 * ABSTRACT: eigenvalues of constant square matrices
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #ifdef HAVE_EIGENVAL
 
-#include <kernel/febase.h>
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
@@ -22,7 +21,7 @@
 #include <Singular/lists.h>
 #include <polys/matpol.h>
 #include <polys/clapsing.h>
-#include <kernel/eigenval.h>
+#include <kernel/linear_algebra/eigenval.h>
 #include <Singular/eigenval_ip.h>
 
 
@@ -76,7 +75,7 @@ BOOLEAN evRowElim(leftv res,leftv h)
             res->rtyp=MATRIX_CMD;
             res->data=(void *)evRowElim(mp_Copy(M, currRing),i,j,k);
             return FALSE;
-	  }
+          }
         }
       }
     }
@@ -109,7 +108,7 @@ BOOLEAN evColElim(leftv res,leftv h)
             res->rtyp=MATRIX_CMD;
             res->data=(void *)evColElim(mp_Copy(M, currRing),i,j,k);
             return FALSE;
-	  }
+          }
         }
       }
     }
@@ -191,32 +190,32 @@ lists evEigenvals(matrix M)
       for(int i=0;i<IDELEMS(e0);i++)
       {
         if(pNext(e0->m[i])==NULL)
-	{
+        {
           (*m)[k]=(*m0)[i];
           k++;
         }
         else
         if(pGetExp(e0->m[i],1)<2&&pGetExp(pNext(e0->m[i]),1)<2&&
            pNext(pNext(e0->m[i]))==NULL)
-	{
-          number e1=nNeg(nCopy(pGetCoeff(e0->m[i])));
+        {
+          number e1=nInpNeg(nCopy(pGetCoeff(e0->m[i])));
           if(pGetExp(pNext(e0->m[i]),1)==0)
             e->m[k]=pNSet(nDiv(pGetCoeff(pNext(e0->m[i])),e1));
           else
-	    e->m[k]=pNSet(nDiv(e1,pGetCoeff(pNext(e0->m[i]))));
+            e->m[k]=pNSet(nDiv(e1,pGetCoeff(pNext(e0->m[i]))));
           nDelete(&e1);
           pNormalize(e->m[k]);
           (*m)[k]=(*m0)[i];
           k++;
         }
         else
-	{
+        {
           e->m[k]=e0->m[i];
           pNormalize(e->m[k]);
           e0->m[i]=NULL;
           (*m)[k]=(*m0)[i];
           k++;
-	}
+        }
       }
 
       delete(m0);
@@ -240,7 +239,7 @@ lists evEigenvals(matrix M)
       {
         if(e->m[i0]==NULL&&!nGreaterZero(pGetCoeff(e->m[i1]))||
            e->m[i1]==NULL&&
-	  (nGreaterZero(pGetCoeff(e->m[i0]))||pNext(e->m[i0])!=NULL)||
+          (nGreaterZero(pGetCoeff(e->m[i0]))||pNext(e->m[i0])!=NULL)||
            e->m[i0]!=NULL&&e->m[i1]!=NULL&&
           (pNext(e->m[i0])!=NULL&&pNext(e->m[i1])==NULL||
            pNext(e->m[i0])==NULL&&pNext(e->m[i1])==NULL&&

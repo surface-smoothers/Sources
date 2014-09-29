@@ -8,9 +8,9 @@
 #include <cxxtest/TestSuite.h>
 #include <cxxtest/GlobalFixture.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <misc/auxiliary.h>
 #include <omalloc/omalloc.h>
@@ -30,9 +30,6 @@
 #endif
 
 #include <polys/nc/gb_hack.h>
-
-// int initializeGMP(){ return 1; } // due to Factory...
-int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
 
 // #pragma GCC diagnostic ignored "-Wwrite-strings"
 namespace
@@ -78,9 +75,9 @@ namespace
     StringSetS("");
     n_Write(a, r);
 
-    std::stringstream ss; 
+    std::stringstream ss;
     {
-      char* s = StringEndS();  ss << s; omFree(s); 
+      char* s = StringEndS();  ss << s; omFree(s);
     }
 
     return ss.str();
@@ -135,9 +132,9 @@ class GlobalPrintingFixture : public CxxTest::GlobalFixture
 
       StringSetS("ressources in use (as reported by feStringAppendResources(0):\n");
       feStringAppendResources(0);
-       
+
       { char* s = StringEndS(); PrintS(s); omFree(s); }
-       
+
       return true;
     }
 

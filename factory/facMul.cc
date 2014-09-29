@@ -4,7 +4,14 @@
 /** @file facMul.cc
  *
  * This file implements functions for fast multiplication and division with
- * remainder
+ * remainder.
+ *
+ * Nomenclature rules: kronSub* -> plain Kronecker substitution
+ *                     reverseSubst* -> reverse Kronecker substitution
+ *                     kronSubRecipro* -> reciprocal Kronecker substitution as
+ *                                        described in D. Harvey "Faster
+ *                                        polynomial multiplication via
+ *                                        multipoint Kronecker substitution"
  *
  * @author Martin Lee
  *
@@ -12,13 +19,12 @@
 /*****************************************************************************/
 
 #include "debug.h"
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "canonicalform.h"
 #include "facMul.h"
-#include "algext.h"
 #include "cf_util.h"
 #include "templates/ftmpl_functions.h"
 
@@ -33,7 +39,7 @@
 // univariate polys
 
 #ifdef HAVE_FLINT
-void kronSub (fmpz_poly_t result, const CanonicalForm& A, int d)
+void kronSubQa (fmpz_poly_t result, const CanonicalForm& A, int d)
 {
   int degAy= degree (A);
   fmpz_poly_init2 (result, d*(degAy + 1));
@@ -106,8 +112,8 @@ mulFLINTQa (const CanonicalForm& F, const CanonicalForm& G,
   int d= degAa + 1 + degBa;
 
   fmpz_poly_t FLINTA,FLINTB;
-  kronSub (FLINTA, A, d);
-  kronSub (FLINTB, B, d);
+  kronSubQa (FLINTA, A, d);
+  kronSubQa (FLINTB, B, d);
 
   fmpz_poly_mul (FLINTA, FLINTA, FLINTB);
 
@@ -214,8 +220,8 @@ mulFLINTQaTrunc (const CanonicalForm& F, const CanonicalForm& G,
   int d= degAa + 1 + degBa;
 
   fmpz_poly_t FLINTA,FLINTB;
-  kronSub (FLINTA, A, d);
-  kronSub (FLINTB, B, d);
+  kronSubQa (FLINTA, A, d);
+  kronSubQa (FLINTB, B, d);
 
   int k= d*m;
   fmpz_poly_mullow (FLINTA, FLINTA, FLINTB, k);
@@ -230,8 +236,12 @@ mulFLINTQaTrunc (const CanonicalForm& F, const CanonicalForm& G,
 CanonicalForm
 mulFLINTQTrunc (const CanonicalForm& F, const CanonicalForm& G, int m)
 {
-  if (F.inCoeffDomain() || G.inCoeffDomain())
-    return mod (F*G, power (Variable (1), m));
+  if (F.inCoeffDomain() && G.inCoeffDomain())
+    return F*G;
+  if (F.inCoeffDomain())
+    return mod (F*G, power (G.mvar(), m));
+  if (G.inCoeffDomain())
+    return mod (F*G, power (F.mvar(), m));
   Variable alpha;
   if (hasFirstAlgVar (F, alpha) || hasFirstAlgVar (G, alpha))
     return mulFLINTQaTrunc (F, G, alpha, m);
@@ -257,13 +267,12 @@ mulFLINTQTrunc (const CanonicalForm& F, const CanonicalForm& G, int m)
   return A;
 }
 
-CanonicalForm uniReverse (const CanonicalForm& F, int d)
+CanonicalForm uniReverse (const CanonicalForm& F, int d, const Variable& x)
 {
   if (d == 0)
     return F;
   if (F.inCoeffDomain())
-    return F*power (Variable (1),d);
-  Variable x= Variable (1);
+    return F*power (x,d);
   CanonicalForm result= 0;
   CFIterator i= F;
   while (d - i.exp() < 0)
@@ -275,17 +284,22 @@ CanonicalForm uniReverse (const CanonicalForm& F, int d)
 }
 
 CanonicalForm
-newtonInverse (const CanonicalForm& F, const int n)
+newtonInverse (const CanonicalForm& F, const int n, const Variable& x)
 {
   int l= ilog2(n);
 
-  CanonicalForm g= F [0];
+  CanonicalForm g;
+  if (F.inCoeffDomain())
+    g= F;
+  else
+    g= F [0];
 
+  if (!F.inCoeffDomain())
+    ASSERT (F.mvar() == x, "main variable of F and x differ");
   ASSERT (!g.isZero(), "expected a unit");
 
   if (!g.isOne())
     g = 1/g;
-  Variable x= Variable (1);
   CanonicalForm result;
   int exp= 0;
   if (n & 1)
@@ -328,11 +342,12 @@ void
 newtonDivrem (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q,
               CanonicalForm& R)
 {
+  ASSERT (F.level() == G.level(), "F and G have different level");
   CanonicalForm A= F;
   CanonicalForm B= G;
-  Variable x= Variable (1);
-  int degA= degree (A, x);
-  int degB= degree (B, x);
+  Variable x= A.mvar();
+  int degA= degree (A);
+  int degB= degree (B);
   int m= degA - degB;
 
   if (m < 0)
@@ -346,13 +361,12 @@ newtonDivrem (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q,
     divrem (A, B, Q, R);
   else
   {
-    R= uniReverse (A, degA);
+    R= uniReverse (A, degA, x);
 
-    CanonicalForm revB= uniReverse (B, degB);
-    CanonicalForm buf= revB;
-    revB= newtonInverse (revB, m + 1);
+    CanonicalForm revB= uniReverse (B, degB, x);
+    revB= newtonInverse (revB, m + 1, x);
     Q= mulFLINTQTrunc (R, revB, m + 1);
-    Q= uniReverse (Q, m);
+    Q= uniReverse (Q, m, x);
 
     R= A - mulNTL (Q, B);
   }
@@ -361,11 +375,12 @@ newtonDivrem (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q,
 void
 newtonDiv (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q)
 {
+  ASSERT (F.level() == G.level(), "F and G have different level");
   CanonicalForm A= F;
   CanonicalForm B= G;
-  Variable x= Variable (1);
-  int degA= degree (A, x);
-  int degB= degree (B, x);
+  Variable x= A.mvar();
+  int degA= degree (A);
+  int degB= degree (B);
   int m= degA - degB;
 
   if (m < 0)
@@ -378,12 +393,11 @@ newtonDiv (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q)
     Q= div (A, B);
   else
   {
-    CanonicalForm R= uniReverse (A, degA);
-
-    CanonicalForm revB= uniReverse (B, degB);
-    revB= newtonInverse (revB, m + 1);
+    CanonicalForm R= uniReverse (A, degA, x);
+    CanonicalForm revB= uniReverse (B, degB, x);
+    revB= newtonInverse (revB, m + 1, x);
     Q= mulFLINTQTrunc (R, revB, m + 1);
-    Q= uniReverse (Q, m);
+    Q= uniReverse (Q, m, x);
   }
 }
 
@@ -409,7 +423,7 @@ mulNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
         mipo *=bCommonDen (mipo);
         if (!is_rat)
           Off (SW_RATIONAL);
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
         fmpz_t FLINTp;
         fmpz_mod_poly_t FLINTmipo;
         fq_ctx_t fq_con;
@@ -494,7 +508,7 @@ mulNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
       {
         if (hasFirstAlgVar (G, alpha) || hasFirstAlgVar (F, alpha))
         {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
           fmpz_t FLINTp;
           fmpz_mod_poly_t FLINTmipo;
           fq_ctx_t fq_con;
@@ -601,7 +615,14 @@ mulNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
   CanonicalForm result;
   if (hasFirstAlgVar (F, alpha) || hasFirstAlgVar (G, alpha))
   {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+    if (!getReduce (alpha))
+    {
+      result= 0;
+      for (CFIterator i= F; i.hasTerms(); i++)
+        result += i.coeff()*G*power (F.mvar(),i.exp());
+      return result;
+    }
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
     nmod_poly_t FLINTmipo;
     fq_nmod_ctx_t fq_con;
 
@@ -715,7 +736,7 @@ modNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
     {
       if (b.getp() != 0)
       {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
         fmpz_t FLINTp;
         fmpz_mod_poly_t FLINTmipo;
         fq_ctx_t fq_con;
@@ -775,7 +796,7 @@ modNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
   CanonicalForm result;
   if (hasFirstAlgVar (F, alpha) || hasFirstAlgVar (G, alpha))
   {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
     nmod_poly_t FLINTmipo;
     fq_nmod_ctx_t fq_con;
 
@@ -843,7 +864,7 @@ divNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
         Variable alpha;
         hasFirstAlgVar (F, alpha);
         hasFirstAlgVar (G, alpha);
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
         fmpz_t FLINTp;
         fmpz_mod_poly_t FLINTmipo;
         fq_ctx_t fq_con;
@@ -893,7 +914,7 @@ divNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
       {
         Variable alpha;
         hasFirstAlgVar (G, alpha);
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
         fmpz_t FLINTp;
         fmpz_mod_poly_t FLINTmipo;
         fq_ctx_t fq_con;
@@ -978,7 +999,7 @@ divNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
     {
       if (b.getp() != 0)
       {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
         fmpz_t FLINTp;
         fmpz_mod_poly_t FLINTmipo;
         fq_ctx_t fq_con;
@@ -1036,7 +1057,7 @@ divNTL (const CanonicalForm& F, const CanonicalForm& G, const modpk& b)
   CanonicalForm result;
   if (hasFirstAlgVar (F, alpha) || hasFirstAlgVar (G, alpha))
   {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
     nmod_poly_t FLINTmipo;
     fq_nmod_ctx_t fq_con;
 
@@ -1112,7 +1133,7 @@ void kronSubFp (nmod_poly_t result, const CanonicalForm& A, int d)
   _nmod_poly_normalise (result);
 }
 
-#if (__FLINT_VERSION_MINOR >= 4)
+#if ( __FLINT_RELEASE >= 20400)
 void
 kronSubFq (fq_nmod_poly_t result, const CanonicalForm& A, int d,
            const fq_nmod_ctx_t fq_con)
@@ -1270,7 +1291,7 @@ kronSubReciproFp (nmod_poly_t subA1, nmod_poly_t subA2, const CanonicalForm& A,
   _nmod_poly_normalise (subA2);
 }
 
-#if (__FLINT_VERSION_MINOR >= 4)
+#if ( __FLINT_RELEASE >= 20400)
 void
 kronSubReciproFq (fq_nmod_poly_t subA1, fq_nmod_poly_t subA2,
                   const CanonicalForm& A, int d, const fq_nmod_ctx_t fq_con)
@@ -1622,7 +1643,7 @@ reverseSubstReciproFp (const nmod_poly_t F, const nmod_poly_t G, int d, int k)
   return result;
 }
 
-#if (__FLINT_VERSION_MINOR >= 4)
+#if ( __FLINT_RELEASE >= 20400)
 CanonicalForm
 reverseSubstReciproFq (const fq_nmod_poly_t F, const fq_nmod_poly_t G, int d,
                        int k, const Variable& alpha, const fq_nmod_ctx_t fq_con)
@@ -1860,7 +1881,7 @@ reverseSubstReciproQ (const fmpz_poly_t F, const fmpz_poly_t G, int d, int k)
   return result;
 }
 
-#if (__FLINT_VERSION_MINOR >= 4)
+#if ( __FLINT_RELEASE >= 20400)
 CanonicalForm
 reverseSubstFq (const fq_nmod_poly_t F, int d, const Variable& alpha,
                 const fq_nmod_ctx_t fq_con)
@@ -2001,7 +2022,7 @@ mulMod2FLINTFp (const CanonicalForm& F, const CanonicalForm& G, const
   return A;
 }
 
-#if (__FLINT_VERSION_MINOR >= 4)
+#if ( __FLINT_RELEASE >= 20400)
 CanonicalForm
 mulMod2FLINTFqReci (const CanonicalForm& F, const CanonicalForm& G, const
                     CanonicalForm& M, const Variable& alpha,
@@ -2131,8 +2152,8 @@ mulMod2FLINTQ (const CanonicalForm& F, const CanonicalForm& G, const
   B *= g;
 
   fmpz_poly_t FLINTA, FLINTB;
-  kronSub (FLINTA, A, d1);
-  kronSub (FLINTB, B, d1);
+  kronSubQa (FLINTA, A, d1);
+  kronSubQa (FLINTB, B, d1);
   int k= d1*degree (M);
 
   fmpz_poly_mullow (FLINTA, FLINTA, FLINTB, (long) k);
@@ -2245,7 +2266,7 @@ zz_pX kronSubFp (const CanonicalForm& A, int d)
 }
 #endif
 
-#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
+#if (!(HAVE_FLINT &&  __FLINT_RELEASE >= 20400))
 zz_pEX kronSubFq (const CanonicalForm& A, int d, const Variable& alpha)
 {
   int degAy= degree (A);
@@ -2361,7 +2382,7 @@ kronSubReciproFp (zz_pX& subA1, zz_pX& subA2, const CanonicalForm& A, int d)
 }
 #endif
 
-#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
+#if (!(HAVE_FLINT &&  __FLINT_RELEASE >= 20400))
 CanonicalForm
 reverseSubstReciproFq (const zz_pEX& F, const zz_pEX& G, int d, int k,
                        const Variable& alpha)
@@ -2589,7 +2610,7 @@ reverseSubstReciproFp (const zz_pX& F, const zz_pX& G, int d, int k)
 }
 #endif
 
-#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
+#if (!(HAVE_FLINT &&  __FLINT_RELEASE >= 20400))
 CanonicalForm reverseSubstFq (const zz_pEX& F, int d, const Variable& alpha)
 {
   Variable y= Variable (2);
@@ -2728,7 +2749,7 @@ mulMod2NTLFp (const CanonicalForm& F, const CanonicalForm& G, const
 }
 #endif
 
-#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
+#if (!(HAVE_FLINT &&  __FLINT_RELEASE >= 20400))
 // assumes input to be reduced mod M and to be an element of Fq not Fp
 CanonicalForm
 mulMod2NTLFqReci (const CanonicalForm& F, const CanonicalForm& G, const
@@ -2778,7 +2799,7 @@ mulMod2NTLFq (const CanonicalForm& F, const CanonicalForm& G, const
 
   if (hasFirstAlgVar (A, alpha) || hasFirstAlgVar (B, alpha))
   {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
     nmod_poly_t FLINTmipo;
     convertFacCF2nmod_poly_t (FLINTmipo, getMipo (alpha));
 
@@ -3192,7 +3213,7 @@ newtonDiv (const CanonicalForm& F, const CanonicalForm& G, const CanonicalForm&
     else
     {
       Variable y= Variable (2);
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo;
       fq_nmod_ctx_t fq_con;
 
@@ -3275,7 +3296,7 @@ newtonDivrem (const CanonicalForm& F, const CanonicalForm& G, CanonicalForm& Q,
     else
     {
       Variable y= Variable (2);
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT &&  __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo;
       fq_nmod_ctx_t fq_con;
 
@@ -3628,7 +3649,7 @@ uniFdivides (const CanonicalForm& A, const CanonicalForm& B)
     Variable alpha;
     if (hasFirstAlgVar (A, alpha) || hasFirstAlgVar (B, alpha))
     {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo;
       fq_nmod_ctx_t fq_con;
 
@@ -3688,9 +3709,7 @@ uniFdivides (const CanonicalForm& A, const CanonicalForm& B)
     return result;
   }
   CanonicalForm Q, R;
-  Variable x= Variable (1);
-  Variable y= Variable (2);
-  newtonDivrem (swapvar (B, y, x), swapvar (A, y, x), Q, R);
+  newtonDivrem (B, A, Q, R);
   if (!isRat)
     Off (SW_RATIONAL);
   return R.isZero();

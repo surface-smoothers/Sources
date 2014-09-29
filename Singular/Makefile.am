@@ -2,57 +2,21 @@ ACLOCAL_AMFLAGS = -I ../m4
 
 GIT_VERSION := $(shell $(top_srcdir)/git-version-gen $(top_srcdir)/.tarball-git-version)
 
-AM_CPPFLAGS = -I${top_srcdir} -I${top_builddir} -I${top_srcdir}/kernel -I${top_builddir}/kernel -I${top_srcdir}/libpolys -I${top_builddir}/libpolys $(GMP_CFLAGS) -I${top_srcdir}/factory/include -I${top_builddir}/factory/include $(FACTORY_CFLAGS) $(NTL_CFLAGS) $(FLINT_CFLAGS)   -DGIT_VERSION='"$(GIT_VERSION)"'
+AM_CPPFLAGS = -I${top_srcdir} -I${top_builddir} -I${top_srcdir}/kernel -I${top_builddir}/kernel -I${top_srcdir}/libpolys -I${top_builddir}/libpolys $(FACTORY_INCLUDES)  $(GMP_CFLAGS) $(NTL_CFLAGS) $(FLINT_CFLAGS) -DGIT_VERSION='"$(GIT_VERSION)"'
 
-if HAVE_GFANLIB
-  USE_GFANLIB = ${top_builddir}/dyn_modules/callgfanlib/gfanlib.la ${abs_top_builddir}/gfanlib/libgfan.la ${CDDGMPLDFLAGS}
-else
-  USE_GFANLIB = 
-endif
+SUBDIRS = dyn_modules
 
-# AM_LDFLAGS = libSingular.la ${top_builddir}/kernel/libkernel.la
-
-########################### Dynamic Modules... #########################
-if ENABLE_P_PROCS_DYNAMIC
-  moduledir = $(libexecdir)/singular/MOD
-else !ENABLE_P_PROCS_DYNAMIC
-  moduledir = $(libdir)/singular
-endif !ENABLE_P_PROCS_DYNAMIC
-
-##########################################################################
-module_LTLIBRARIES = pyobject.la
-
-pyobject_la_SOURCES = pyobject.cc
-
-pyobject_la_CXXFLAGS = $(PYTHON_CSPEC)
-pyobject_la_CPPFLAGS = $(PYTHON_CPPFLAGS)  ${AM_CPPFLAGS}
-
-pyobject_la_LDFLAGS = $(PYTHON_EXTRA_LIBS)  $(PYTHON_LSPEC) ${AM_LDFLAGS} $(PYTHON_EXTRA_LDFLAGS) $(PYTHON_LDFLAGS) -module -export-dynamic -avoid-version -flat_namespace -weak_reference_mismatches weak -undefined dynamic_lookup
-###  -export-dynamic -shared -module -avoid-version (add to all DMs?)
-
-##########################################################################
-if PYTHON_USE
-  PY=pyobject.la  $(PYTHON_EXTRA_LIBS)  $(PYTHON_LSPEC) $(PYTHON_EXTRA_LDFLAGS) $(PYTHON_LDFLAGS) 
-else !PYTHON_USE
-  PY=
-endif !PYTHON_USE
-
-if SI_EMBED_PYTHON
- EMBED_PYOBJECT   = ${PY} ${top_builddir}/dyn_modules/syzextra/syzextra.la ${USE_GFANLIB}
-else !SI_EMBED_PYTHON
-  EMBED_PYOBJECT = 
-endif !SI_EMBED_PYTHON
+########################### Possible builtin modules... #########################
+BUILTIN_FLAGS = ${BUILTIN_LIBS}
 
 ########################### libSingular* #########################
 
 libSingular_LTLIBRARIES = libSingular.la 
 libSingulardir = $(libdir)
 
-libSingular_la_CPPFLAGS = ${AM_CPPFLAGS} -DLIBSINGULAR
+libSingular_la_CPPFLAGS = ${AM_CPPFLAGS} -DLIBSINGULAR ${PTHREAD_CFLAGS}
 
-SOURCES =    Minor.cc\
-   MinorInterface.cc\
-   MinorProcessor.cc\
+SOURCES = \
    links/asciiLink.cc\
    attrib.cc\
    blackbox.cc\
@@ -68,7 +32,6 @@ SOURCES =    Minor.cc\
    fglm.cc\
    gms.cc\
    grammar.cc\
-   interpolation.cc\
    iparith.cc\
    ipassign.cc\
    ipconv.cc\
@@ -76,21 +39,19 @@ SOURCES =    Minor.cc\
    iplib.cc\
    ipprint.cc\
    ipshell.cc\
-   janet.cc\
    libparse.cc\
    linearAlgebra_ip.cc\
    lists.cc\
    maps_ip.cc\
-   minpoly.cc\
    misc_ip.cc\
    mod_lib.cc\
    links/ndbm.cc\
    newstruct.cc\
+   number2.cc\
    pcv.cc\
    links/pipeLink.cc\
    scanner.cc\
    sdb.cc\
-   links/s_buff.cc\
    links/silink.cc\
    links/sing_dbm.cc\
    sing_win.cc\
@@ -99,22 +60,17 @@ SOURCES =    Minor.cc\
    links/semaphore.c\
    subexpr.cc\
    pyobject_setup.cc\
-   singmathic.cc\
    walk.cc\
    walk_ip.cc\
    wrapper.cc\
-   fereadl.c mmstd.c claptmpl.cc\
-   rlimit.c
+   mmstd.c claptmpl.cc\
+   febase.cc
 
 #   links/slInit_Dynamic.cc
 
 libSingular_la_SOURCES   = $(SOURCES)
 
-SingularHEADERS =    Cache.h \
-   CacheImplementation.h \
-   Minor.h \
-   MinorInterface.h \
-   MinorProcessor.h \
+SingularHEADERS = \
    attrib.h \
    blackbox.h \
    cntrlc.h \
@@ -126,45 +82,41 @@ SingularHEADERS =    Cache.h \
    fglm.h \
    gms.h \
    grammar.h \
-   interpolation.h \
    idrec.h \
    ipconv.h \
    ipid.h \
    ipprint.h \
    ipshell.h \
-   janet.h \
    libparse.h \
    libsingular.h \
    linearAlgebra_ip.h\
    lists.h \
    locals.h \
    maps_ip.h \
-   minpoly.h \
    misc_ip.h \
    mmalloc.h \
    mod_lib.h \
    omSingularConfig.h \
    links/ndbm.h \
    newstruct.h \
+   number2.h \
    pcv.h \
    links/pipeLink.h \
    pyobject_setup.h \
    run.h \
    sdb.h \
    links/silink.h \
-   links/s_buff.h \
    links/sing_dbm.h \
    sing_win.h \
    links/slInit.h \
    links/ssiLink.h \
    links/simpleipc.h \
-   si_signals.h \
    stype.h \
    subexpr.h \
    table.h \
    tok.h \
    walk.h \
-   rlimit.h
+   fevoices.h
 
 
 # -DMAKE_DISTRIBUTION 
@@ -172,8 +124,8 @@ SingularHEADERS =    Cache.h \
 # plural_cmd.inc
 nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc 
 
-libSingular_la_LDFLAGS    = ${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION}
-libSingular_la_LIBADD      = ${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} ${EMBED_PYOBJECT} ${top_builddir}/kernel/libkernel.la
+libSingular_la_LDFLAGS    =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION} ${PTHREAD_LDFLAGS}
+libSingular_la_LIBADD     =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} ${BUILTIN_FLAGS} ${top_builddir}/kernel/libkernel.la ${PTHREAD_LIBS}
 
 libSingular_includedir = ${includedir}/singular/Singular
 nobase_libSingular_include_HEADERS = $(SingularHEADERS)
@@ -197,7 +149,7 @@ feOptTS_CPPFLAGS = ${AM_CPPFLAGS} -DTSINGULAR
 
 ########################### Singular* #########################
 
-EXTRA_PROGRAMS =  libparse Singulars
+EXTRA_PROGRAMS =  libparse Singulard
 
 # the "optional_programs" variable should be defined in the configure
 # script, and listed in an AC_SUBST macro
@@ -209,16 +161,15 @@ Singular ESingular TSingular $(optional_Singular_programs): ${abs_builddir}/LIB
 
 Singular_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
 
-Singular_LDADD = libSingular.la ${EMBED_PYOBJECT}
+Singular_LDADD = libSingular.la ${BUILTIN_FLAGS}
 
-Singular_LDFLAGS = -static ${EMBED_PYOBJECT}
+Singular_LDFLAGS = -static ${AM_LDFLAGS} ${BUILTIN_FLAGS}
 
-Singulars_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
+Singulard_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
 
-#  ${EMBED_PYOBJECT_LDFLAGS}  ${EMBED_PYOBJECT_LDFLAGS}
-Singulars_LDADD = libSingular.la ${EMBED_PYOBJECT}
+Singulard_LDADD = libSingular.la ${BUILTIN_FLAGS}
 
-Singulars_LDFLAGS = -static ${AM_LDFLAGS} ${EMBED_PYOBJECT}
+Singulard_LDFLAGS = -shared ${AM_LDFLAGS} ${BUILTIN_FLAGS}
 
 scriptdir = $(libexecdir)/singular/MOD
 dist_script_SCRIPTS = singularsurf
@@ -279,14 +230,12 @@ TESTS=test
 check_PROGRAMS=$(TESTS)
 
 test_SOURCES = test.cc
-# ${EMBED_PYOBJECT_LDFLAGS}
 test_LDADD = libSingular.la 
 
 #########################################################
-
+### plural_cmd.inc
 # These files are built first
-BUILT_SOURCES = feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib plural_cmd.inc \
-                gftables MOD
+BUILT_SOURCES = feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib gftables MOD
 
 CLEANFILES = $(BUILT_SOURCES) $(EXTRA_PROGRAMS)
 
@@ -304,11 +253,14 @@ feOptES.inc: feOptES$(EXEEXT)
 feOptTS.inc: feOptTS$(EXEEXT)
 	${builddir}/feOptTS$(EXEEXT)
 
-plural_cmd.inc iparith.inc: gentable1$(EXEEXT)
+# plural_cmd.inc is only necessary for documentation generation
+#plural_cmd.inc: gentable1$(EXEEXT)
+#	${builddir}/gentable1$(EXEEXT) argument
+
+iparith.inc: gentable1$(EXEEXT) table.h
 	${builddir}/gentable1$(EXEEXT)
 
 # # fake rule to fix parallel make http://www.gnu.org/s/hello/manual/automake/Multiple-Outputs.html
-# plural_cmd.inc: iparith.inc
 
 gftables: ${top_srcdir}/factory/gftables
 	ln -snf ${top_srcdir}/factory/gftables ${builddir}/gftables
@@ -318,6 +270,8 @@ ${abs_builddir}/LIB: ${srcdir}/LIB
 	  ln -snf ${abs_srcdir}/LIB ${abs_builddir}/; \
 	fi
 
-MOD: ${top_builddir}/libpolys/polys/.libs
-	ln -snf ${top_builddir}/libpolys/polys/.libs/ ${builddir}/MOD
+MOD: 
+	if [ -d "${top_builddir}/libpolys/polys/.libs" ]; then \
+	  ln -snf ${top_builddir}/libpolys/polys/.libs/ ${abs_builddir}/MOD; \
+	fi 	  
 

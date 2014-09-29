@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -25,7 +25,7 @@
 /// Our Type!
 static const n_coeffType ID = n_Q;
 
-omBin rnumber_bin = omGetSpecBin(sizeof(snumber)); // TODO: move this into coeffs-struct (for Q)?! 
+omBin rnumber_bin = omGetSpecBin(sizeof(snumber)); // TODO: move this into coeffs-struct (for Q)?!
 
 
 #define SR_HDL(A) ((long)(A))

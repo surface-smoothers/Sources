@@ -1,8 +1,13 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
-#ifdef HAVE_CONFIG_H
+/**
+ * @file cf_linsys.cc
+ *
+ * solve linear systems and compute determinants of matrices
+**/
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 #include "debug.h"

@@ -15,9 +15,9 @@
 #include <stdio.h>
 
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 
@@ -48,7 +48,7 @@ BOOLEAN dPolyReportError(poly p, ring r, const char* fmt, ...)
   va_list ap;
   va_start(ap, fmt);
 
-  fprintf(stderr, "\n// ***dPolyError: ");
+  fprintf(stderr, "\n// ***dPolyReportError: ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n occured at\n");
   omPrintCurrentBackTraceMax(stderr, 8);

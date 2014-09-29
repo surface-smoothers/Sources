@@ -7,7 +7,7 @@
  * \f$ F_{p} \f$ , \f$ F_{p}(\alpha ) \f$ or GF, based on "Modern Computer
  * Algebra, Chapter 15" by J. von zur Gathen & J. Gerhard and "Factoring
  * multivariate polynomials over a finite field" by L. Bernardin.
- * Factor Recombination is described in "Factoring polynomials over global 
+ * Factor Recombination is described in "Factoring polynomials over global
  * fields" by K. Belabas, M. van Hoeij, J. Klueners, A. Steel
  *
  *
@@ -16,9 +16,9 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 #include "debug.h"
@@ -31,11 +31,10 @@
 #include "facHensel.h"
 #include "facMul.h"
 #include "cf_map.h"
-#include "cf_gcd_smallp.h"
+#include "cf_irred.h"
 #include "facFqBivarUtil.h"
 #include "facFqBivar.h"
 #include "cfNewtonPolygon.h"
-#include "algext.h"
 
 #ifdef HAVE_NTL
 #include "NTLconvert.h"
@@ -172,7 +171,7 @@ uniFactorizer (const CanonicalForm& A, const Variable& alpha, const bool& GF)
     CanonicalForm buf= GF2FalphaRep (A, beta);
     if (getCharacteristic() > 2)
     {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo, leadingCoeff;
       fq_nmod_ctx_t fq_con;
       fq_nmod_poly_t FLINTA;
@@ -233,12 +232,13 @@ uniFactorizer (const CanonicalForm& A, const Variable& alpha, const bool& GF)
       buf= Falpha2GFRep (buf);
       i.getItem()= CFFactor (buf, i.getItem().exp());
     }
+    prune (beta);
   }
   else if (alpha.level() != 1)
   {
     if (getCharacteristic() > 2)
     {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo, leadingCoeff;
       fq_nmod_ctx_t fq_con;
       fq_nmod_poly_t FLINTA;
@@ -815,7 +815,7 @@ Variable chooseExtension (const Variable & alpha, const Variable& beta, int k)
 void
 earlyFactorDetection (CFList& reconstructedFactors, CanonicalForm& F, CFList&
                       factors, int& adaptedLiftBound, int*& factorsFoundIndex,
-                      DegreePattern& degs, bool& success, int deg, const 
+                      DegreePattern& degs, bool& success, int deg, const
                       CanonicalForm& eval, const modpk& b, CanonicalForm& den)
 {
   DegreePattern bufDegs1= degs;
@@ -2014,7 +2014,7 @@ extReconstruction (CanonicalForm& G, CFList& factors, int* zeroOneVecs, int
     iter= factors;
     buf= 1;
     factorsConsidered= CFList();
-    for (long j= 0; j < nmod_mat_ncols(N); j++, iter++)
+    for (long j= 0; j < nmod_mat_nrows(N); j++, iter++)
     {
       if (!(nmod_mat_entry (N, j, i) == 0))
       {
@@ -4175,6 +4175,7 @@ increasePrecision2 (const CanonicalForm& F, CFList& factors,
         delete [] bounds;
         return Union (result, factors);
       }
+      delete [] zeroOne;
     }
     oldL= l;
     l += stepSize;
@@ -5113,6 +5114,7 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
   CFList result;
   bool irreducible= false;
   CFList bufFactors= factors;
+  CFList bufBufFactors;
   CFArray *A = new CFArray [bufFactors.length()];
   bool useOldQs= false;
   bool hitBound= false;
@@ -5146,8 +5148,6 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
   {
     bufFactors.insert (LCF);
     henselLiftResume12 (F, bufFactors, oldL, l, Pi, diophant, M);
-    bufFactors.insert (LCF);
-    bufFactors.removeFirst();
     j= bufFactors;
     truncF= mod (F, power (y, l));
     if (useOldQs)
@@ -5232,6 +5232,7 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
     int * zeroOneVecs= extractZeroOneVecs (NTLN);
 #endif
     bufF= F;
+    bufBufFactors= bufFactors;
 #ifdef HAVE_FLINT
     result= reconstruction (bufF, bufFactors, zeroOneVecs, l, FLINTN, eval);
 #else
@@ -5244,6 +5245,11 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
       factors= bufFactors;
       delete [] A;
       return result;
+    }
+    else
+    {
+      bufF= F;
+      bufFactors= bufBufFactors;
     }
 
 #ifdef HAVE_FLINT
@@ -5332,6 +5338,7 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
   CFList result;
   bool irreducible= false;
   CFList bufFactors= factors;
+  CFList bufBufFactors;
   CFArray *A = new CFArray [bufFactors.length()];
   bool useOldQs= false;
   bool hitBound= false;
@@ -5398,6 +5405,7 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
 
     int * zeroOneVecs= extractZeroOneVecs (NTLN);
     bufF= F;
+    bufBufFactors= bufFactors;
     result= reconstruction (bufF, bufFactors, zeroOneVecs, l, NTLN, eval);
     delete [] zeroOneVecs;
     if (result.length() > 0 && degree (bufF) + 1 + degree (LC (bufF, 1)) <= l)
@@ -5406,6 +5414,11 @@ furtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList&
       factors= bufFactors;
       delete [] A;
       return result;
+    }
+    else
+    {
+      bufF= F;
+      bufFactors= bufBufFactors;
     }
 
     if (isReduced (NTLN))
@@ -5484,6 +5497,7 @@ extFurtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList& factors, int l,
   CFList result;
   bool irreducible= false;
   CFList bufFactors= factors;
+  CFList bufBufFactors;
   CFArray *A = new CFArray [bufFactors.length()];
   bool useOldQs= false;
   bool hitBound= false;
@@ -5670,6 +5684,7 @@ extFurtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList& factors, int l,
     }
 
     bufF= F;
+    bufBufFactors= bufFactors;
 #ifdef HAVE_FLINT
     int * zeroOneVecs= extractZeroOneVecs (FLINTN);
     result= extReconstruction (bufF, bufFactors, zeroOneVecs, l, FLINTN, info,
@@ -5688,6 +5703,11 @@ extFurtherLiftingAndIncreasePrecision (CanonicalForm& F, CFList& factors, int l,
       factors= bufFactors;
       delete [] A;
       return result;
+    }
+    else
+    {
+      bufF= F;
+      bufFactors= bufBufFactors;
     }
 
 #ifdef HAVE_FLINT
@@ -5789,6 +5809,7 @@ furtherLiftingAndIncreasePrecisionFq2Fp (CanonicalForm& F, CFList& factors, int
   CFList result;
   bool irreducible= false;
   CFList bufFactors= factors;
+  CFList bufBufFactors;
   CFArray *A = new CFArray [bufFactors.length()];
   bool useOldQs= false;
   int extensionDeg= degree (getMipo (alpha));
@@ -5906,6 +5927,7 @@ furtherLiftingAndIncreasePrecisionFq2Fp (CanonicalForm& F, CFList& factors, int
     int * zeroOneVecs= extractZeroOneVecs (NTLN);
 #endif
     CanonicalForm bufF= F;
+    bufBufFactors= bufFactors;
 #ifdef HAVE_FLINT
     result= reconstruction (bufF, bufFactors, zeroOneVecs, l, FLINTN, eval);
 #else
@@ -5918,6 +5940,11 @@ furtherLiftingAndIncreasePrecisionFq2Fp (CanonicalForm& F, CFList& factors, int
       factors= bufFactors;
       delete [] A;
       return result;
+    }
+    else
+    {
+      bufF= F;
+      bufFactors= bufBufFactors;
     }
 
 #ifdef HAVE_FLINT
@@ -8235,9 +8262,9 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     return factors;
   }
 
-  
+
   //check trivial case
-  if (degree (A) == 1 || degree (A, 1) == 1 || 
+  if (degree (A) == 1 || degree (A, 1) == 1 ||
       (size (A) == 2 && igcd (degree (A), degree (A,1))==1))
   {
     factors.append (A);
@@ -8640,7 +8667,7 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     }
     else if (alpha.level() == 1 && !GF)
     {
-      CFList lll= henselLiftAndLatticeRecombi (A, uniFactors, alpha, degs, 
+      CFList lll= henselLiftAndLatticeRecombi (A, uniFactors, alpha, degs,
                                                symmetric, evaluation);
       factors= Union (lll, factors);
     }
@@ -8823,6 +8850,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable vBuf= rootOf (mipo.mapinto());
       for (CFListIterator j= factors; j.hasItem(); j++)
         j.getItem()= GF2FalphaRep (j.getItem(), vBuf);
+      prune (vBuf);
     }
     else // not able to pass to GF, pass to F_p(\alpha)
     {
@@ -8830,6 +8858,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable v= rootOf (mipo);
       ExtensionInfo info2= ExtensionInfo (v);
       factors= biFactorize (A, info2);
+      prune (v);
     }
     return factors;
   }
@@ -8839,10 +8868,11 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     {
       int extDeg= degree (getMipo (alpha));
       extDeg++;
-      CanonicalForm mipo= randomIrredpoly (extDeg + 1, x);
+      CanonicalForm mipo= randomIrredpoly (extDeg, x);
       Variable v= rootOf (mipo);
       ExtensionInfo info2= ExtensionInfo (v);
       factors= biFactorize (A, info2);
+      prune (v);
     }
     else
     {
@@ -8864,6 +8894,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
                                    source, dest);
         ExtensionInfo info2= ExtensionInfo (v, alpha, imPrimElem, primElem);
         factors= biFactorize (bufA, info2);
+        prune (v);
       }
       else
       {
@@ -8884,6 +8915,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         bufA= mapUp (bufA, beta, v, delta, imPrimElem, source, dest);
         ExtensionInfo info2= ExtensionInfo (v, beta, imPrimElem, delta);
         factors= biFactorize (bufA, info2);
+        prune (v);
       }
     }
     return factors;
@@ -8906,6 +8938,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, extensionDeg, 'Z');
         ExtensionInfo info2= ExtensionInfo (extension);
         factors= biFactorize (A.mapinto(), info2);
+        prune (vBuf);
       }
       else // not able to pass to another GF, pass to F_p(\alpha)
       {
@@ -8916,6 +8949,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         Variable v= chooseExtension (vBuf, beta, k);
         ExtensionInfo info2= ExtensionInfo (v, extension);
         factors= biFactorize (A, info2);
+        prune (vBuf);
       }
     }
     else // need factorization over GF (p^k)
@@ -8953,6 +8987,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, k, cGFName);
         for (CFListIterator i= factors; i.hasItem(); i++)
           i.getItem()= Falpha2GFRep (i.getItem());
+        prune (v1);
       }
     }
     return factors;

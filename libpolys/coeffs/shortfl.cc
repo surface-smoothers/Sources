@@ -5,9 +5,9 @@
 /*
 * ABSTRACT:
 */
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 #include <coeffs/shortfl.h>
 
@@ -268,6 +268,7 @@ void nrWrite (number &a, const coeffs r)
     StringAppend("(%s)",ch);
 }
 
+#if 0
 void nrPower (number a, int i, number * result, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
@@ -285,6 +286,7 @@ void nrPower (number a, int i, number * result, const coeffs r)
   nrPower(a,i-1,result,r);
   *result = nf(nf(a).F() * nf(*result).F()).N();
 }
+#endif
 
 namespace {
   static const char* nrEatr(const char *s, float *r)
@@ -424,18 +426,27 @@ number nrMapQ(number from, const coeffs aRing, const coeffs r)
 */
 #define SR_HDL(A) ((long)(A))
 #define IS_INT(A) ((A)->s==3)
-#define IS_IMM(A) (SR_HDL(A)&SR_INT)
+#define IS_IMM(A) (SR_HDL(A) & SR_INT)
 #define GET_NOM(A) ((A)->z)
 #define GET_DENOM(A) ((A)->n)
 
   assume( getCoeffType(r) == ID );
-  assume( getCoeffType(aRing) == n_Q );
+  assume( aRing->rep == n_rep_gap_rat );
 
+  mpz_ptr z;
+  mpz_ptr zz=NULL;
   if (IS_IMM(from))
-    return nf((float)nlInt(from,NULL /* dummy for nlInt*/)).N();
+  {
+     zz=(mpz_ptr)omAlloc(sizeof(mpz_t));
+     mpz_init_set_si(zz,SR_TO_INT(from));
+     z=zz;
+  }
+  else
+  {
+    /* read out the enumerator */
+    z=GET_NOM(from);
+  }
 
-  /* read out the enumerator */
-  mpz_ptr z=GET_NOM(from);
   int i = mpz_size1(z);
   mpf_t e;
   mpf_init(e);
@@ -443,8 +454,13 @@ number nrMapQ(number from, const coeffs aRing, const coeffs r)
   int sign= mpf_sgn(e);
   mpf_abs (e, e);
 
+  if (zz!=NULL)
+  {
+    mpz_clear(zz);
+    omFreeSize(zz,sizeof(mpz_t));
+  }
   /* if number was an integer, we are done*/
-  if(IS_INT(from))
+  if(IS_IMM(from)|| IS_INT(from))
   {
     if(i>4)
     {
@@ -484,6 +500,50 @@ number nrMapQ(number from, const coeffs aRing, const coeffs r)
   mpf_clear(e);
   mpf_clear(d);
   mpf_clear(q);
+  return nf(f).N();
+}
+
+number nrMapZ(number from, const coeffs aRing, const coeffs r)
+{
+  assume( getCoeffType(r) == ID );
+  assume( aRing->rep == n_rep_gap_gmp );
+
+  mpz_ptr z;
+  mpz_ptr zz=NULL;
+  if (IS_IMM(from))
+  {
+     zz=(mpz_ptr)omAlloc(sizeof(mpz_t));
+     mpz_init_set_si(zz,SR_TO_INT(from));
+     z=zz;
+  }
+  else
+  {
+    /* read out the enumerator */
+    z=(mpz_ptr)from;
+  }
+
+  int i = mpz_size1(z);
+  mpf_t e;
+  mpf_init(e);
+  mpf_set_z(e,z);
+  int sign= mpf_sgn(e);
+  mpf_abs (e, e);
+
+  if (zz!=NULL)
+  {
+    mpz_clear(zz);
+    omFreeSize(zz,sizeof(mpz_t));
+  }
+  if(i>4)
+  {
+    WerrorS("float overflow");
+    return nf(0.0).N();
+  }
+  double basis;
+  signed long int exp;
+  basis = mpf_get_d_2exp(&exp, e);
+  float f= sign*ldexp(basis,exp);
+  mpf_clear(e);
   return nf(f).N();
 }
 
@@ -606,23 +666,27 @@ nMapFunc nrSetMap(const coeffs src, const coeffs dst)
 {
   assume( getCoeffType(dst) == ID );
 
-  if (nCoeff_is_Q(src))
+  if (src->rep==n_rep_gap_rat) /*Q, Z */
   {
     return nrMapQ;
   }
-  if (nCoeff_is_long_R(src))
+  if (src->rep==n_rep_gap_gmp) /*Q, Z */
+  {
+    return nrMapZ;
+  }
+  if ((src->rep==n_rep_gmp_float) && nCoeff_is_long_R(src))
   {
     return nrMapLongR;
   }
-  if (nCoeff_is_R(src))
+  if ((src->rep==n_rep_float) && nCoeff_is_R(src))
   {
     return ndCopyMap;
   }
-  if(nCoeff_is_Zp(src))
+  if ((src->rep==n_rep_int) && nCoeff_is_Zp(src))
   {
     return nrMapP;
   }
-  if (nCoeff_is_long_C(src))
+  if ((src->rep==n_rep_gmp_complex) && nCoeff_is_long_C(src))
   {
     return nrMapC;
   }
@@ -640,6 +704,10 @@ BOOLEAN nrInitChar(coeffs n, void* p)
 
   assume( p == NULL );
 
+  n->is_field=TRUE;
+  n->is_domain=TRUE;
+  n->rep=n_rep_float;
+
   n->cfKillChar = ndKillChar; /* dummy */
   n->ch = 0;
   n->cfCoeffString = nrCoeffString;
@@ -651,7 +719,7 @@ BOOLEAN nrInitChar(coeffs n, void* p)
   n->cfMult  = nrMult;
   n->cfDiv   = nrDiv;
   n->cfExactDiv= nrDiv;
-  n->cfNeg   = nrNeg;
+  n->cfInpNeg   = nrNeg;
   n->cfInvers= nrInvers;
   n->cfCopy  = ndCopy;
   n->cfGreater = nrGreater;
@@ -662,10 +730,9 @@ BOOLEAN nrInitChar(coeffs n, void* p)
   n->cfGreaterZero = nrGreaterZero;
   n->cfWriteLong = nrWrite;
   n->cfRead = nrRead;
-  n->cfPower = nrPower;
+  //n->cfPower = nrPower;
   n->cfSetMap = nrSetMap;
   n->cfCoeffWrite  = nrCoeffWrite;
-  n->cfInit_bigint = nrMapQ;
 
     /* nName= ndName; */
     /*nSize  = ndSize;*/

@@ -1,22 +1,25 @@
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <kernel/mod2.h>
 
 #ifdef HAVE_SIMPLEIPC
-
-# include "simpleipc.h"
-
-#include <Singular/cntrlc.h>
-#include <Singular/si_signals.h>
-
 #include <semaphore.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+
+# include "simpleipc.h"
+
+#include <Singular/cntrlc.h>
+#include <reporter/si_signals.h>
+
 
 
 // Not yet implemented: SYSV IPC Semaphores

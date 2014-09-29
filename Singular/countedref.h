@@ -1,15 +1,15 @@
-/// -*- c++ -*-
+// -*- c++ -*-
 //*****************************************************************************
 /** @file countedref.h
- *
- * @author Alexander Dreyer
- * @date 2012-08-15
  *
  * This file defines reusable classes supporting reference counted interpreter
  * objects and initiates the @c blackbox operations for high-level types
  * 'reference' and 'shared'.
  *
  * @note This works was supported by the "Industrial Algebra" project.
+ *
+ * @author Alexander Dreyer
+ * @date 2012-08-15
  *
  * @par Copyright:
  *   (c) 2012 by The Singular Team, see LICENSE file
@@ -22,10 +22,9 @@
 
 #include <omalloc/omalloc.h>
 #include <kernel/structs.h>
-#include <kernel/febase.h>
-#include "subexpr.h"
-#include "idrec.h"
-#include "ipid.h"
+#include <Singular/subexpr.h>
+#include <Singular/idrec.h>
+#include <Singular/ipid.h>
 /** @class CountedRefPtr
  * This class implements a smart pointer which handles pointer-style access
  * to a reference-counted structure and destructing the latter after use.

@@ -1,6 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 #include <omalloc/omalloc.h>
 
@@ -88,14 +88,14 @@ void TestSum(const coeffs r, const unsigned long N)
     i = n_Init(k, r);
     ndInpAdd(s, i, r); // s += i
 
-    i = n_Neg(i, r);
+    i = n_InpNeg(i, r);
     ndInpAdd(ss, i, r); // ss -= i
 
     n_Delete(&i, r);
   }
   clog<< "ss: "; PrintSized(ss, r);
 
-  ss = n_Neg(ss, r); // ss = -ss
+  ss = n_InpNeg(ss, r); // ss = -ss
 
   clog<< "real sum    : "; PrintSized(s, r);
   clog<< "real sum(--): "; PrintSized(ss, r);
@@ -235,13 +235,13 @@ BOOLEAN Test(const n_coeffType type, void* p = NULLp)
     n_CoeffWrite(r); PrintLn();
   }
 
-  if (n_NumberOfParameters(r) > 0) 
+  if (n_NumberOfParameters(r) > 0)
   {
     number z = n_Param(1, r); // also any integer instead of 0//?
     PrintS("Parameter: "); PrintSized(z, r);
-    n_Delete(&z, r);    
+    n_Delete(&z, r);
   }
-   
+
 
   clog << "Char: " << n_GetChar(r) << endl;
 

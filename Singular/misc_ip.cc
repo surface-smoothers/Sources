@@ -11,26 +11,27 @@
 /*****************************************************************************/
 
 // include header files
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
 
-#include <misc/auxiliary.h>
 #include <kernel/mod2.h>
-#include <Singular/si_signals.h>
+#include <misc/auxiliary.h>
+#include <misc/sirandom.h>
 
-#define SI_DONT_HAVE_GLOBAL_VARS
+#include <reporter/si_signals.h>
+
 #include <factory/factory.h>
+
+#include <coeffs/si_gmp.h>
+#include <coeffs/coeffs.h>
+#include <coeffs/OPAE.h>
+#include <coeffs/OPAEQ.h>
+#include <coeffs/OPAEp.h>
+
+#include <polys/ext_fields/algext.h>
+#include <polys/ext_fields/transext.h>
 
 #ifdef HAVE_SIMPLEIPC
 #include <Singular/links/simpleipc.h>
 #endif
-
-#include <coeffs/si_gmp.h>
-#include <coeffs/coeffs.h>
-
-#include <polys/ext_fields/algext.h>
-#include <polys/ext_fields/transext.h>
 
 #include "misc_ip.h"
 #include "ipid.h"
@@ -386,10 +387,10 @@ lists primeFactorisation(const number n, const int pBound)
 #include <polys/monomials/ring.h>
 #include <polys/templates/p_Procs.h>
 
-#include <kernel/febase.h>
-#include <kernel/kstd1.h>
-#include <kernel/timer.h>
-
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/oswrapper/timer.h>
+#include <resources/feResource.h>
+#include <kernel/oswrapper/feread.h>
 
 #include "subexpr.h"
 #include "cntrlc.h"
@@ -401,8 +402,6 @@ lists primeFactorisation(const number n, const int pBound)
 #ifdef HAVE_STATIC
 #undef HAVE_DYN_RL
 #endif
-
-#define SI_DONT_HAVE_GLOBAL_VARS
 
 //#ifdef HAVE_LIBPARSER
 //#  include "libparse.h"
@@ -793,8 +792,8 @@ char * versionString(/*const bool bShowDetails = false*/ )
 #if defined(mpir_version)
               StringAppend("MPIR(%s)~GMP(%s),", mpir_version, gmp_version);
 #elif defined(gmp_version)
-	      // #if defined (__GNU_MP_VERSION) && defined (__GNU_MP_VERSION_MINOR)
-	      //              StringAppend("GMP(%d.%d),",__GNU_MP_VERSION,__GNU_MP_VERSION_MINOR);
+              // #if defined (__GNU_MP_VERSION) && defined (__GNU_MP_VERSION_MINOR)
+              //              StringAppend("GMP(%d.%d),",__GNU_MP_VERSION,__GNU_MP_VERSION_MINOR);
               StringAppend("GMP(%s),", gmp_version);
 #endif
 #ifdef HAVE_NTL
@@ -805,7 +804,7 @@ char * versionString(/*const bool bShowDetails = false*/ )
 #ifdef HAVE_FLINT
               StringAppend("FLINT(%s),",version);
 #endif
-
+              StringAppend("factory(%s),\n\t", factoryVersion);
 #if defined(HAVE_DYN_RL)
               if (fe_fgets_stdin==fe_fgets_dummy)
                 StringAppendS("no input,");
@@ -1022,7 +1021,10 @@ void checkall()
       {
         omCheckAddr(hh);
         omCheckAddr((ADDRESS)IDID(hh));
-        if (RingDependend(IDTYP(hh))) Print("%s typ %d in Top\n",IDID(hh),IDTYP(hh));
+        if (RingDependend(IDTYP(hh)))
+        {
+          Print("%s typ %d in Top (should be in ring)\n",IDID(hh),IDTYP(hh));
+        }
         hh=IDNEXT(hh);
       }
       hh=basePack->idroot;
@@ -1031,12 +1033,18 @@ void checkall()
         if (IDTYP(hh)==PACKAGE_CMD)
         {
           idhdl h2=IDPACKAGE(hh)->idroot;
-          while (h2!=NULL)
+          if (IDPACKAGE(hh)!=basePack)
           {
-            omCheckAddr(h2);
-            omCheckAddr((ADDRESS)IDID(h2));
-            if (RingDependend(IDTYP(h2))) Print("%s typ %d in %s\n",IDID(h2),IDTYP(h2),IDID(hh));
-            h2=IDNEXT(h2);
+            while (h2!=NULL)
+            {
+              omCheckAddr(h2);
+              omCheckAddr((ADDRESS)IDID(h2));
+              if (RingDependend(IDTYP(h2)))
+              {
+                Print("%s typ %d in %s (should be in ring)\n",IDID(h2),IDTYP(h2),IDID(hh));
+              }
+              h2=IDNEXT(h2);
+            }
           }
         }
         hh=IDNEXT(hh);
@@ -1164,15 +1172,29 @@ extern "C"
   }
 }
 
+#ifdef SINGULAR_4_1
+static n_coeffType n_pAE=n_unknown;
+static BOOLEAN ii_pAE_init(leftv res,leftv a)
+{
+  if (a->Typ()!=INT_CMD)
+  {
+    WerrorS("`int` expected");
+    return TRUE;
+  }
+  else
+  {
+    res->rtyp=CRING_CMD;
+    res->data=(void*)nInitChar(n_pAE,(void*)a->Data());
+    return FALSE;
+  }
+}
+#endif
 /*2
 * initialize components of Singular
 */
 void siInit(char *name)
 {
 // factory default settings: -----------------------------------------------
-  On(SW_USE_NTL);
-  On(SW_USE_NTL_GCD_0); // On -> seg11 in Old/algnorm, Old/factor...
-  On(SW_USE_NTL_GCD_P); // On -> cyle in Short/brnoeth_s: fixed
   On(SW_USE_EZGCD);
   On(SW_USE_CHINREM_GCD);
   //On(SW_USE_FF_MOD_GCD);
@@ -1195,9 +1217,6 @@ void siInit(char *name)
     omInitInfo();
 
 // interpreter tables etc.: -----------------------------------------------
-#ifdef INIT_BUG
-  jjInitTab1();
-#endif
   memset(&sLastPrinted,0,sizeof(sleftv));
   sLastPrinted.rtyp=NONE;
 
@@ -1212,7 +1231,7 @@ void siInit(char *name)
   currPackHdl=h;
   basePackHdl=h;
 
-  coeffs_BIGINT = nInitChar(n_Q,NULL);
+  coeffs_BIGINT = nInitChar(n_Q,(void*)1);
 
 #if 1
    // def HAVE_POLYEXTENSIONS
@@ -1255,6 +1274,37 @@ void siInit(char *name)
   #endif
   feSetOptValue(FE_OPT_CPUS, cpus);
 
+#ifdef SINGULAR_4_1
+// default coeffs
+  {
+    idhdl h;
+    h=enterid(omStrDup("QQ"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+    IDDATA(h)=(char*)nInitChar(n_Q,NULL);
+    h=enterid(omStrDup("ZZ"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+    IDDATA(h)=(char*)nInitChar(n_Z,NULL);
+    //h=enterid(omStrDup("RR"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+    //IDDATA(h)=(char*)nInitChar(n_R,NULL);
+    //h=enterid(omStrDup("CC"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+    //IDDATA(h)=(char*)nInitChar(n_long_C,NULL);
+    n_coeffType t=nRegister(n_unknown,n_AEInitChar);
+    if (t!=n_unknown)
+    {
+      h=enterid(omStrDup("AE"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+      IDDATA(h)=(char*)nInitChar(t,NULL);
+    }
+    t=nRegister(n_unknown,n_QAEInitChar);
+    if (t!=n_unknown)
+    {
+      h=enterid(omStrDup("QAE"),0/*level*/, CRING_CMD,&(basePack->idroot),FALSE /*init*/,FALSE /*search*/);
+      IDDATA(h)=(char*)nInitChar(t,NULL);
+    }
+    n_pAE=nRegister(n_unknown,n_pAEInitChar);
+    if (n_pAE!=n_unknown)
+    {
+      iiAddCproc("kernel","pAE",FALSE,ii_pAE_init);
+    }
+  }
+#endif
 // loading standard.lib -----------------------------------------------
   if (! feOptValue(FE_OPT_NO_STDLIB))
   {
@@ -1266,13 +1316,3 @@ void siInit(char *name)
   }
   errorreported = 0;
 }
-
-/*
-#ifdef LIBSINGULAR
-// the init routines of factory need mmInit
-int mmInit( void )
-{
-  return 1;
-}
-#endif
-*/

@@ -3,18 +3,16 @@
 #include <Singular/libsingular.h>
 #include <unistd.h>
 
-int mmInit(void) {return 1; } // ? due to SINGULAR!!!...???
 
-
-int main( int, char *argv[] ) 
+int main( int, char *argv[] )
 {
   feInitResources(argv[0]);
 
   StringSetS("ressources in use (as reported by feStringAppendResources(0):\n");
   feStringAppendResources(0);
-   
+
   { StringAppendS("\n"); char* s = StringEndS(); PrintS(s); omFree(s); }
-    
+
 //  // init path names etc.
 //  siInit(argv[0]);
 
@@ -44,7 +42,7 @@ int main( int, char *argv[] )
 
   // compute p1+p2
   p1=p_Add_q(p1,p2,R); p2=NULL;
-  pWrite(p1); 
+  pWrite(p1);
 
 //   sleep(120);
 

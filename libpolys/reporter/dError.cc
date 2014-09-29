@@ -10,14 +10,16 @@
 #ifndef DERROR_C
 #define DERROR_C
 
+#include <misc/auxiliary.h>
+
+#include <omalloc/omalloc.h>
+
+#include <reporter/reporter.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
-
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
 
 static inline void malloc_free( void * ptr )
 {
@@ -37,21 +39,16 @@ static inline void malloc_free( void * ptr )
 #endif
 
 
-#include <reporter/reporter.h>
-
-#ifdef HAVE_CONFIG_H
-#include <omalloc/omalloc.h>
-#endif
-
-
-extern "C" 
+extern "C"
 {
 
 int dReportError(const char* fmt, ...)
 {
+#if 0
 #ifdef HAVE_EXECINFO_H
 #define SIZE 50
-  void *buffer[SIZE+1]; int ret; 
+  void *buffer[SIZE+1]; int ret;
+#endif
 #endif
 
   va_list ap;
@@ -59,7 +56,7 @@ int dReportError(const char* fmt, ...)
 #ifndef MAKE_DISTRIBUTION
   fprintf(stderr, "\n// ***dError: ");
   vfprintf(stderr, fmt, ap);
-#if  defined(HAVE_CONFIG_H) && !defined(OM_NDEBUG)
+#if !defined(OM_NDEBUG)
   #ifdef omPrintCurrentBackTraceMax
   fprintf(stderr, " occured at: \n");
   omPrintCurrentBackTraceMax(stderr, 8);
@@ -70,7 +67,7 @@ int dReportError(const char* fmt, ...)
 #ifdef HAVE_EXECINFO_H
   ret = backtrace( buffer, SIZE ); // execinfo.h
   fprintf(stderr, "\nExecinfo backtrace (with %zd stack frames): \n", ret);
-  
+
 #ifndef HAVE_GCC_ABI_DEMANGLE
   backtrace_symbols_fd(buffer, ret, STDERR_FILENO); // execinfo.h
 #else
@@ -78,7 +75,7 @@ int dReportError(const char* fmt, ...)
 
   int status;
   char *demangledName;
-  char *s; 
+  char *s;
   char *ss;
   for (int i = 0; i < ret; i++)
   {
@@ -86,14 +83,14 @@ int dReportError(const char* fmt, ...)
 
     s = ptr[i];
 //    fprintf (stderr, " #%02d: %s\n", i, s);
-    
+
     ss = index(s, '(');
     ss[0] = 0;
     fprintf (stderr, " #%02d: '%s': ", i, s);
     ss[0] = '('; s = ss + 1;
 
     ss = index(s, '+');
-    
+
     if ( ss != NULL )
     {
       ss[0] = 0;
@@ -102,12 +99,12 @@ int dReportError(const char* fmt, ...)
         fprintf (stderr, " '%s'", (demangledName[0] != 0)? demangledName: s);
       else
         fprintf (stderr, " '%s'", s);
-        
+
       malloc_free( demangledName );
       ss[0] = '+';
       s = ss + 1;
     }
-    
+
     ss = index(s, ')');
     if( s != ss)
     {
@@ -124,7 +121,7 @@ int dReportError(const char* fmt, ...)
 
 #undef SIZE
 #endif
-  
+
   dErrorBreak();
 #else
   fprintf(stderr, "\n// !!! YOU HAVE FOUND A BUG IN SINGULAR.");
@@ -137,7 +134,7 @@ int dReportError(const char* fmt, ...)
 }
 
 #endif
-  
+
 #ifndef MAKE_DISTRIBUTION
 // dummy procedure for setting a breakpoint
 // within the debugger

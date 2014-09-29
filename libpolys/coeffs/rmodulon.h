@@ -32,6 +32,7 @@ BOOLEAN nrnIsOne       (number a, const coeffs r);
 BOOLEAN nrnIsMOne      (number a, const coeffs r);
 BOOLEAN nrnIsUnit      (number a, const coeffs r);
 number  nrnGetUnit     (number a, const coeffs r);
+number  nrnAnn         (number a, const coeffs r);
 number  nrnDiv         (number a, number b, const coeffs r);
 number  nrnMod         (number a,number b, const coeffs r);
 number  nrnIntDiv      (number a,number b, const coeffs r);
@@ -44,8 +45,14 @@ BOOLEAN nrnEqual       (number a, number b, const coeffs r);
 number  nrnLcm         (number a,number b, const coeffs r);
 number  nrnGcd         (number a,number b, const coeffs r);
 number  nrnExtGcd      (number a, number b, number *s, number *t, const coeffs r);
+number  nrnXExtGcd      (number a, number b, number *s, number *t, number *u, number *v, const coeffs r);
+number  nrnQuotRem      (number a, number b, number *s, const coeffs r);
 nMapFunc nrnSetMap     (const coeffs src, const coeffs dst);
+#if SI_INTEGER_VARIANT==2
 #define  nrnWrite      nrzWrite
+#else
+void nrnWrite (number &a, const coeffs);
+#endif
 const char *  nrnRead  (const char *s, number *a, const coeffs r);
 void     nrnCoeffWrite (const coeffs r, BOOLEAN details);
 #ifdef LDEBUG
@@ -53,6 +60,7 @@ BOOLEAN nrnDBTest      (number a, const char *f, const int l, const coeffs r);
 #endif
 void    nrnSetExp(unsigned long c, const coeffs r);
 void    nrnInitExp(unsigned long c, const coeffs r);
+coeffs  nrnQuot1(number c, const coeffs r);
 
 number nrnMapQ(number from, const coeffs src, const coeffs dst);
 #endif

@@ -5,7 +5,7 @@
  *  Created: 11/99
  *******************************************************************/
 
-#ifndef MH_TABLE_C
+#ifndef MH_TABLES_C
 #define MH_TABLES_C
 
 #define _POSIX_SOURCE 1
@@ -13,10 +13,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <omalloc/omConfig.h>
-#include <omalloc/omDerivedConfig.h>
-#include <omalloc/omStructs.h>
-#include <omalloc/omAllocPrivate.h>
+#include "omConfig.h"
+#include "omDerivedConfig.h"
+#include "omStructs.h"
+#include "omAllocPrivate.h"
 
 /* Specify the minimal number of blocks which should go into a bin */
 #if SIZEOF_SYSTEM_PAGE > 4096

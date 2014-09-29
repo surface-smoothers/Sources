@@ -6,9 +6,9 @@
 * ABSTRACT: identfier handling
 */
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 
 #include <kernel/mod2.h>
 
@@ -19,24 +19,27 @@
 
 #include <coeffs/numbers.h>
 #include <coeffs/bigintmat.h>
+#include <coeffs/longrat.h>
 
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
 
-#include <kernel/febase.h>
-#include <libpolys/coeffs/longrat.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 
 #include <Singular/tok.h>
 #include <Singular/ipshell.h>
+#include <Singular/fevoices.h>
 #include <Singular/lists.h>
 #include <Singular/attrib.h>
 #include <Singular/links/silink.h>
 #include <Singular/ipid.h>
 #include <Singular/blackbox.h>
 
+#ifdef SINGULAR_4_1
+#include <Singular/number2.h>
+#endif
 #ifdef HAVE_DYNAMIC_LOADING
 #include <polys/mod_raw.h>
 #endif /* HAVE_DYNAMIC_LOADING */
@@ -132,11 +135,16 @@ void *idrecDataInit(int t)
   switch (t)
   {
     //the type with init routines:
+#ifdef SINGULAR_4_1
+    case CNUMBER_CMD:
+      return (void*)n2Init(0,NULL);
+    case CMATRIX_CMD:
+#endif
+    case BIGINTMAT_CMD:
+      return (void *)new bigintmat();
     case INTVEC_CMD:
     case INTMAT_CMD:
       return (void *)new intvec();
-    case BIGINTMAT_CMD:
-      return (void *)new bigintmat();
     case NUMBER_CMD:
       return (void *) nInit(0);
     case BIGINT_CMD:
@@ -171,6 +179,7 @@ void *idrecDataInit(int t)
     case RESOLUTION_CMD:
       return  (void *)omAlloc0(sizeof(ssyStrategy));
     //other types: without init (int,script,poly,def,package)
+    case CRING_CMD:
     case INT_CMD:
     case DEF_CMD:
     case POLY_CMD:
@@ -223,6 +232,7 @@ idhdl idrec::set(const char * s, int level, int t, BOOLEAN init)
     if (t == PROC_CMD)
     {
       IDPROC(h)->language=LANG_NONE;
+      IDPROC(h)->ref=1;
     }
     else if (t == PACKAGE_CMD)
     {
@@ -249,6 +259,7 @@ char * idrec::String(BOOLEAN typed)
 idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN search)
 {
   if (s==NULL) return NULL;
+  if (root==NULL) return NULL;
   idhdl h;
   s=omStrDup(s);
   // idhdl *save_root=root;
@@ -291,7 +302,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
         {
           if (BVERBOSE(V_REDEFINE))
             Warn("redefining %s **",s);
-          IDID(h)=NULL;
+          if (s==IDID(h)) IDID(h)=NULL;
           killhdl2(h,&currRing->idroot,currRing);
         }
         else
@@ -603,7 +614,7 @@ void  ipMoveId(idhdl tomove)
 
 const char * piProcinfo(procinfov pi, const char *request)
 {
-  if(pi == NULL) return "empty proc";
+  if((pi == NULL)||(pi->language==LANG_NONE)) return "empty proc";
   else if (strcmp(request, "libname")  == 0) return pi->libname;
   else if (strcmp(request, "procname") == 0) return pi->procname;
   else if (strcmp(request, "type")     == 0)
