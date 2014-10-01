@@ -618,7 +618,34 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         return FALSE;
       }
       else
+  /*==================== currentSeed ==================================*/
+      if(strcmp(sys_cmd,"currentFactorySeed")==0)
+      {
+        if ((h!=NULL) &&(h->Typ()==INT_CMD))
+        {
+          long bla = (int)((long)h->Data());
+          factoryseed( bla );
+          return FALSE;
+        }
+        res->rtyp=INT_CMD;
+        res->data=(void*)(long) (currentFactorySeed());
+        return FALSE;
+      }
+
+      if(strcmp(sys_cmd,"currentSeed")==0)
+      {
+        if ((h!=NULL) &&(h->Typ()==INT_CMD))
+        {
+          long bla = (int)((long)h->Data());
+          siSeed = (int)(bla);
+          return FALSE;
+        }
+        res->rtyp=INT_CMD;
+        res->data=(void*)(long)(siSeed);
+        return FALSE;
+      }
   /*==================== random ==================================*/
+
       if(strcmp(sys_cmd,"random")==0)
       {
         if ((h!=NULL) &&(h->Typ()==INT_CMD))
