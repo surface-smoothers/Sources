@@ -46,7 +46,7 @@ neworder (const CFList & PolyList)
   for (int i= highest_level; i>=1; i--)
   {
     oldorder.insert (Variable (i));
-    CFList is_one= only_in_one (PS1, Variable (i)); 
+    CFList is_one= only_in_one (PS1, Variable (i));
     if (is_one.length() == 1)
     {
       reorder.insert (Variable (i));
@@ -55,7 +55,7 @@ neworder (const CFList & PolyList)
     else if (is_one.length() == 0)
     {
       reorder.append (Variable (i)); // assigne it the highest level
-      PS1= Difference (PS1, is_one); 
+      PS1= Difference (PS1, is_one);
     }
   }
   difference= Difference (oldorder, reorder);
@@ -549,14 +549,17 @@ irredAS (CFList & AS, int & indexRed, CanonicalForm & reducible)
         if (degree (i.getItem()) > 1)
         {  // search for a non linear elem
           qs= facAlgFunc2 (i.getItem(), as);
-          if (qs.getFirst().factor().inCoeffDomain())
-            qs.removeFirst();
-          if (qs.length() > 1 || qs.getFirst().exp() > 1)
-          { //found elem is reducible
-            reducible= i.getItem();
-            indexRed= nr + 1;
-            break;
-          }
+          if (qs.length() > 0)
+	  {
+	    if (qs.getFirst().factor().inCoeffDomain())
+              qs.removeFirst();
+            if (qs.length() > 1 || qs.getFirst().exp() > 1)
+            { //found elem is reducible
+              reducible= i.getItem();
+              indexRed= nr + 1;
+              break;
+            }
+	  }
         }
       }
     }
@@ -669,7 +672,7 @@ irrCharSeries (const CFList & PS)
           {
             if (i.getItem() == reducible)
               break;
-            else 
+            else
               cst.append (i.getItem());
           }
           is= Union (factorsOfInitials (cst), is);
