@@ -32,29 +32,34 @@
 #include <polys/monomials/maps.h>
 #include <polys/coeffrings.h>
 #include <polys/sparsmat.h>
-#include <Singular/mod_lib.h>
 #include <polys/weight.h>
 #include <polys/ext_fields/transext.h>
-#  include <polys/clapsing.h>
+#include <polys/clapsing.h>
 
 #include <kernel/combinatorics/stairc.h>
-#include <kernel/polys.h>
-#include <Singular/fevoices.h>
-#include <kernel/ideals.h>
-#include <kernel/GBEngine/kstd1.h>
-#include <kernel/oswrapper/timer.h>
-#include <kernel/preimage.h>
-#include <kernel/GBEngine/units.h>
-#include <kernel/spectrum/GMPrat.h>
-#include <kernel/GBEngine/tgb.h>
-#include <kernel/groebner_walk/walkProc.h>
-#include <kernel/linear_algebra/linearAlgebra.h>
-#include <kernel/GBEngine/syz.h>
+#include <kernel/combinatorics/hilb.h>
 
 #include <kernel/linear_algebra/interpolation.h>
-#  include <kernel/GBEngine/kstdfac.h>
-#  include <kernel/fglm/fglm.h>
+#include <kernel/linear_algebra/linearAlgebra.h>
+#include <kernel/linear_algebra/MinorInterface.h>
 
+#include <kernel/spectrum/GMPrat.h>
+#include <kernel/groebner_walk/walkProc.h>
+#include <kernel/oswrapper/timer.h>
+#include <kernel/fglm/fglm.h>
+
+#include <kernel/GBEngine/kstdfac.h>
+#include <kernel/GBEngine/syz.h>
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/GBEngine/units.h>
+#include <kernel/GBEngine/tgb.h>
+
+#include <kernel/preimage.h>
+#include <kernel/polys.h>
+#include <kernel/ideals.h>
+
+#include <Singular/mod_lib.h>
+#include <Singular/fevoices.h>
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <Singular/sdb.h>
@@ -66,7 +71,6 @@
 #include <Singular/ipprint.h>
 #include <Singular/attrib.h>
 #include <Singular/links/silink.h>
-#include <kernel/linear_algebra/MinorInterface.h>
 #include <Singular/misc_ip.h>
 #include <Singular/linearAlgebra_ip.h>
 
@@ -5118,6 +5122,9 @@ static BOOLEAN jjTYPEOF(leftv res, leftv v)
     case INTMAT_CMD:
     case BIGINTMAT_CMD:
     case NUMBER_CMD:
+    #ifdef SINGULAR_4_1
+    case CNUMBER_CMD:
+    #endif
     case BIGINT_CMD:
     case LIST_CMD:
     case PACKAGE_CMD:
@@ -6255,6 +6262,23 @@ static BOOLEAN jjRANDOM_Im(leftv res, leftv u, leftv v, leftv w)
   res->data = (char *)iv;
   return FALSE;
 }
+#ifdef SINGULAR_4_1
+static BOOLEAN jjRANDOM_CF(leftv res, leftv u, leftv v, leftv w)
+// <coeff>, par1, par2 -> number2
+{
+  coeffs cf=(coeffs)u->Data();
+  if ((cf!=NULL) && (cf->cfRandom!=NULL))
+  {
+    number n=cf->cfRandom(siRand,(number)v->Data(),(number)w->Data(),cf);
+    number2 nn=(number2)omAlloc(sizeof(*nn));
+    nn->cf=cf;
+    nn->n=n;
+    res->data=nn;
+    return FALSE;
+  }
+  return TRUE;
+}
+#endif
 static BOOLEAN jjSUBST_Test(leftv v,leftv w,
   int &ringvar, poly &monomexpr)
 {
@@ -7743,55 +7767,17 @@ static Subexpr jjMakeSub(leftv e)
 /* must be ordered: first operations for chars (infix ops),
  * then alphabetically */
 
-BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
+static BOOLEAN iiExprArith2TabIntern(leftv res, leftv a, int op, leftv b,
+                                    BOOLEAN proccall,
+                                    struct sValCmd2* dArith2,int i,
+                                    int at, int bt,
+                                    struct sConvertTypes *dConvertTypes)
 {
   memset(res,0,sizeof(sleftv));
   BOOLEAN call_failed=FALSE;
 
   if (!errorreported)
   {
-#ifdef SIQ
-    if (siq>0)
-    {
-      //Print("siq:%d\n",siq);
-      command d=(command)omAlloc0Bin(sip_command_bin);
-      memcpy(&d->arg1,a,sizeof(sleftv));
-      //a->Init();
-      memcpy(&d->arg2,b,sizeof(sleftv));
-      //b->Init();
-      d->argc=2;
-      d->op=op;
-      res->data=(char *)d;
-      res->rtyp=COMMAND;
-      return FALSE;
-    }
-#endif
-    int at=a->Typ();
-    int bt=b->Typ();
-    // handling bb-objects ----------------------------------------------------
-    if (at>MAX_TOK)
-    {
-      blackbox *bb=getBlackboxStuff(at);
-      if (bb!=NULL)
-      {
-        if (!bb->blackbox_Op2(op,res,a,b)) return FALSE;
-        if (errorreported) return TRUE;
-        // else: no op defined
-      }
-      else          return TRUE;
-    }
-    else if ((bt>MAX_TOK)&&(op!='('))
-    {
-      blackbox *bb=getBlackboxStuff(bt);
-      if (bb!=NULL)
-      {
-        if(!bb->blackbox_Op2(op,res,a,b)) return FALSE;
-        if (errorreported) return TRUE;
-        // else: no op defined
-      }
-      else          return TRUE;
-    }
-    int i=iiTabIndex(dArithTab2,JJTAB2LEN,op);
     int index=i;
 
     iiOp=op;
@@ -7920,6 +7906,74 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
       }
     }
     res->rtyp = UNKNOWN;
+  }
+  a->CleanUp();
+  b->CleanUp();
+  return TRUE;
+}
+BOOLEAN iiExprArith2Tab(leftv res, leftv a, int op,
+                                    struct sValCmd2* dArith2,int i,
+                                    int at,
+                                    struct sConvertTypes *dConvertTypes)
+{
+  leftv b=a->next;
+  a->next=NULL;
+  int bt=b->Typ();
+  BOOLEAN bo=iiExprArith2TabIntern(res,a,op,b,TRUE,dArith2,i,at,bt,dConvertTypes);
+  a->next=b;
+  a->CleanUp();
+  return bo;
+}
+BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
+{
+  memset(res,0,sizeof(sleftv));
+  BOOLEAN call_failed=FALSE;
+
+  if (!errorreported)
+  {
+#ifdef SIQ
+    if (siq>0)
+    {
+      //Print("siq:%d\n",siq);
+      command d=(command)omAlloc0Bin(sip_command_bin);
+      memcpy(&d->arg1,a,sizeof(sleftv));
+      //a->Init();
+      memcpy(&d->arg2,b,sizeof(sleftv));
+      //b->Init();
+      d->argc=2;
+      d->op=op;
+      res->data=(char *)d;
+      res->rtyp=COMMAND;
+      return FALSE;
+    }
+#endif
+    int at=a->Typ();
+    int bt=b->Typ();
+    // handling bb-objects ----------------------------------------------------
+    if (at>MAX_TOK)
+    {
+      blackbox *bb=getBlackboxStuff(at);
+      if (bb!=NULL)
+      {
+        if (!bb->blackbox_Op2(op,res,a,b)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
+      else          return TRUE;
+    }
+    else if ((bt>MAX_TOK)&&(op!='('))
+    {
+      blackbox *bb=getBlackboxStuff(bt);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_Op2(op,res,a,b)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
+      else          return TRUE;
+    }
+    int i=iiTabIndex(dArithTab2,JJTAB2LEN,op);
+    return iiExprArith2TabIntern(res,a,op,b,proccall,dArith2,i,at,bt,dConvertTypes);
   }
   a->CleanUp();
   b->CleanUp();
@@ -8090,51 +8144,17 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
 /* must be ordered: first operations for chars (infix ops),
  * then alphabetically */
 
-BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
+static BOOLEAN iiExprArith3TabIntern(leftv res, int op, leftv a, leftv b, leftv c,
+  struct sValCmd3* dArith3,int i, int at, int bt, int ct,
+  struct sConvertTypes *dConvertTypes)
 {
   memset(res,0,sizeof(sleftv));
   BOOLEAN call_failed=FALSE;
 
   if (!errorreported)
   {
-#ifdef SIQ
-    if (siq>0)
-    {
-      //Print("siq:%d\n",siq);
-      command d=(command)omAlloc0Bin(sip_command_bin);
-      memcpy(&d->arg1,a,sizeof(sleftv));
-      //a->Init();
-      memcpy(&d->arg2,b,sizeof(sleftv));
-      //b->Init();
-      memcpy(&d->arg3,c,sizeof(sleftv));
-      //c->Init();
-      d->op=op;
-      d->argc=3;
-      res->data=(char *)d;
-      res->rtyp=COMMAND;
-      return FALSE;
-    }
-#endif
-    int at=a->Typ();
-    // handling bb-objects ----------------------------------------------
-    if (at>MAX_TOK)
-    {
-      blackbox *bb=getBlackboxStuff(at);
-      if (bb!=NULL)
-      {
-        if(!bb->blackbox_Op3(op,res,a,b,c)) return FALSE;
-        if (errorreported) return TRUE;
-        // else: no op defined
-      }
-      else          return TRUE;
-      if (errorreported) return TRUE;
-    }
-    int bt=b->Typ();
-    int ct=c->Typ();
-
     iiOp=op;
-    int i=0;
-    while ((dArith3[i].cmd!=op)&&(dArith3[i].cmd!=0)) i++;
+    int index=i;
     while (dArith3[i].cmd==op)
     {
       if ((at==dArith3[i].arg1)
@@ -8168,7 +8188,7 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
       leftv bn = (leftv)omAlloc0Bin(sleftv_bin);
       leftv cn = (leftv)omAlloc0Bin(sleftv_bin);
       BOOLEAN failed=FALSE;
-      i=0;
+      i=index;
       while ((dArith3[i].cmd!=op)&&(dArith3[i].cmd!=0)) i++;
       while (dArith3[i].cmd==op)
       {
@@ -8244,7 +8264,7 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
         Werror("`%s` is not defined",s);
       else
       {
-        i=0;
+        i=index;
         while ((dArith3[i].cmd!=op)&&(dArith3[i].cmd!=0)) i++;
         const char *s = iiTwoOps(op);
         Werror("%s(`%s`,`%s`,`%s`) failed"
@@ -8275,6 +8295,76 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
   c->CleanUp();
         //Print("op: %d,result typ:%d\n",op,res->rtyp);
   return TRUE;
+}
+BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
+{
+  memset(res,0,sizeof(sleftv));
+  BOOLEAN call_failed=FALSE;
+
+  if (!errorreported)
+  {
+#ifdef SIQ
+    if (siq>0)
+    {
+      //Print("siq:%d\n",siq);
+      command d=(command)omAlloc0Bin(sip_command_bin);
+      memcpy(&d->arg1,a,sizeof(sleftv));
+      //a->Init();
+      memcpy(&d->arg2,b,sizeof(sleftv));
+      //b->Init();
+      memcpy(&d->arg3,c,sizeof(sleftv));
+      //c->Init();
+      d->op=op;
+      d->argc=3;
+      res->data=(char *)d;
+      res->rtyp=COMMAND;
+      return FALSE;
+    }
+#endif
+    int at=a->Typ();
+    // handling bb-objects ----------------------------------------------
+    if (at>MAX_TOK)
+    {
+      blackbox *bb=getBlackboxStuff(at);
+      if (bb!=NULL)
+      {
+        if(!bb->blackbox_Op3(op,res,a,b,c)) return FALSE;
+        if (errorreported) return TRUE;
+        // else: no op defined
+      }
+      else          return TRUE;
+      if (errorreported) return TRUE;
+    }
+    int bt=b->Typ();
+    int ct=c->Typ();
+
+    iiOp=op;
+    int i=0;
+    while ((dArith3[i].cmd!=op)&&(dArith3[i].cmd!=0)) i++;
+    return iiExprArith3TabIntern(res,op,a,b,c,dArith3,i,at,bt,ct,dConvertTypes);
+  }
+  a->CleanUp();
+  b->CleanUp();
+  c->CleanUp();
+        //Print("op: %d,result typ:%d\n",op,res->rtyp);
+  return TRUE;
+}
+BOOLEAN iiExprArith3Tab(leftv res, leftv a, int op,
+                                    struct sValCmd3* dArith3,int i,
+                                    int at,
+                                    struct sConvertTypes *dConvertTypes)
+{
+  leftv b=a->next;
+  a->next=NULL;
+  int bt=b->Typ();
+  leftv c=b->next;
+  b->next=NULL;
+  int ct=c->Typ();
+  BOOLEAN bo=iiExprArith3TabIntern(res,op,a,b,c,dArith3,i,at,bt,ct,dConvertTypes);
+  b->next=c;
+  a->next=b;
+  a->CleanUp();
+  return bo;
 }
 /*==================== operations with many arg. ===============================*/
 /* must be ordered: first operations for chars (infix ops),
