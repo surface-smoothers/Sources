@@ -708,7 +708,7 @@ static proc splitPrimary(list l,ideal ser,int @wr,list sact)
       }
       else
       {
-        act=zero_decomp(keepprime[i],ideal(0),@wr,1);
+        act=newZero_decomp(keepprime[i],ideal(0),@wr,1);
         if(size(act)==2)
         {
           l[2*i]=act[2];
@@ -810,7 +810,7 @@ static proc splitCharp(list l)
           option(redSB);
           t=std(t);
 
-          list sp=zero_decomp(t,0,0);
+          list sp=newZero_decomp(t,0,0);
 
           setring P;
           rp=imap(RL,sp);
@@ -1158,7 +1158,7 @@ EXAMPLE: example zero_decomp; shows an example
 //=============================================================
 
       ser1=phi1(ser);
-      @lh=zero_decomp (@qh,phi(ser1),@wr);
+      @lh=newZero_decomp (@qh,phi(ser1),@wr);
 
       kill lres0;
       list lres0;
@@ -1317,7 +1317,7 @@ example
    poly  q = z4+2;
    ideal i = p^2*q^3,(y-z3)^3,(x-yz+z4)^4;
    i=std(i);
-   list  pr= zero_decomp(i,ideal(0),0);
+   list  pr= newZero_decomp(i,ideal(0),0);
    pr;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -1364,7 +1364,7 @@ proc extF(list l,list #)
   for(i=1;i<=size(L);i++)
   {
     attrib(L[i],"isSB",1);
-    pr=zero_decomp(L[i],0,0);
+    pr=newZero_decomp(L[i],0,0);
     keep=keep+pr;
   }
   for(i=1;i<=size(keep);i++)
@@ -3038,7 +3038,7 @@ EXAMPLE: example decomp; shows an example
   {
     op=option(get);
     option(redSB);
-    list gprimary= zero_decomp(@j,ser,@wr);
+    list gprimary= newZero_decomp(@j,ser,@wr);
 
     setring @P;
     primary=fetch(gnir,gprimary);
@@ -3263,7 +3263,7 @@ EXAMPLE: example decomp; shows an example
       op=option(get);
       option(redSB);
 
-      list uprimary= zero_decomp(@j,ser,@wr);
+      list uprimary= newZero_decomp(@j,ser,@wr);
 //HIER
       if(abspri)
       {
@@ -3560,7 +3560,7 @@ EXAMPLE: example decomp; shows an example
 
         op=option(get);
         option(redSB);
-        list uprimary= zero_decomp(@j,ser,@wr);
+        list uprimary= newZero_decomp(@j,ser,@wr);
 //HIER
         if(abspri)
         {
