@@ -2360,11 +2360,16 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
   {
     if (algorithm == "GTZ")
     {
+      dbprint(1, "i = " + string(i) );
+
       re[1] = decomp_i(patchPrimaryDecomposition,i, 2);
+      dbprint(1, " re[1],GTZ = " , re[1] );
     }
     else
     {
+      dbprint(1, "i = " + string(i) );
       re[1] = minAssSL(i);
+      dbprint(1, " re[1],SL = " , re[1] );
     }
     re = union(re);
     option(set, op);
@@ -7388,7 +7393,6 @@ static proc testPrimary_i(int patchPrimaryDecomposition,list pr, ideal k)
 //           For other parameters see 'testPrimary'
    ASSUME(0, hasFieldCoefficient(basering) );
    ASSUME(0, not isQuotientRing(basering) ) ;
-
    int i;
    pr=reconvList(pr);
    if (patchPrimaryDecomposition==1)
@@ -8819,6 +8823,8 @@ static proc minAssSL(ideal I)
     // Debug
     dbprint(printlevel - voice, "// We call minAssSLIteration to find new prime ideals!");
     pd = minAssSLIteration(I, P);
+    "pd;";
+    pd;
     // Debug
     dbprint(printlevel - voice, "// Output of minAssSLIteration:");
     dbprint(printlevel - voice, pd);
@@ -8851,14 +8857,23 @@ static proc minAssSLIteration(ideal I, ideal P);
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
-
+  "entering minAssSLInteration with parameters";
+  "I="; I;
+  "P=";P;
+~;
   int k = 1;
   int good  = 0;
   list primaryDec = list();
   // Debug
+ // dbprint(1,"voice",voice);
+  printlevel = voice+1;
   dbprint (printlevel-voice, "// We search for an element in P - sqrt(I).");
   while ((k <= size(P)) and (good == 0))
   {
+    "P[k]";P[k];
+    "I";I;
+    "rad_con(P[k], I);";
+    rad_con(P[k], I);
     good = 1 - rad_con(P[k], I);
     k++;
   }
@@ -8872,7 +8887,11 @@ static proc minAssSLIteration(ideal I, ideal P);
   // Debug
   dbprint (printlevel - voice, "// We found h = ", P[k]);
   dbprint (printlevel - voice, "// We calculate the saturation of I with respect to the element just founded.");
+  "I, P[k];";
+  I, P[k];
+ "I";string(I);
   ideal J = sat(I, P[k])[1];
+  "J";J;string(J);
 
   // Uses decomp from primdec, modified to avoid the recursion.
   // Debug
