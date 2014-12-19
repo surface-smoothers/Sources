@@ -3,6 +3,9 @@
 *****************************************/
 /*
 * ABSTRACT: general interface to internals of Singular ("system" command)
+* jjSYSTEM: official commands, must be documented in the manual,
+*           #defines must be local to each command
+* jjEXTENDED_SYSTEM: tests, temporary comands etc.
 */
 
 #define HAVE_WALK 1
@@ -43,11 +46,11 @@
 #include <coeffs/coeffs.h>
 #include <coeffs/mpr_complex.h>
 #include "coeffs/AE.h"
-#include "coeffs/OPAE.h"
+// #include "coeffs/OPAE.h"
 #include "coeffs/AEp.h"
-#include "coeffs/OPAEp.h"
+// #include "coeffs/OPAEp.h"
 #include "coeffs/AEQ.h"
-#include "coeffs/OPAEQ.h"
+// #include "coeffs/OPAEQ.h"
 
 
 #include <resources/feResource.h>
@@ -137,13 +140,13 @@
 #endif
 #endif
 
-
 // Define to enable many more system commands
 //#undef MAKE_DISTRIBUTION
 #ifndef MAKE_DISTRIBUTION
 #define HAVE_EXTENDED_SYSTEM 1
 #endif
 
+#include <polys/flintconv.h>
 #include <polys/clapconv.h>
 #include <kernel/GBEngine/kstdfac.h>
 
@@ -161,19 +164,10 @@
 #include "Singular/links/simpleipc.h"
 #endif
 
-/*
- *   New function/system-calls that will be included as dynamic module
- * should be inserted here.
- * - without HAVE_DYNAMIC_LOADING: these functions comes as system("....");
- * - with    HAVE_DYNAMIC_LOADING: these functions are loaded as module.
- */
-//#ifndef HAVE_DYNAMIC_LOADING
-
 #ifdef HAVE_PCV
 #include "pcv.h"
 #endif
 
-//#endif /* not HAVE_DYNAMIC_LOADING */
 
 #ifdef __CYGWIN__
 //#include <Python.h>
@@ -308,16 +302,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
 
-/*==================== gen ==================================*/
-// // This seems to be obsolette...?!
-// // TODO: cleanup doc/reference.doc:6998 to system("gen")
-//     if(strcmp(sys_cmd,"gen")==0)
-//     {
-//       res->rtyp=INT_CMD;
-//       res->data=(void *)(long)npGen;
-//       return FALSE;
-//     }
-//     else
 /*==================== sh ==================================*/
     if(strcmp(sys_cmd,"sh")==0)
     {
@@ -493,9 +477,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     if (strcmp(sys_cmd,"setenv")==0)
     {
   #ifdef HAVE_SETENV
-      if (h!=NULL && h->Typ()==STRING_CMD && h->Data() != NULL &&
-          h->next != NULL && h->next->Typ() == STRING_CMD
-          && h->next->Data() != NULL)
+      const short t[]={2,STRING_CMD,STRING_CMD};
+      if (iiCheckTypes(h,t,1))
       {
         res->rtyp=STRING_CMD;
         setenv((char *)h->Data(), (char *)h->next->Data(), 1);
@@ -505,7 +488,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       }
       else
       {
-        WerrorS("two strings expected");
         return TRUE;
       }
   #else
@@ -637,52 +619,47 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   /*==================== random ==================================*/
     if(strcmp(sys_cmd,"random")==0)
     {
-      if ((h!=NULL) &&(h->Typ()==INT_CMD))
+      const short t[]={1,INT_CMD};
+      if (h!=NULL)
       {
-        siRandomStart=(int)((long)h->Data());
-        siSeed=siRandomStart;
-        factoryseed(siRandomStart);
-        return FALSE;
-      }
-      else if (h != NULL)
-      {
-        WerrorS("int expected");
-        return TRUE;
+        if (iiCheckTypes(h,t,1))
+        {
+          siRandomStart=(int)((long)h->Data());
+          siSeed=siRandomStart;
+          factoryseed(siRandomStart);
+          return FALSE;
+        }
+        else
+        {
+          return TRUE;
+        }
       }
       res->rtyp=INT_CMD;
-      res->data=(void*)(long) siRandomStart;
+      res->data=(void*)(long) siSeed;
       return FALSE;
     }
     else
   /*==================== complexNearZero ======================*/
     if(strcmp(sys_cmd,"complexNearZero")==0)
     {
-      if (h->Typ()==NUMBER_CMD )
+      const short t[]={2,NUMBER_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        if ( h->next!=NULL && h->next->Typ()==INT_CMD )
+        if ( !rField_is_long_C(currRing) )
         {
-          if ( !rField_is_long_C(currRing) )
-          {
-            WerrorS( "unsupported ground field!");
-            return TRUE;
-          }
-          else
-          {
-            res->rtyp=INT_CMD;
-            res->data=(void*)complexNearZero((gmp_complex*)h->Data(),
-                               (int)((long)(h->next->Data())));
-            return FALSE;
-          }
+          WerrorS( "unsupported ground field!");
+          return TRUE;
         }
         else
         {
-          WerrorS( "expected <int> as third parameter!");
-          return TRUE;
+          res->rtyp=INT_CMD;
+          res->data=(void*)complexNearZero((gmp_complex*)h->Data(),
+                             (int)((long)(h->next->Data())));
+          return FALSE;
         }
       }
       else
       {
-        WerrorS( "expected <number> as second parameter!");
         return TRUE;
       }
     }
@@ -690,7 +667,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   /*==================== getPrecDigits ======================*/
     if(strcmp(sys_cmd,"getPrecDigits")==0)
     {
-      if ( !rField_is_long_C(currRing) && !rField_is_long_R(currRing) )
+      if ( (currRing==NULL)
+      ||  (!rField_is_long_C(currRing) && !rField_is_long_R(currRing)))
       {
         WerrorS( "unsupported ground field!");
         return TRUE;
@@ -702,147 +680,11 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       return FALSE;
     }
     else
-  /*==================== mpz_t loader ======================*/
-    if(strcmp(sys_cmd, "GNUmpLoad")==0)
-    {
-      if ((h != NULL) && (h->Typ() == STRING_CMD))
-      {
-        char* filename = (char*)h->Data();
-        FILE* f = fopen(filename, "r");
-        if (f == NULL)
-        {
-          WerrorS( "invalid file name (in paths use '/')");
-          return FALSE;
-        }
-        mpz_t m; mpz_init(m);
-        mpz_inp_str(m, f, 10);
-        fclose(f);
-        number n = n_InitMPZ(m, coeffs_BIGINT);
-        res->rtyp = BIGINT_CMD;
-        res->data = (void*)n;
-        return FALSE;
-      }
-      else
-      {
-        WerrorS( "expected valid file name as a string");
-        return TRUE;
-      }
-    }
-    else
-  /*==================== intvec matching ======================*/
-    /* Given two non-empty intvecs, the call
-            'system("intvecMatchingSegments", ivec, jvec);'
-         computes all occurences of jvec in ivec, i.e., it returns
-         a list of int indices k such that ivec[k..size(jvec)+k-1] = jvec.
-         If no such k exists (e.g. when ivec is shorter than jvec), an
-         intvec with the single entry 0 is being returned. */
-    if(strcmp(sys_cmd, "intvecMatchingSegments")==0)
-    {
-      if ((h       != NULL) && (h->Typ()       == INTVEC_CMD) &&
-          (h->next != NULL) && (h->next->Typ() == INTVEC_CMD) &&
-          (h->next->next == NULL))
-      {
-        intvec* ivec = (intvec*)h->Data();
-        intvec* jvec = (intvec*)h->next->Data();
-        intvec* r = new intvec(1); (*r)[0] = 0;
-        int validEntries = 0;
-        for (int k = 0; k <= ivec->rows() - jvec->rows(); k++)
-        {
-          if (memcmp(&(*ivec)[k], &(*jvec)[0],
-                       sizeof(int) * jvec->rows()) == 0)
-          {
-            if (validEntries == 0)
-              (*r)[0] = k + 1;
-            else
-            {
-              r->resize(validEntries + 1);
-              (*r)[validEntries] = k + 1;
-            }
-            validEntries++;
-          }
-        }
-        res->rtyp = INTVEC_CMD;
-        res->data = (void*)r;
-        return FALSE;
-      }
-      else
-      {
-        WerrorS("expected two non-empty intvecs as arguments");
-        return TRUE;
-      }
-    }
-    else
-  /* ================== intvecOverlap ======================= */  
-    /* Given two non-empty intvecs, the call
-            'system("intvecOverlap", ivec, jvec);'
-         computes the longest intvec kvec such that ivec ends with kvec
-         and jvec starts with kvec. The length of this overlap is being
-         returned. If there is no overlap at all, then 0 is being returned. */
-    if(strcmp(sys_cmd, "intvecOverlap")==0)
-    {
-      if ((h       != NULL) && (h->Typ()       == INTVEC_CMD) &&
-            (h->next != NULL) && (h->next->Typ() == INTVEC_CMD) &&
-            (h->next->next == NULL))
-      {
-        intvec* ivec = (intvec*)h->Data();
-        intvec* jvec = (intvec*)h->next->Data();
-        int ir = ivec->rows(); int jr = jvec->rows();
-        int r = jr; if (ir < jr) r = ir;   /* r = min{ir, jr} */
-        while ((r >= 1) && (memcmp(&(*ivec)[ir - r], &(*jvec)[0],
-                                     sizeof(int) * r) != 0))
-          r--;
-        res->rtyp = INT_CMD;
-        res->data = (void*)(long)r;
-        return FALSE;
-      }
-      else
-      {
-        WerrorS("expected two non-empty intvecs as arguments");
-        return TRUE;
-      }
-    }
-    else
-  /*==================== Hensel's lemma ======================*/
-    if(strcmp(sys_cmd, "henselfactors")==0)
-    {
-      if ((h != NULL) && (h->Typ() == INT_CMD) &&
-        (h->next != NULL) && (h->next->Typ() == INT_CMD) &&
-        (h->next->next != NULL) && (h->next->next->Typ() == POLY_CMD) &&
-        (h->next->next->next != NULL) &&
-        (h->next->next->next->Typ() == POLY_CMD) &&
-        (h->next->next->next->next != NULL) &&
-        (h->next->next->next->next->Typ() == POLY_CMD) &&
-        (h->next->next->next->next->next != NULL) &&
-        (h->next->next->next->next->next->Typ() == INT_CMD) &&
-        (h->next->next->next->next->next->next == NULL))
-      {
-        int xIndex = (int)(long)h->Data();
-        int yIndex = (int)(long)h->next->Data();
-        poly hh    = (poly)h->next->next->Data();
-        poly f0    = (poly)h->next->next->next->Data();
-        poly g0    = (poly)h->next->next->next->next->Data();
-        int d      = (int)(long)h->next->next->next->next->next->Data();
-        poly f; poly g;
-        henselFactors(xIndex, yIndex, hh, f0, g0, d, f, g);
-        lists L = (lists)omAllocBin(slists_bin);
-        L->Init(2);
-        L->m[0].rtyp = POLY_CMD; L->m[0].data=(void*)f;
-        L->m[1].rtyp = POLY_CMD; L->m[1].data=(void*)g;
-        res->rtyp = LIST_CMD;
-        res->data = (char *)L;
-        return FALSE;
-      }
-      else
-      {
-        WerrorS( "expected argument list (int, int, poly, poly, poly, int)");
-        return TRUE;
-      }
-    }
-    else
   /*==================== lduDecomp ======================*/
     if(strcmp(sys_cmd, "lduDecomp")==0)
     {
-      if ((h != NULL) && (h->Typ() == MATRIX_CMD) && (h->next == NULL))
+      const short t[]={1,MATRIX_CMD};
+      if (iiCheckTypes(h,t,1))
       {
         matrix aMat = (matrix)h->Data();
         matrix pMat; matrix lMat; matrix dMat; matrix uMat;
@@ -863,7 +705,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       }
       else
       {
-        WerrorS( "expected argument list (int, int, poly, poly, poly, int)");
         return TRUE;
       }
     }
@@ -889,24 +730,15 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
               solution space.
            The method produces an error if matrix and vector sizes do not
            fit. */
-      if ((h == NULL) || (h->Typ() != MATRIX_CMD) ||
-        (h->next == NULL) || (h->next->Typ() != MATRIX_CMD) ||
-        (h->next->next == NULL) || (h->next->next->Typ() != MATRIX_CMD) ||
-        (h->next->next->next == NULL) ||
-        (h->next->next->next->Typ() != MATRIX_CMD) ||
-        (h->next->next->next->next == NULL) ||
-        (h->next->next->next->next->Typ() != POLY_CMD) ||
-        (h->next->next->next->next->next == NULL) ||
-        (h->next->next->next->next->next->Typ() != POLY_CMD) ||
-        (h->next->next->next->next->next->next == NULL) ||
-        (h->next->next->next->next->next->next->Typ() != POLY_CMD) ||
-        (h->next->next->next->next->next->next->next == NULL) ||
-        (h->next->next->next->next->next->next->next->Typ() != MATRIX_CMD) ||
-        (h->next->next->next->next->next->next->next->next != NULL))
+      const short t[]={7,MATRIX_CMD,MATRIX_CMD,MATRIX_CMD,MATRIX_CMD,POLY_CMD,POLY_CMD,MATRIX_CMD};
+      if (!iiCheckTypes(h,t,1))
       {
-        WerrorS("expected input (matrix, matrix, matrix, matrix, "
-                                 "poly, poly, poly, matrix)");
         return TRUE;
+      }
+      if (rField_is_Ring(currRing))
+      {
+        WerrorS("field required");
+	return TRUE;
       }
       matrix pMat  = (matrix)h->Data();
       matrix lMat  = (matrix)h->next->Data();
@@ -971,20 +803,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       return FALSE;
     }
     else
-  /*==================== neworder =============================*/
-  // should go below
-    if(strcmp(sys_cmd,"neworder")==0)
-    {
-      if ((h!=NULL) &&(h->Typ()==IDEAL_CMD))
-      {
-        res->rtyp=STRING_CMD;
-        res->data=(void *)singclap_neworder((ideal)h->Data(), currRing);
-        return FALSE;
-      }
-      else
-        WerrorS("ideal expected");
-    }
-    else
   /*==== countedref: reference and shared ====*/
     if (strcmp(sys_cmd, "shared") == 0)
     {
@@ -1030,16 +848,13 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     if (strcmp(sys_cmd,"reserve")==0)
     {
       int ssiReservePort(int clients);
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
+      const short t[]={1,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
         res->rtyp=INT_CMD;
         int p=ssiReservePort((int)(long)h->Data());
         res->data=(void*)(long)p;
         return (p==0);
-      }
-      else
-      {
-        WerrorS("system(\"reserve\",<int>)");
       }
       return TRUE;
     }
@@ -1057,10 +872,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 /*==================== install newstruct =================*/
     if (strcmp(sys_cmd,"install")==0)
     {
-      if ((h!=NULL) && (h->Typ()==STRING_CMD)
-      && (h->next!=NULL) && (h->next->Typ()==STRING_CMD)
-      && (h->next->next!=NULL) && (h->next->next->Typ()==PROC_CMD)
-      && (h->next->next->next!=NULL) && (h->next->next->next->Typ()==INT_CMD))
+      const short t[]={4,STRING_CMD,STRING_CMD,PROC_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
         return newstruct_set_proc((char*)h->Data(),(char*)h->next->Data(),
                                 (int)(long)h->next->next->next->Data(),
@@ -1072,7 +885,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 /*==================== newstruct =================*/
     if (strcmp(sys_cmd,"newstruct")==0)
     {
-      if ((h!=NULL) && (h->Typ()==STRING_CMD))
+      const short t[]={1,STRING_CMD};
+      if (iiCheckTypes(h,t,1))
       {
         int id=0;
         blackboxIsCmd((char*)h->Data(),id);
@@ -1101,37 +915,36 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     #ifdef HAVE_NTL
     if (strcmp(sys_cmd, "absFact") == 0)
     {
-      if (h!=NULL)
+      const short t[]={1,POLY_CMD};
+      if (iiCheckTypes(h,t,1)
+      && (currRing!=NULL)
+      && (getCoeffType(currRing->cf)==n_transExt))
       {
         res->rtyp=LIST_CMD;
-        if (h->Typ()==POLY_CMD)
-        {
-          intvec *v=NULL;
-          ideal mipos= NULL;
-          int n= 0;
-          ideal f=singclap_absFactorize((poly)(h->Data()), mipos, &v, n, currRing);
-          if (f==NULL) return TRUE;
-          ivTest(v);
-          lists l=(lists)omAllocBin(slists_bin);
-          l->Init(4);
-          l->m[0].rtyp=IDEAL_CMD;
-          l->m[0].data=(void *)f;
-          l->m[1].rtyp=INTVEC_CMD;
-          l->m[1].data=(void *)v;
-          l->m[2].rtyp=IDEAL_CMD;
-          l->m[2].data=(void*) mipos;
-          l->m[3].rtyp=INT_CMD;
-          l->m[3].data=(void*) (long) n;
-          res->data=(void *)l;
-          return FALSE;
-        }
-        else return TRUE;
+        intvec *v=NULL;
+        ideal mipos= NULL;
+        int n= 0;
+        ideal f=singclap_absFactorize((poly)(h->Data()), mipos, &v, n, currRing);
+        if (f==NULL) return TRUE;
+        ivTest(v);
+        lists l=(lists)omAllocBin(slists_bin);
+        l->Init(4);
+        l->m[0].rtyp=IDEAL_CMD;
+        l->m[0].data=(void *)f;
+        l->m[1].rtyp=INTVEC_CMD;
+        l->m[1].data=(void *)v;
+        l->m[2].rtyp=IDEAL_CMD;
+        l->m[2].data=(void*) mipos;
+        l->m[3].rtyp=INT_CMD;
+        l->m[3].data=(void*) (long) n;
+        res->data=(void *)l;
+        return FALSE;
       }
       else return TRUE;
     }
     else
     #endif
-  /* =================== LLL via NTL ==============================*/    
+  /* =================== LLL via NTL ==============================*/
   #ifdef HAVE_NTL
     if (strcmp(sys_cmd, "LLL") == 0)
     {
@@ -1145,7 +958,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         }
         else if (h->Typ()==INTMAT_CMD)
         {
-          res->data=(char *)singntl_LLL((intvec*)h->Data(), currRing);
+          res->data=(char *)singntl_LLL((intvec*)h->Data());
           return FALSE;
         }
         else return TRUE;
@@ -1154,39 +967,120 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
   #endif
+  /* =================== LLL via Flint ==============================*/
+  #ifdef HAVE_FLINT
+  #ifdef FLINT_VER_2_4_5
+    if (strcmp(sys_cmd, "LLL_Flint") == 0)
+    {
+      if (h!=NULL)
+      {
+        if(h->next == NULL)
+        {
+            res->rtyp=h->Typ();
+            if (h->Typ()==BIGINTMAT_CMD)
+            {
+              res->data=(char *)singflint_LLL((bigintmat*)h->Data(), NULL);
+              return FALSE;
+            }
+            else if (h->Typ()==INTMAT_CMD)
+            {
+              res->data=(char *)singflint_LLL((intvec*)h->Data(), NULL);
+              return FALSE;
+            }
+            else return TRUE;
+        }
+        if(h->next->Typ()!= INT_CMD)
+        {
+            WerrorS("matrix,int or bigint,int expected");
+            return TRUE;
+        }
+        if(h->next->Typ()== INT_CMD)
+        {
+            if(((int)((long)(h->next->Data())) != 0) && (int)((long)(h->next->Data()) != 1))
+            {
+                WerrorS("int is different from 0, 1");
+                return TRUE;
+            }
+            res->rtyp=h->Typ();
+            if((long)(h->next->Data()) == 0)
+            {
+                if (h->Typ()==BIGINTMAT_CMD)
+                {
+                  res->data=(char *)singflint_LLL((bigintmat*)h->Data(), NULL);
+                  return FALSE;
+                }
+                else if (h->Typ()==INTMAT_CMD)
+                {
+                  res->data=(char *)singflint_LLL((intvec*)h->Data(), NULL);
+                  return FALSE;
+                }
+                else return TRUE;
+            }
+            // This will give also the transformation matrix U s.t. res = U * m
+            if((long)(h->next->Data()) == 1)
+            {
+                if (h->Typ()==BIGINTMAT_CMD)
+                {
+                  bigintmat* m = (bigintmat*)h->Data();
+                  bigintmat* T = new bigintmat(m->rows(),m->rows(),m->basecoeffs());
+                  for(int i = 1; i<=m->rows(); i++)
+                  {
+                    n_Delete(&(BIMATELEM(*T,i,i)),T->basecoeffs());
+                    BIMATELEM(*T,i,i)=n_Init(1, T->basecoeffs());
+                  }
+                  m = singflint_LLL(m,T);
+                  lists L = (lists)omAllocBin(slists_bin);
+                  L->Init(2);
+                  L->m[0].rtyp = BIGINTMAT_CMD;  L->m[0].data = (void*)m;
+                  L->m[1].rtyp = BIGINTMAT_CMD;  L->m[1].data = (void*)T;
+                  res->data=L;
+                  res->rtyp=LIST_CMD;
+                  return FALSE;
+                }
+                else if (h->Typ()==INTMAT_CMD)
+                {
+                  intvec* m = (intvec*)h->Data();
+                  intvec* T = new intvec(m->rows(),m->rows(),(int)0);
+                  for(int i = 1; i<=m->rows(); i++)
+                    IMATELEM(*T,i,i)=1;
+                  m = singflint_LLL(m,T);
+                  lists L = (lists)omAllocBin(slists_bin);
+                  L->Init(2);
+                  L->m[0].rtyp = INTMAT_CMD;  L->m[0].data = (void*)m;
+                  L->m[1].rtyp = INTMAT_CMD;  L->m[1].data = (void*)T;
+                  res->data=L;
+                  res->rtyp=LIST_CMD;
+                  return FALSE;
+                }
+                else return TRUE;
+            }
+        }
+
+      }
+      else return TRUE;
+    }
+    else
+  #endif
+  #endif
   /*==================== shift-test for freeGB  =================*/
   #ifdef HAVE_SHIFTBBA
     if (strcmp(sys_cmd, "stest") == 0)
     {
-      poly p;
-      int sh,uptodeg, lVblock;
-      if ((h!=NULL) && (h->Typ()==POLY_CMD))
+      const short t[]={4,POLY_CMD,INT_CMD,INT_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        p=(poly)h->CopyD();
+        poly p=(poly)h->CopyD();
         h=h->next;
-      }
-      else return TRUE;
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
-      {
-        sh=(int)((long)(h->Data()));
+        int sh=(int)((long)(h->Data()));
         h=h->next;
-      }
-      else return TRUE;
-
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
-      {
-        uptodeg=(int)((long)(h->Data()));
+        int uptodeg=(int)((long)(h->Data()));
         h=h->next;
-      }
-      else return TRUE;
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
-      {
-        lVblock=(int)((long)(h->Data()));
+        int lVblock=(int)((long)(h->Data()));
         res->data = pLPshift(p,sh,uptodeg,lVblock);
         res->rtyp = POLY_CMD;
+        return FALSE;
       }
       else return TRUE;
-      return FALSE;
     }
     else
   #endif
@@ -1194,22 +1088,17 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   #ifdef HAVE_SHIFTBBA
     if (strcmp(sys_cmd, "btest") == 0)
     {
-      poly p;
-      int lV;
-      if ((h!=NULL) && (h->Typ()==POLY_CMD))
+      const short t[]={2,POLY_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        p=(poly)h->CopyD();
+        poly p=(poly)h->CopyD();
         h=h->next;
-      }
-      else return TRUE;
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
-      {
-        lV=(int)((long)(h->Data()));
+        int lV=(int)((long)(h->Data()));
         res->rtyp = INT_CMD;
         res->data = (void*)(long)pLastVblock(p, lV);
+        return FALSE;
       }
       else return TRUE;
-      return FALSE;
     }
     else
   #endif
@@ -1217,29 +1106,23 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   #ifdef HAVE_SHIFTBBA
     if (strcmp(sys_cmd, "shrinktest") == 0)
     {
-      poly p;
-      int lV;
-      if ((h!=NULL) && (h->Typ()==POLY_CMD))
+      const short t[]={2,POLY_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        p=(poly)h->CopyD();
+        poly p=(poly)h->CopyD();
         h=h->next;
-      }
-      else return TRUE;
-      if ((h!=NULL) && (h->Typ()==INT_CMD))
-      {
-        lV=(int)((long)(h->Data()));
+        int lV=(int)((long)(h->Data()));
         res->rtyp = POLY_CMD;
         //        res->data = p_mShrink(p, lV, currRing);
         //        kStrategy strat=new skStrategy;
         //        strat->tailRing = currRing;
         res->data = p_Shrink(p, lV, currRing);
+        return FALSE;
       }
       else return TRUE;
-      return FALSE;
     }
     else
   #endif
-  //#ifndef HAVE_DYNAMIC_LOADING
   /*==================== pcv ==================================*/
   #ifdef HAVE_PCV
     if(strcmp(sys_cmd,"pcvLAddL")==0)
@@ -1278,16 +1161,35 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
   #endif
-  /*==================== eigenvalues ==================================*/
+  /*==================== hessenberg/eigenvalues ==================================*/
   #ifdef HAVE_EIGENVAL
     if(strcmp(sys_cmd,"hessenberg")==0)
     {
       return evHessenberg(res,h);
     }
     else
+  #endif
+  /*==================== eigenvalues ==================================*/
+  #ifdef HAVE_EIGENVAL
     if(strcmp(sys_cmd,"eigenvals")==0)
     {
       return evEigenvals(res,h);
+    }
+    else
+  #endif
+  /*==================== rowelim ==================================*/
+  #ifdef HAVE_EIGENVAL
+    if(strcmp(sys_cmd,"rowelim")==0)
+    {
+      return evRowElim(res,h);
+    }
+    else
+  #endif
+  /*==================== rowcolswap ==================================*/
+  #ifdef HAVE_EIGENVAL
+    if(strcmp(sys_cmd,"rowcolswap")==0)
+    {
+      return evSwap(res,h);
     }
     else
   #endif
@@ -1299,7 +1201,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
   #endif
-  //#endif /* HAVE_DYNAMIC_LOADING */
   /*==================== contributors =============================*/
     if(strcmp(sys_cmd,"contributors") == 0)
     {
@@ -1313,7 +1214,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     #ifdef HAVE_SPECTRUM
     if(strcmp(sys_cmd,"spectrum") == 0)
     {
-      if (h->Typ()!=POLY_CMD)
+      if ((h==NULL) || (h->Typ()!=POLY_CMD))
       {
         WerrorS("poly expected");
         return TRUE;
@@ -1348,12 +1249,10 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   /*==================== spadd =============================*/
     if(strcmp(sys_cmd,"spadd") == 0)
     {
-      if ((h->next!=NULL)
-      && (h->Typ()==LIST_CMD)
-      && (h->next->Typ()==LIST_CMD))
+      const short t[]={2,LIST_CMD,LIST_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        if (h->next->next==NULL)
-          return spaddProc(res,h,h->next);
+        return spaddProc(res,h,h->next);
       }
       return TRUE;
     }
@@ -1361,27 +1260,24 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   /*==================== spmul =============================*/
     if(strcmp(sys_cmd,"spmul") == 0)
     {
-      if ((h->next!=NULL)
-      && (h->Typ()==LIST_CMD)
-      && (h->next->Typ()==INT_CMD))
+      const short t[]={2,LIST_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
       {
-        if (h->next->next==NULL)
-          return spmulProc(res,h,h->next);
+        return spmulProc(res,h,h->next);
       }
       return TRUE;
     }
     else
   #endif
-/*==================== tensorModuleMult ========================= */ 
+/*==================== tensorModuleMult ========================= */
   #define HAVE_SHEAFCOH_TRICKS 1
 
   #ifdef HAVE_SHEAFCOH_TRICKS
     if(strcmp(sys_cmd,"tensorModuleMult")==0)
     {
+      const short t[]={2,INT_CMD,MODUL_CMD};
   //      WarnS("tensorModuleMult!");
-      if (h!=NULL && h->Typ()==INT_CMD && h->Data() != NULL &&
-            h->next != NULL && h->next->Typ() == MODUL_CMD
-            && h->next->Data() != NULL)
+      if (iiCheckTypes(h,t,1))
       {
         int m = (int)( (long)h->Data() );
         ideal M = (ideal)h->next->Data();
@@ -1389,67 +1285,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         res->data=(void *)id_TensorModuleMult(m, M, currRing);
         return FALSE;
       }
-      WerrorS("system(\"tensorModuleMult\", int, module) expected");
       return TRUE;
-    }
-    else
-  #endif
-  ////////////////////////////////////////////////////////////////////////
-  /// Additional interface functions to non-commutative subsystem (PLURAL)
-  ///
-
-
-  /*==================== Approx_Step  =================*/
-  #ifdef HAVE_PLURAL
-    if (strcmp(sys_cmd, "astep") == 0)
-    {
-         ideal I;
-         if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
-         {
-           I=(ideal)h->CopyD();
-           res->rtyp=IDEAL_CMD;
-           if (rIsPluralRing(currRing)) res->data=Approx_Step(I);
-           else res->data=I;
-           setFlag(res,FLAG_STD);
-         }
-         else return TRUE;
-         return FALSE;
-    }
-    else
-  #endif
-  /*==================== PrintMat  =================*/
-  #ifdef HAVE_PLURAL
-    if (strcmp(sys_cmd, "PrintMat") == 0)
-    {
-          int a;
-          int b;
-          ring r;
-          int metric;
-          if ((h!=NULL) && (h->Typ()==INT_CMD))
-          {
-            a=(int)((long)(h->Data()));
-            h=h->next;
-          }
-          else if ((h!=NULL) && (h->Typ()==INT_CMD))
-          {
-            b=(int)((long)(h->Data()));
-            h=h->next;
-          }
-          else if ((h!=NULL) && (h->Typ()==RING_CMD))
-          {
-            r=(ring)h->Data();
-            h=h->next;
-          }
-          else
-            return TRUE;
-          if ((h!=NULL) && (h->Typ()==INT_CMD))
-          {
-            metric=(int)((long)(h->Data()));
-          }
-          res->rtyp=MATRIX_CMD;
-          if (rIsPluralRing(r)) res->data=nc_PrintMat(a,b,r,metric);
-          else res->data=NULL;
-          return FALSE;
     }
     else
   #endif
@@ -1457,117 +1293,55 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   #ifdef HAVE_PLURAL
     if (strcmp(sys_cmd, "twostd") == 0)
     {
-          ideal I;
-          if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
-          {
-            I=(ideal)h->CopyD();
-            res->rtyp=IDEAL_CMD;
-            if (rIsPluralRing(currRing)) res->data=twostd(I);
-            else res->data=I;
-            setFlag(res,FLAG_TWOSTD);
-            setFlag(res,FLAG_STD);
-          }
-          else return TRUE;
-          return FALSE;
+      ideal I;
+      if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
+      {
+        I=(ideal)h->CopyD();
+        res->rtyp=IDEAL_CMD;
+        if (rIsPluralRing(currRing)) res->data=twostd(I);
+        else res->data=I;
+        setFlag(res,FLAG_TWOSTD);
+        setFlag(res,FLAG_STD);
+      }
+      else return TRUE;
+      return FALSE;
     }
     else
-  #endif 
+  #endif
   /*==================== lie bracket =================*/
   #ifdef HAVE_PLURAL
     if (strcmp(sys_cmd, "bracket") == 0)
     {
-        poly p;
-        poly q;
-        if ((h!=NULL) && (h->Typ()==POLY_CMD))
-        {
-          p=(poly)h->CopyD();
-          h=h->next;
-        }
-        else return TRUE;
-        if ((h!=NULL) && (h->Typ()==POLY_CMD))
-        {
-          q=(poly)h->Data();
-        }
-        else return TRUE;
+      const short t[]={2,POLY_CMD,POLY_CMD};
+      if (iiCheckTypes(h,t,1))
+      {
+        poly p=(poly)h->CopyD();
+        h=h->next;
+        poly q=(poly)h->Data();
         res->rtyp=POLY_CMD;
         if (rIsPluralRing(currRing))  res->data=nc_p_Bracket_qq(p,q, currRing);
-        else res->data=NULL;
         return FALSE;
+      }
+      return TRUE;
     }
     else
   #endif
-/* ============ NCUseExtensions ======================== */
+  /*==================== env ==================================*/
   #ifdef HAVE_PLURAL
-    if(strcmp(sys_cmd,"NCUseExtensions")==0)
+    if (strcmp(sys_cmd, "env")==0)
     {
-        if ((h!=NULL) && (h->Typ()==INT_CMD))
-          res->data=(void *)(long)setNCExtensions( (int)((long)(h->Data())) );
-        else
-          res->data=(void *)(long)getNCExtensions();
-        res->rtyp=INT_CMD;
+      if ((h!=NULL) && (h->Typ()==RING_CMD))
+      {
+        ring r = (ring)h->Data();
+        res->data = rEnvelope(r);
+        res->rtyp = RING_CMD;
         return FALSE;
-    }
-    else
-  #endif
-/* ============ NCGetType ======================== */
-  #ifdef HAVE_PLURAL
-    if(strcmp(sys_cmd,"NCGetType")==0)
-    {
-        res->rtyp=INT_CMD;
-        if( rIsPluralRing(currRing) )
-          res->data=(void *)(long)ncRingType(currRing);
-        else
-          res->data=(void *)(-1L);
-        return FALSE;
-    }
-    else
-  #endif
-/* ============ ForceSCA ======================== */
-  #ifdef HAVE_PLURAL
-    if(strcmp(sys_cmd,"ForceSCA")==0)
-    {
-        if( !rIsPluralRing(currRing) )
-          return TRUE;
-        int b, e;
-        if ((h!=NULL) && (h->Typ()==INT_CMD))
-        {
-          b = (int)((long)(h->Data()));
-          h=h->next;
-        }
-        else return TRUE;
-        if ((h!=NULL) && (h->Typ()==INT_CMD))
-        {
-          e = (int)((long)(h->Data()));
-        }
-        else return TRUE;
-        if( !sca_Force(currRing, b, e) )
-          return TRUE;
-        return FALSE;
-    }
-    else
-  #endif
-/* ============ ForceNewNCMultiplication ======================== */
-  #ifdef HAVE_PLURAL
-    if(strcmp(sys_cmd,"ForceNewNCMultiplication")==0)
-    {
-        if( !rIsPluralRing(currRing) )
-          return TRUE;
-        if( !ncInitSpecialPairMultiplication(currRing) ) // No Plural!
-          return TRUE;
-
-        return FALSE;
-    }
-    else
-  #endif
-/* ============ ForceNewOldNCMultiplication ======================== */
-  #ifdef HAVE_PLURAL
-    if(strcmp(sys_cmd,"ForceNewOldNCMultiplication")==0)
-    {
-        if( !rIsPluralRing(currRing) )
-          return TRUE;
-        if( !ncInitSpecialPowersMultiplication(currRing) ) // Enable Formula for Plural (depends on swiches)!
-          return TRUE;
-        return FALSE;
+      }
+      else
+      {
+        WerrorS("`system(\"env\",<ring>)` expected");
+        return TRUE;
+      }
     }
     else
   #endif
@@ -1590,25 +1364,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
   #endif
-  /*==================== env ==================================*/
-  #ifdef HAVE_PLURAL
-    if (strcmp(sys_cmd, "env")==0)
-    {
-        if ((h!=NULL) && (h->Typ()==RING_CMD))
-        {
-          ring r = (ring)h->Data();
-          res->data = rEnvelope(r);
-          res->rtyp = RING_CMD;
-          return FALSE;
-        }
-        else
-        {
-          WerrorS("`system(\"env\",<ring>)` expected");
-          return TRUE;
-        }
-    }
-    else
-  #endif  
   /*==================== oppose ==================================*/
   #ifdef HAVE_PLURAL
     if (strcmp(sys_cmd, "oppose")==0)
@@ -1640,33 +1395,24 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   #ifdef HAVE_SHIFTBBA
     if (strcmp(sys_cmd, "freegb") == 0)
     {
-        ideal I;
-        int uptodeg, lVblock;
-        if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
+      const short t[]={3,IDEAL_CMD,INT_CMD,INT_CMD};
+      if (iiCheckTypes(h,t,1))
+      {
+        ideal I=(ideal)h->CopyD();
+        h=h->next;
+        int uptodeg=(int)((long)(h->Data()));
+        h=h->next;
+        int lVblock=(int)((long)(h->Data()));
+        res->data = freegb(I,uptodeg,lVblock);
+        if (res->data == NULL)
         {
-          I=(ideal)h->CopyD();
-          h=h->next;
+          /* that is there were input errors */
+          res->data = I;
         }
-        else return TRUE;
-        if ((h!=NULL) && (h->Typ()==INT_CMD))
-        {
-          uptodeg=(int)((long)(h->Data()));
-          h=h->next;
-        }
-        else return TRUE;
-        if ((h!=NULL) && (h->Typ()==INT_CMD))
-        {
-          lVblock=(int)((long)(h->Data()));
-          res->data = freegb(I,uptodeg,lVblock);
-          if (res->data == NULL)
-          {
-            /* that is there were input errors */
-            res->data = I;
-          }
-          res->rtyp = IDEAL_CMD;
-        }
-        else return TRUE;
+        res->rtyp = IDEAL_CMD;
         return FALSE;
+      }
+      else return TRUE;
     }
     else
   #endif /*SHIFTBBA*/
@@ -1677,915 +1423,788 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
   #ifdef OWNW
     if (strcmp(sys_cmd, "walkNextWeight") == 0)
     {
-        if (h == NULL || h->Typ() != INTVEC_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != IDEAL_CMD)
-        {
-          WerrorS("system(\"walkNextWeight\", intvec, intvec, ideal) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->Data())->length() != currRing->N ||
-            ((intvec*) h->next->Data())->length() != currRing->N)
-        {
-          Werror("system(\"walkNextWeight\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        res->data = (void*) walkNextWeight(((intvec*) h->Data()),
-                                           ((intvec*) h->next->Data()),
-                                           (ideal) h->next->next->Data());
-        if (res->data == NULL || res->data == (void*) 1L)
-        {
-          res->rtyp = INT_CMD;
-        }
-        else
-        {
-          res->rtyp = INTVEC_CMD;
-        }
-        return FALSE;
-    }
-    else
-  /*==================== walkNextWeight =================*/
-    if (strcmp(sys_cmd, "walkInitials") == 0)
-    {
-        if (h == NULL || h->Typ() != IDEAL_CMD)
-        {
-          WerrorS("system(\"walkInitials\", ideal) expected");
-          return TRUE;
-        }
-
-        res->data = (void*) walkInitials((ideal) h->Data());
-        res->rtyp = IDEAL_CMD;
-        return FALSE;
+      const short t[]={3,INTVEC_CMD,INTVEC_CMD,IDEAL_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->Data())->length() != currRing->N ||
+          ((intvec*) h->next->Data())->length() != currRing->N)
+      {
+        Werror("system(\"walkNextWeight\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      res->data = (void*) walkNextWeight(((intvec*) h->Data()),
+                                         ((intvec*) h->next->Data()),
+                                         (ideal) h->next->next->Data());
+      if (res->data == NULL || res->data == (void*) 1L)
+      {
+        res->rtyp = INT_CMD;
+      }
+      else
+      {
+        res->rtyp = INTVEC_CMD;
+      }
+      return FALSE;
     }
     else
   #endif
+  #endif
+  /*==================== walkNextWeight =================*/
+  #ifdef HAVE_WALK
+  #ifdef OWNW
+    if (strcmp(sys_cmd, "walkInitials") == 0)
+    {
+      if (h == NULL || h->Typ() != IDEAL_CMD)
+      {
+        WerrorS("system(\"walkInitials\", ideal) expected");
+        return TRUE;
+      }
+      res->data = (void*) walkInitials((ideal) h->Data());
+      res->rtyp = IDEAL_CMD;
+      return FALSE;
+    }
+    else
+  #endif
+  #endif
   /*==================== walkAddIntVec =================*/
+  #ifdef HAVE_WALK
   #ifdef WAIV
     if (strcmp(sys_cmd, "walkAddIntVec") == 0)
     {
-        if (h == NULL || h->Typ() != INTVEC_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"walkAddIntVec\", intvec, intvec) expected");
-          return TRUE;
-        }
-        intvec* arg1 = (intvec*) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-
-
-        res->data = (intvec*) walkAddIntVec(arg1, arg2);
-        res->rtyp = INTVEC_CMD;
-        return FALSE;
+      const short t[]={2,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      res->data = (intvec*) walkAddIntVec(arg1, arg2);
+      res->rtyp = INTVEC_CMD;
+      return FALSE;
     }
     else
   #endif
+  #endif
   /*==================== MwalkNextWeight =================*/
+  #ifdef HAVE_WALK
   #ifdef MwaklNextWeight
     if (strcmp(sys_cmd, "MwalkNextWeight") == 0)
     {
-        if (h == NULL || h->Typ() != INTVEC_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != IDEAL_CMD)
-        {
-          WerrorS("system(\"MwalkNextWeight\", intvec, intvec, ideal) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->Data())->length() != currRing->N ||
-            ((intvec*) h->next->Data())->length() != currRing->N)
-        {
-          Werror("system(\"MwalkNextWeight\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        intvec* arg1 = (intvec*) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        ideal arg3   =   (ideal) h->next->next->Data();
-
-        intvec* result = (intvec*) MwalkNextWeight(arg1, arg2, arg3);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={3,INTVEC_CMD,INTVEC_CMD,IDEAL_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->Data())->length() != currRing->N ||
+        ((intvec*) h->next->Data())->length() != currRing->N)
+      {
+        Werror("system(\"MwalkNextWeight\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      ideal arg3   =   (ideal) h->next->next->Data();
+      intvec* result = (intvec*) MwalkNextWeight(arg1, arg2, arg3);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
   #endif //MWalkNextWeight
+  #endif
   /*==================== Mivdp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "Mivdp") == 0)
     {
-        if (h == NULL || h->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"Mivdp\", int) expected");
-          return TRUE;
-        }
-        if ((int) ((long)(h->Data())) != currRing->N)
-        {
-          Werror("system(\"Mivdp\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        int arg1 = (int) ((long)(h->Data()));
-
-        intvec* result = (intvec*) Mivdp(arg1);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+      if (h == NULL || h->Typ() != INT_CMD)
+      {
+        WerrorS("system(\"Mivdp\", int) expected");
+        return TRUE;
+      }
+      if ((int) ((long)(h->Data())) != currRing->N)
+      {
+        Werror("system(\"Mivdp\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      int arg1 = (int) ((long)(h->Data()));
+      intvec* result = (intvec*) Mivdp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
   /*==================== Mivlp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "Mivlp") == 0)
     {
-        if (h == NULL || h->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"Mivlp\", int) expected");
-          return TRUE;
-        }
-        if ((int) ((long)(h->Data())) != currRing->N)
-        {
-          Werror("system(\"Mivlp\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        int arg1 = (int) ((long)(h->Data()));
-
-        intvec* result = (intvec*) Mivlp(arg1);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+      if (h == NULL || h->Typ() != INT_CMD)
+      {
+        WerrorS("system(\"Mivlp\", int) expected");
+        return TRUE;
+      }
+      if ((int) ((long)(h->Data())) != currRing->N)
+      {
+        Werror("system(\"Mivlp\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      int arg1 = (int) ((long)(h->Data()));
+      intvec* result = (intvec*) Mivlp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
   /*==================== MpDiv =================*/
+  #ifdef HAVE_WALK
   #ifdef MpDiv
     if(strcmp(sys_cmd, "MpDiv") == 0)
     {
-          if(h==NULL || h->Typ() != POLY_CMD ||
-             h->next == NULL || h->next->Typ() != POLY_CMD)
-          {
-            WerrorS("system(\"MpDiv\",poly, poly) expected");
-            return TRUE;
-          }
-          poly arg1 = (poly) h->Data();
-          poly arg2 = (poly) h->next->Data();
-
-          poly result = MpDiv(arg1, arg2);
-
-          res->rtyp = POLY_CMD;
-          res->data = result;
-          return FALSE;
+      const short t[]={2,POLY_CMD,POLY_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      poly arg1 = (poly) h->Data();
+      poly arg2 = (poly) h->next->Data();
+      poly result = MpDiv(arg1, arg2);
+      res->rtyp = POLY_CMD;
+      res->data = result;
+      return FALSE;
     }
     else
   #endif
+  #endif
   /*==================== MpMult =================*/
+  #ifdef HAVE_WALK
   #ifdef MpMult
     if(strcmp(sys_cmd, "MpMult") == 0)
     {
-          if(h==NULL || h->Typ() != POLY_CMD ||
-             h->next == NULL || h->next->Typ() != POLY_CMD)
-          {
-            WerrorS("system(\"MpMult\",poly, poly) expected");
-            return TRUE;
-          }
-          poly arg1 = (poly) h->Data();
-          poly arg2 = (poly) h->next->Data();
-
-          poly result = MpMult(arg1, arg2);
-          res->rtyp = POLY_CMD;
-          res->data = result;
-          return FALSE;
+      const short t[]={2,POLY_CMD,POLY_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      poly arg1 = (poly) h->Data();
+      poly arg2 = (poly) h->next->Data();
+      poly result = MpMult(arg1, arg2);
+      res->rtyp = POLY_CMD;
+      res->data = result;
+      return FALSE;
     }
     else
   #endif
+  #endif
   /*==================== MivSame =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "MivSame") == 0)
     {
-        if(h == NULL || h->Typ() != INTVEC_CMD ||
-           h->next == NULL || h->next->Typ() != INTVEC_CMD )
-        {
-          WerrorS("system(\"MivSame\", intvec, intvec) expected");
-          return TRUE;
-        }
-        /*
-        if (((intvec*) h->Data())->length() != currRing->N ||
-            ((intvec*) h->next->Data())->length() != currRing->N)
-        {
-          Werror("system(\"MivSame\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        */
-        intvec* arg1 = (intvec*) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        /*
-        poly result = (poly) MivSame(arg1, arg2);
-
-        res->rtyp = POLY_CMD;
-        res->data =  (poly) result;
-        */
-        res->rtyp = INT_CMD;
-        res->data = (void*)(long) MivSame(arg1, arg2);
-        return FALSE;
+      const short t[]={2,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      /*
+      if (((intvec*) h->Data())->length() != currRing->N ||
+      ((intvec*) h->next->Data())->length() != currRing->N)
+      {
+        Werror("system(\"MivSame\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      */
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      /*
+      poly result = (poly) MivSame(arg1, arg2);
+      res->rtyp = POLY_CMD;
+      res->data =  (poly) result;
+      */
+      res->rtyp = INT_CMD;
+      res->data = (void*)(long) MivSame(arg1, arg2);
+      return FALSE;
     }
     else
+  #endif
   /*==================== M3ivSame =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "M3ivSame") == 0)
     {
-        if(h == NULL || h->Typ() != INTVEC_CMD ||
-           h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-           h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD  )
-        {
-          WerrorS("system(\"M3ivSame\", intvec, intvec, intvec) expected");
-          return TRUE;
-        }
-        /*
-        if (((intvec*) h->Data())->length() != currRing->N ||
-            ((intvec*) h->next->Data())->length() != currRing->N ||
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"M3ivSame\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        */
-        intvec* arg1 = (intvec*) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3 = (intvec*) h->next->next->Data();
-        /*
-        poly result = (poly) M3ivSame(arg1, arg2, arg3);
-
-        res->rtyp = POLY_CMD;
-        res->data =  (poly) result;
-        */
-        res->rtyp = INT_CMD;
-        res->data = (void*)(long) M3ivSame(arg1, arg2, arg3);
-        return FALSE;
+      const short t[]={3,INTVEC_CMD,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      /*
+      if (((intvec*) h->Data())->length() != currRing->N ||
+        ((intvec*) h->next->Data())->length() != currRing->N ||
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"M3ivSame\" ...) intvecs not of length %d\n",
+              currRing->N);
+        return TRUE;
+      }
+      */
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3 = (intvec*) h->next->next->Data();
+      /*
+      poly result = (poly) M3ivSame(arg1, arg2, arg3);
+      res->rtyp = POLY_CMD;
+      res->data =  (poly) result;
+      */
+      res->rtyp = INT_CMD;
+      res->data = (void*)(long) M3ivSame(arg1, arg2, arg3);
+      return FALSE;
     }
     else
+  #endif
   /*==================== MwalkInitialForm =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MwalkInitialForm") == 0)
     {
-          if(h == NULL || h->Typ() != IDEAL_CMD ||
-             h->next == NULL || h->next->Typ() != INTVEC_CMD)
-          {
-            WerrorS("system(\"MwalkInitialForm\", ideal, intvec) expected");
-            return TRUE;
-          }
-          if(((intvec*) h->next->Data())->length() != currRing->N)
-          {
-            Werror("system \"MwalkInitialForm\"...) intvec not of length %d\n",
-                   currRing->N);
-            return TRUE;
-          }
-          ideal id      = (ideal) h->Data();
-          intvec* int_w = (intvec*) h->next->Data();
-          ideal result  = (ideal) MwalkInitialForm(id, int_w);
-
-          res->rtyp = IDEAL_CMD;
-          res->data = result;
-          return FALSE;
+      const short t[]={2,IDEAL_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if(((intvec*) h->next->Data())->length() != currRing->N)
+      {
+        Werror("system \"MwalkInitialForm\"...) intvec not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      ideal id      = (ideal) h->Data();
+      intvec* int_w = (intvec*) h->next->Data();
+      ideal result  = (ideal) MwalkInitialForm(id, int_w);
+      res->rtyp = IDEAL_CMD;
+      res->data = result;
+      return FALSE;
     }
     else
+  #endif
   /*==================== MivMatrixOrder =================*/
+  #ifdef HAVE_WALK
     /************** Perturbation walk **********/
     if(strcmp(sys_cmd, "MivMatrixOrder") == 0)
     {
-          if(h==NULL || h->Typ() != INTVEC_CMD)
-          {
-            WerrorS("system(\"MivMatrixOrder\",intvec) expected");
-            return TRUE;
-          }
-          intvec* arg1 = (intvec*) h->Data();
-
-          intvec* result = MivMatrixOrder(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      if(h==NULL || h->Typ() != INTVEC_CMD)
+      {
+        WerrorS("system(\"MivMatrixOrder\",intvec) expected");
+        return TRUE;
+      }
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* result = MivMatrixOrder(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
   /*==================== MivMatrixOrderdp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MivMatrixOrderdp") == 0)
     {
-          if(h==NULL || h->Typ() != INT_CMD)
-          {
-            WerrorS("system(\"MivMatrixOrderdp\",intvec) expected");
-            return TRUE;
-          }
-          int arg1 = (int) ((long)(h->Data()));
-
-          intvec* result = (intvec*) MivMatrixOrderdp(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
-        }
+      if(h==NULL || h->Typ() != INT_CMD)
+      {
+        WerrorS("system(\"MivMatrixOrderdp\",intvec) expected");
+        return TRUE;
+      }
+      int arg1 = (int) ((long)(h->Data()));
+      intvec* result = (intvec*) MivMatrixOrderdp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
+    }
     else
+  #endif
   /*==================== MPertVectors =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MPertVectors") == 0)
     {
-          if(h==NULL || h->Typ() != IDEAL_CMD ||
-             h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-             h->next->next == NULL || h->next->next->Typ() != INT_CMD)
-          {
-            WerrorS("system(\"MPertVectors\",ideal, intvec, int) expected");
-            return TRUE;
-          }
-
-          ideal arg1 = (ideal) h->Data();
-          intvec* arg2 = (intvec*) h->next->Data();
-          int arg3 = (int) ((long)(h->next->next->Data()));
-
-          intvec* result = (intvec*) MPertVectors(arg1, arg2, arg3);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      const short t[]={3,IDEAL_CMD,INTVEC_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      int arg3 = (int) ((long)(h->next->next->Data()));
+      intvec* result = (intvec*) MPertVectors(arg1, arg2, arg3);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
   /*==================== MPertVectorslp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MPertVectorslp") == 0)
     {
-          if(h==NULL || h->Typ() != IDEAL_CMD ||
-             h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-             h->next->next == NULL || h->next->next->Typ() != INT_CMD)
-          {
-            WerrorS("system(\"MPertVectorslp\",ideal, intvec, int) expected");
-            return TRUE;
-          }
-
-          ideal arg1 = (ideal) h->Data();
-          intvec* arg2 = (intvec*) h->next->Data();
-          int arg3 = (int) ((long)(h->next->next->Data()));
-
-          intvec* result = (intvec*) MPertVectorslp(arg1, arg2, arg3);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      const short t[]={3,IDEAL_CMD,INTVEC_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      int arg3 = (int) ((long)(h->next->next->Data()));
+      intvec* result = (intvec*) MPertVectorslp(arg1, arg2, arg3);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
-    /************** fractal walk **********/
     else
+  #endif
+    /************** fractal walk **********/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "Mfpertvector") == 0)
     {
-          if(h==NULL || h->Typ() != IDEAL_CMD ||
-            h->next==NULL || h->next->Typ() != INTVEC_CMD  )
-          {
-            WerrorS("system(\"Mfpertvector\", ideal,intvec) expected");
-            return TRUE;
-          }
-          ideal arg1 = (ideal) h->Data();
-          intvec* arg2 = (intvec*) h->next->Data();
-          intvec* result = Mfpertvector(arg1, arg2);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      const short t[]={2,IDEAL_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* result = Mfpertvector(arg1, arg2);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MivUnit =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MivUnit") == 0)
     {
-          int arg1 = (int) ((long)(h->Data()));
-
-          intvec* result = (intvec*) MivUnit(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      const short t[]={1,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      int arg1 = (int) ((long)(h->Data()));
+      intvec* result = (intvec*) MivUnit(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MivWeightOrderlp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MivWeightOrderlp") == 0)
     {
-          if(h==NULL || h->Typ() != INTVEC_CMD)
-          {
-            WerrorS("system(\"MivWeightOrderlp\",intvec) expected");
-            return TRUE;
-          }
-          intvec* arg1 = (intvec*) h->Data();
-          intvec* result = MivWeightOrderlp(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      const short t[]={1,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* result = MivWeightOrderlp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MivWeightOrderdp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MivWeightOrderdp") == 0)
     {
-          if(h==NULL || h->Typ() != INTVEC_CMD)
-          {
-            WerrorS("system(\"MivWeightOrderdp\",intvec) expected");
-            return TRUE;
-          }
-          intvec* arg1 = (intvec*) h->Data();
-          //int arg2 = (int) h->next->Data();
-
-          intvec* result = MivWeightOrderdp(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      if(h==NULL || h->Typ() != INTVEC_CMD)
+      {
+        WerrorS("system(\"MivWeightOrderdp\",intvec) expected");
+        return TRUE;
+      }
+      intvec* arg1 = (intvec*) h->Data();
+      //int arg2 = (int) h->next->Data();
+      intvec* result = MivWeightOrderdp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MivMatrixOrderlp =================*/
+  #ifdef HAVE_WALK
     if(strcmp(sys_cmd, "MivMatrixOrderlp") == 0)
     {
-          if(h==NULL || h->Typ() != INT_CMD)
-          {
-            WerrorS("system(\"MivMatrixOrderlp\",int) expected");
-            return TRUE;
-          }
-          int arg1 = (int) ((long)(h->Data()));
-
-          intvec* result = (intvec*) MivMatrixOrderlp(arg1);
-
-          res->rtyp = INTVEC_CMD;
-          res->data =  result;
-          return FALSE;
+      if(h==NULL || h->Typ() != INT_CMD)
+      {
+        WerrorS("system(\"MivMatrixOrderlp\",int) expected");
+        return TRUE;
+      }
+      int arg1 = (int) ((long)(h->Data()));
+      intvec* result = (intvec*) MivMatrixOrderlp(arg1);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MkInterRedNextWeight =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "MkInterRedNextWeight") == 0)
     {
-        if (h == NULL || h->Typ() != INTVEC_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != IDEAL_CMD)
-        {
-          WerrorS("system(\"MkInterRedNextWeight\", intvec, intvec, ideal) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->Data())->length() != currRing->N ||
-            ((intvec*) h->next->Data())->length() != currRing->N)
-        {
-          Werror("system(\"MkInterRedNextWeight\" ...) intvecs not of length %d\n",
+      const short t[]={3,INTVEC_CMD,INTVEC_CMD,IDEAL_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->Data())->length() != currRing->N ||
+        ((intvec*) h->next->Data())->length() != currRing->N)
+      {
+        Werror("system(\"MkInterRedNextWeight\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        intvec* arg1 = (intvec*) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        ideal arg3   =   (ideal) h->next->next->Data();
-
-        intvec* result = (intvec*) MkInterRedNextWeight(arg1, arg2, arg3);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      intvec* arg1 = (intvec*) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      ideal arg3   =   (ideal) h->next->next->Data();
+      intvec* result = (intvec*) MkInterRedNextWeight(arg1, arg2, arg3);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MPertNextWeight =================*/
+  #ifdef HAVE_WALK
   #ifdef MPertNextWeight
     if (strcmp(sys_cmd, "MPertNextWeight") == 0)
     {
-        if (h == NULL || h->Typ() != INTVEC_CMD ||
-            h->next == NULL || h->next->Typ() != IDEAL_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"MPertNextWeight\", intvec, ideal, int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->Data())->length() != currRing->N)
-        {
-          Werror("system(\"MPertNextWeight\" ...) intvecs not of length %d\n",
+      const short t[]={3,INTVEC_CMD,IDEAL_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->Data())->length() != currRing->N)
+      {
+        Werror("system(\"MPertNextWeight\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        intvec* arg1 = (intvec*) h->Data();
-        ideal arg2 = (ideal) h->next->Data();
-        int arg3   =   (int) h->next->next->Data();
-
-        intvec* result = (intvec*) MPertNextWeight(arg1, arg2, arg3);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      intvec* arg1 = (intvec*) h->Data();
+      ideal arg2 = (ideal) h->next->Data();
+      int arg3   =   (int) h->next->next->Data();
+      intvec* result = (intvec*) MPertNextWeight(arg1, arg2, arg3);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
   #endif //MPertNextWeight
+  #endif
+  /*==================== Mivperttarget =================*/
+  #ifdef HAVE_WALK
   #ifdef Mivperttarget
     if (strcmp(sys_cmd, "Mivperttarget") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INT_CMD )
-        {
-          WerrorS("system(\"Mivperttarget\", ideal, int) expected");
-          return TRUE;
-        }
-
-        ideal arg1 = (ideal) h->Data();
-        int arg2 = (int) h->next->Data();
-
-        intvec* result = (intvec*) Mivperttarget(arg1, arg2);
-
-        res->rtyp = INTVEC_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={2,IDEAL_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      ideal arg1 = (ideal) h->Data();
+      int arg2 = (int) h->next->Data();
+      intvec* result = (intvec*) Mivperttarget(arg1, arg2);
+      res->rtyp = INTVEC_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
   #endif //Mivperttarget
+  #endif
+  /*==================== Mwalk =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "Mwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"Mwalk\", ideal, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"Mwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-
-
-        ideal result = (ideal) Mwalk(arg1, arg2, arg3);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
-    }
-    else
-  #ifdef MPWALK_ORIG
-    if (strcmp(sys_cmd, "Mpwalk") == 0)
-    {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INT_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INT_CMD ||
-            h->next->next->next == NULL ||
-              h->next->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next->next == NULL ||
-              h->next->next->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"Mpwalk\", ideal, int, int, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->next->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->next->next->Data())->length()!=currRing->N)
-        {
-          Werror("system(\"Mpwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        int arg2 = (int) h->next->Data();
-        int arg3 = (int) h->next->next->Data();
-        intvec* arg4 = (intvec*) h->next->next->next->Data();
-        intvec* arg5   =  (intvec*) h->next->next->next->next->Data();
-
-
-        ideal result = (ideal) Mpwalk(arg1, arg2, arg3, arg4, arg5);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={4,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,RING_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"Mwalk\" ...) intvecs not of length %d\n",
+           currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      ring arg4   =  (ring) h->next->next->next->Data();
+      ideal result = (ideal) Mwalk(arg1, arg2, arg3,arg4);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
   #endif
+  /*==================== Mpwalk =================*/
+  #ifdef HAVE_WALK
+  #ifdef MPWALK_ORIG
+    if (strcmp(sys_cmd, "Mwalk") == 0)
+    {
+      const short t[]={4,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,RING_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if ((((intvec*) h->next->Data())->length() != currRing->N &&
+          ((intvec*) h->next->next->Data())->length() != currRing->N ) &&
+          (((intvec*) h->next->Data())->length() != (currRing->N)*(currRing->N) &&
+          ((intvec*) h->next->next->Data())->length() != (currRing->N)*(currRing->N)))
+      {
+        Werror("system(\"Mwalk\" ...) intvecs not of length %d or %d\n",
+               currRing->N,(currRing->N)*(currRing->N));
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      ring arg4 = (ring) h->next->next->next->Data();
+      ideal result = (ideal) Mwalk(arg1, arg2, arg3,arg4);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
+    }
+    else
+  #else
     if (strcmp(sys_cmd, "Mpwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INT_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INT_CMD ||
-            h->next->next->next == NULL ||
-              h->next->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next->next == NULL ||
-              h->next->next->next->next->Typ() != INTVEC_CMD||
-            h->next->next->next->next->next == NULL ||
-              h->next->next->next->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"Mpwalk\", ideal, int, int, intvec, intvec, int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->next->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->next->next->Data())->length()!=currRing->N)
-        {
-          Werror("system(\"Mpwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        int arg2 = (int) ((long)(h->next->Data()));
-        int arg3 = (int) ((long)(h->next->next->Data()));
-        intvec* arg4 = (intvec*) h->next->next->next->Data();
-        intvec* arg5   =  (intvec*) h->next->next->next->next->Data();
-        int arg6   =  (int) ((long)(h->next->next->next->next->next->Data()));
-
-
-        ideal result = (ideal) Mpwalk(arg1, arg2, arg3, arg4, arg5, arg6);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={6,IDEAL_CMD,INT_CMD,INT_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if(((intvec*) h->next->next->next->Data())->length() != currRing->N &&
+         ((intvec*) h->next->next->next->next->Data())->length()!=currRing->N)
+      {
+        Werror("system(\"Mpwalk\" ...) intvecs not of length %d\n",currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      int arg2 = (int) (long) h->next->Data();
+      int arg3 = (int) (long) h->next->next->Data();
+      intvec* arg4 = (intvec*) h->next->next->next->Data();
+      intvec* arg5 = (intvec*) h->next->next->next->next->Data();
+      int arg6 = (int) (long) h->next->next->next->next->next->Data();
+      ideal result = (ideal) Mpwalk(arg1, arg2, arg3, arg4, arg5,arg6);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+    #endif
+  #endif
+  /*==================== Mrwalk =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "Mrwalk") == 0)
-    { // Random Walk
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next == NULL || h->next->next->next->Typ() != INT_CMD ||
-            h->next->next->next->next == NULL || h->next->next->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"Mrwalk\", ideal, intvec, intvec, int, int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"Mrwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3 =  (intvec*) h->next->next->Data();
-        int arg4 = (int)(long) h->next->next->next->Data();
-        int arg5 = (int)(long) h->next->next->next->next->Data();
-
-
-        ideal result = (ideal) Mrwalk(arg1, arg2, arg3, arg4, arg5);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+    {
+      const short t[]={6,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD,INT_CMD,RING_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if((((intvec*) h->next->Data())->length() != currRing->N &&
+         ((intvec*) h->next->next->Data())->length() != currRing->N ) &&
+         (((intvec*) h->next->Data())->length() != (currRing->N)*(currRing->N) &&
+         ((intvec*) h->next->next->Data())->length() != (currRing->N)*(currRing->N) ))
+      {
+        Werror("system(\"Mrwalk\" ...) intvecs not of length %d or %d\n",
+               currRing->N,(currRing->N)*(currRing->N));
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3 =  (intvec*) h->next->next->Data();
+      int arg4 = (int)(long) h->next->next->next->Data();
+      int arg5 = (int)(long) h->next->next->next->next->Data();
+      ring arg6 = (ring) h->next->next->next->next->next->Data();
+      ideal result = (ideal) Mrwalk(arg1, arg2, arg3, arg4, arg5, arg6);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MAltwalk1 =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "MAltwalk1") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INT_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INT_CMD ||
-            h->next->next->next == NULL ||
-              h->next->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next->next == NULL ||
-              h->next->next->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"MAltwalk1\", ideal, int, int, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->next->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->next->next->Data())->length()!=currRing->N)
-        {
-          Werror("system(\"MAltwalk1\" ...) intvecs not of length %d\n",
+      const short t[]={5,IDEAL_CMD,INT_CMD,INT_CMD,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->next->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->next->next->Data())->length()!=currRing->N)
+      {
+        Werror("system(\"MAltwalk1\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        int arg2 = (int) ((long)(h->next->Data()));
-        int arg3 = (int) ((long)(h->next->next->Data()));
-        intvec* arg4 = (intvec*) h->next->next->next->Data();
-        intvec* arg5   =  (intvec*) h->next->next->next->next->Data();
-
-
-        ideal result = (ideal) MAltwalk1(arg1, arg2, arg3, arg4, arg5);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      int arg2 = (int) ((long)(h->next->Data()));
+      int arg3 = (int) ((long)(h->next->next->Data()));
+      intvec* arg4 = (intvec*) h->next->next->next->Data();
+      intvec* arg5   =  (intvec*) h->next->next->next->next->Data();
+      ideal result = (ideal) MAltwalk1(arg1, arg2, arg3, arg4, arg5);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
-  #ifdef MFWALK_ALT
     else
+  #endif
+  /*==================== MAltwalk1 =================*/
+  #ifdef HAVE_WALK
+  #ifdef MFWALK_ALT
     if (strcmp(sys_cmd, "Mfwalk_alt") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next == NULL || h->next->next->next->Typ() !=INT_CMD)
-        {
-          WerrorS("system(\"Mfwalk\", ideal, intvec, intvec,int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"Mfwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-        int arg4 = (int) h->next->next->next->Data();
-
-        ideal result = (ideal) Mfwalk_alt(arg1, arg2, arg3, arg4);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={4,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"Mfwalk\" ...) intvecs not of length %d\n",
+              currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      int arg4 = (int) h->next->next->next->Data();
+      ideal result = (ideal) Mfwalk_alt(arg1, arg2, arg3, arg4);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
-  #endif
     else
+  #endif
+  #endif
+  /*==================== Mfwalk =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "Mfwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"Mfwalk\", ideal, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"Mfwalk\" ...) intvecs not of length %d\n",
+      const short t[]={3,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"Mfwalk\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-
-        ideal result = (ideal) Mfwalk(arg1, arg2, arg3);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      ideal result = (ideal) Mfwalk(arg1, arg2, arg3);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== Mfrwalk =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "Mfrwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next == NULL || h->next->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"Mfrwalk\", ideal, intvec, intvec, int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"Mfrwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3 = (intvec*) h->next->next->Data();
-        int arg4 = (int)(long) h->next->next->next->Data();
-
-        ideal result = (ideal) Mfrwalk(arg1, arg2, arg3, arg4);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={6,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD,INT_CMD,RING_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+          ((intvec*) h->next->next->Data())->length() != currRing->N)
+      {
+        Werror("system(\"Mfrwalk\" ...) intvecs not of length %d\n",currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3 = (intvec*) h->next->next->Data();
+      int arg4 = (int)(long) h->next->next->next->Data();
+      ideal result = (ideal) Mfrwalk(arg1, arg2, arg3, arg4);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
-
+  /*==================== Mprwalk =================*/
+    if (strcmp(sys_cmd, "Mprwalk") == 0)
+    {
+      const short t[]={7,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD,INT_CMD,INT_CMD,RING_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+          ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"Mrwalk\" ...) intvecs not of length %d\n",
+               currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3 =  (intvec*) h->next->next->Data();
+      int arg4 = (int)(long) h->next->next->next->Data();
+      int arg5 = (int)(long) h->next->next->next->next->Data();
+      int arg6 = (int)(long) h->next->next->next->next->next->Data();
+      ring arg7 = (ring) h->next->next->next->next->next->next->Data();
+      ideal result = (ideal) Mprwalk(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
+    }
+    else
+  #endif
+  /*==================== TranMImprovwalk =================*/
+  #ifdef HAVE_WALK
   #ifdef TRAN_Orig
     if (strcmp(sys_cmd, "TranMImprovwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"TranMImprovwalk\", ideal, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"TranMImprovwalk\" ...) intvecs not of length %d\n",
-                 currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-
-
-        ideal result = (ideal) TranMImprovwalk(arg1, arg2, arg3);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      const short t[]={3,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"TranMImprovwalk\" ...) intvecs not of length %d\n",
+              currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      ideal result = (ideal) TranMImprovwalk(arg1, arg2, arg3);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
   #endif
+  #endif
+  /*==================== MAltwalk2 =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "MAltwalk2") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD)
-        {
-          WerrorS("system(\"MAltwalk2\", ideal, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"MAltwalk2\" ...) intvecs not of length %d\n",
+      const short t[]={3,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"MAltwalk2\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-
-
-        ideal result = (ideal) MAltwalk2(arg1, arg2, arg3);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      ideal result = (ideal) MAltwalk2(arg1, arg2, arg3);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== MAltwalk2 =================*/
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "TranMImprovwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD||
-            h->next->next->next == NULL || h->next->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"TranMImprovwalk\", ideal, intvec, intvec, int) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"TranMImprovwalk\" ...) intvecs not of length %d\n",
+      const short t[]={4,IDEAL_CMD,INTVEC_CMD,INTVEC_CMD,INT_CMD};
+      if (!iiCheckTypes(h,t,1)) return TRUE;
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"TranMImprovwalk\" ...) intvecs not of length %d\n",
                  currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3   =  (intvec*) h->next->next->Data();
-        int arg4   =  (int) ((long)(h->next->next->next->Data()));
-
-        ideal result = (ideal) TranMImprovwalk(arg1, arg2, arg3, arg4);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3   =  (intvec*) h->next->next->Data();
+      int arg4   =  (int) ((long)(h->next->next->next->Data()));
+      ideal result = (ideal) TranMImprovwalk(arg1, arg2, arg3, arg4);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
+  /*==================== TranMrImprovwalk =================*/
+  #if 0
+  #ifdef HAVE_WALK
     if (strcmp(sys_cmd, "TranMrImprovwalk") == 0)
     {
-        if (h == NULL || h->Typ() != IDEAL_CMD ||
-            h->next == NULL || h->next->Typ() != INTVEC_CMD ||
-            h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD ||
-            h->next->next->next == NULL || h->next->next->next->Typ() != INT_CMD ||
-            h->next->next->next == NULL || h->next->next->next->next->Typ() != INT_CMD ||
-            h->next->next->next == NULL || h->next->next->next->next->next->Typ() != INT_CMD)
-        {
-          WerrorS("system(\"TranMrImprovwalk\", ideal, intvec, intvec) expected");
-          return TRUE;
-        }
-
-        if (((intvec*) h->next->Data())->length() != currRing->N &&
-            ((intvec*) h->next->next->Data())->length() != currRing->N )
-        {
-          Werror("system(\"TranMrImprovwalk\" ...) intvecs not of length %d\n", currRing->N);
-          return TRUE;
-        }
-        ideal arg1 = (ideal) h->Data();
-        intvec* arg2 = (intvec*) h->next->Data();
-        intvec* arg3 = (intvec*) h->next->next->Data();
-        int arg4 = (int)(long) h->next->next->next->Data();
-        int arg5 = (int)(long) h->next->next->next->next->Data();
-        int arg6 = (int)(long) h->next->next->next->next->next->Data();
-
-        ideal result = (ideal) TranMrImprovwalk(arg1, arg2, arg3, arg4, arg5, arg6);
-
-        res->rtyp = IDEAL_CMD;
-        res->data =  result;
-
-        return FALSE;
+      if (h == NULL || h->Typ() != IDEAL_CMD ||
+        h->next == NULL || h->next->Typ() != INTVEC_CMD ||
+        h->next->next == NULL || h->next->next->Typ() != INTVEC_CMD ||
+        h->next->next->next == NULL || h->next->next->next->Typ() != INT_CMD ||
+        h->next->next->next == NULL || h->next->next->next->next->Typ() != INT_CMD ||
+        h->next->next->next == NULL || h->next->next->next->next->next->Typ() != INT_CMD)
+      {
+        WerrorS("system(\"TranMrImprovwalk\", ideal, intvec, intvec) expected");
+        return TRUE;
+      }
+      if (((intvec*) h->next->Data())->length() != currRing->N &&
+        ((intvec*) h->next->next->Data())->length() != currRing->N )
+      {
+        Werror("system(\"TranMrImprovwalk\" ...) intvecs not of length %d\n", currRing->N);
+        return TRUE;
+      }
+      ideal arg1 = (ideal) h->Data();
+      intvec* arg2 = (intvec*) h->next->Data();
+      intvec* arg3 = (intvec*) h->next->next->Data();
+      int arg4 = (int)(long) h->next->next->next->Data();
+      int arg5 = (int)(long) h->next->next->next->next->Data();
+      int arg6 = (int)(long) h->next->next->next->next->next->Data();
+      ideal result = (ideal) TranMrImprovwalk(arg1, arg2, arg3, arg4, arg5, arg6);
+      res->rtyp = IDEAL_CMD;
+      res->data =  result;
+      return FALSE;
     }
     else
+  #endif
   #endif
   /*================= Extended system call ========================*/
     {
@@ -2676,98 +2295,76 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
   /*==================== locNF ======================================*/
       if(strcmp(sys_cmd,"locNF")==0)
       {
-        if (h != NULL && h->Typ() == VECTOR_CMD)
+        const short t[]={4,VECTOR_CMD,MODUL_CMD,INT_CMD,INTVEC_CMD};
+        if (iiCheckTypes(h,t,1))
         {
           poly f=(poly)h->Data();
           h=h->next;
-          if (h != NULL && h->Typ() == MODUL_CMD)
+          ideal m=(ideal)h->Data();
+          assumeStdFlag(h);
+          h=h->next;
+          int n=(int)((long)h->Data());
+          h=h->next;
+          intvec *v=(intvec *)h->Data();
+
+          /* == now the work starts == */
+
+          short * iv=iv2array(v, currRing);
+          poly r=0;
+          poly hp=ppJetW(f,n,iv);
+          int s=MATCOLS(m);
+          int j=0;
+          matrix T=mp_InitI(s,1,0, currRing);
+
+          while (hp != NULL)
           {
-            ideal m=(ideal)h->Data();
-            assumeStdFlag(h);
-            h=h->next;
-            if (h != NULL && h->Typ() == INT_CMD)
+            if (pDivisibleBy(m->m[j],hp))
             {
-              int n=(int)((long)h->Data());
-              h=h->next;
-              if (h != NULL && h->Typ() == INTVEC_CMD)
+              if (MATELEM(T,j+1,1)==0)
               {
-                intvec *v=(intvec *)h->Data();
-
-                /* == now the work starts == */
-
-                short * iv=iv2array(v, currRing);
-                poly r=0;
-                poly hp=ppJetW(f,n,iv);
-                int s=MATCOLS(m);
-                int j=0;
-                matrix T=mp_InitI(s,1,0, currRing);
-
-                while (hp != NULL)
-                {
-                  if (pDivisibleBy(m->m[j],hp))
-                    {
-                      if (MATELEM(T,j+1,1)==0)
-                      {
-                        MATELEM(T,j+1,1)=pDivideM(pHead(hp),pHead(m->m[j]));
-                      }
-                      else
-                      {
-                        pAdd(MATELEM(T,j+1,1),pDivideM(pHead(hp),pHead(m->m[j])));
-                      }
-                      hp=ppJetW(ksOldSpolyRed(m->m[j],hp,0),n,iv);
-                      j=0;
-                    }
-                  else
-                  {
-                    if (j==s-1)
-                    {
-                      r=pAdd(r,pHead(hp));
-                      hp=pLmDeleteAndNext(hp); /* hp=pSub(hp,pHead(hp));*/
-                      j=0;
-                    }
-                    else
-                    {
-                      j++;
-                    }
-                  }
-                }
-
-                matrix Temp=mp_Transp((matrix) id_Vec2Ideal(r, currRing), currRing);
-                matrix R=mpNew(MATCOLS((matrix) id_Vec2Ideal(f, currRing)),1);
-                for (int k=1;k<=MATROWS(Temp);k++)
-                {
-                  MATELEM(R,k,1)=MATELEM(Temp,k,1);
-                }
-
-                lists L=(lists)omAllocBin(slists_bin);
-                L->Init(2);
-                L->m[0].rtyp=MATRIX_CMD;   L->m[0].data=(void *)R;
-                L->m[1].rtyp=MATRIX_CMD;   L->m[1].data=(void *)T;
-                res->data=L;
-                res->rtyp=LIST_CMD;
-                // iv aufraeumen
-                omFree(iv);
+                MATELEM(T,j+1,1)=pDivideM(pHead(hp),pHead(m->m[j]));
               }
               else
               {
-                Warn ("4th argument: must be an intvec!");
+                pAdd(MATELEM(T,j+1,1),pDivideM(pHead(hp),pHead(m->m[j])));
               }
+              hp=ppJetW(ksOldSpolyRed(m->m[j],hp,0),n,iv);
+              j=0;
             }
             else
             {
-              Warn("3rd argument must be an int!!");
+              if (j==s-1)
+              {
+                r=pAdd(r,pHead(hp));
+                hp=pLmDeleteAndNext(hp); /* hp=pSub(hp,pHead(hp));*/
+                j=0;
+              }
+              else
+              {
+                j++;
+              }
             }
           }
-          else
+
+          matrix Temp=mp_Transp((matrix) id_Vec2Ideal(r, currRing), currRing);
+          matrix R=mpNew(MATCOLS((matrix) id_Vec2Ideal(f, currRing)),1);
+          for (int k=1;k<=MATROWS(Temp);k++)
           {
-            Warn("2nd argument must be a module!");
+            MATELEM(R,k,1)=MATELEM(Temp,k,1);
           }
+
+          lists L=(lists)omAllocBin(slists_bin);
+          L->Init(2);
+          L->m[0].rtyp=MATRIX_CMD;   L->m[0].data=(void *)R;
+          L->m[1].rtyp=MATRIX_CMD;   L->m[1].data=(void *)T;
+          res->data=L;
+          res->rtyp=LIST_CMD;
+          // iv aufraeumen
+          omFree(iv);
+          return FALSE;
         }
         else
-        {
-          Warn("1st argument must be a vector!");
-        }
-        return FALSE;
+          return TRUE;
       }
       else
   /*==================== poly debug ==================================*/
@@ -3314,22 +2911,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
         else
   #endif
   #endif
-  /*==================== eigenvalues ==================================*/
-  #ifdef HAVE_EIGENVAL
-      if(strcmp(sys_cmd,"eigenvals")==0)
-      {
-        return evEigenvals(res,h);
-      }
-      else
-  #endif
-  /*==================== Gauss-Manin system ==================================*/
-  #ifdef HAVE_GMS
-      if(strcmp(sys_cmd,"gmsnf")==0)
-      {
-        return gmsNF(res,h);
-      }
-      else
-  #endif
   /*==================== facstd_debug ==================================*/
   #if !defined(SING_NDEBUG)
       if(strcmp(sys_cmd,"facstd")==0)
@@ -3784,7 +3365,7 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
           }
           else if (h->Typ()==INTMAT_CMD)
           {
-            res->data=(char *)singntl_HNF((intvec*)h->Data(), currRing);
+            res->data=(char *)singntl_HNF((intvec*)h->Data());
             return FALSE;
           }
           else return TRUE;
@@ -3873,6 +3454,289 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
     return FALSE;
   }
   else
+  /*==================== mpz_t loader ======================*/
+    if(strcmp(sys_cmd, "GNUmpLoad")==0)
+    {
+      if ((h != NULL) && (h->Typ() == STRING_CMD))
+      {
+        char* filename = (char*)h->Data();
+        FILE* f = fopen(filename, "r");
+        if (f == NULL)
+        {
+          WerrorS( "invalid file name (in paths use '/')");
+          return FALSE;
+        }
+        mpz_t m; mpz_init(m);
+        mpz_inp_str(m, f, 10);
+        fclose(f);
+        number n = n_InitMPZ(m, coeffs_BIGINT);
+        res->rtyp = BIGINT_CMD;
+        res->data = (void*)n;
+        return FALSE;
+      }
+      else
+      {
+        WerrorS( "expected valid file name as a string");
+        return TRUE;
+      }
+    }
+    else
+  /*==================== intvec matching ======================*/
+    /* Given two non-empty intvecs, the call
+            'system("intvecMatchingSegments", ivec, jvec);'
+         computes all occurences of jvec in ivec, i.e., it returns
+         a list of int indices k such that ivec[k..size(jvec)+k-1] = jvec.
+         If no such k exists (e.g. when ivec is shorter than jvec), an
+         intvec with the single entry 0 is being returned. */
+    if(strcmp(sys_cmd, "intvecMatchingSegments")==0)
+    {
+      if ((h       != NULL) && (h->Typ()       == INTVEC_CMD) &&
+          (h->next != NULL) && (h->next->Typ() == INTVEC_CMD) &&
+          (h->next->next == NULL))
+      {
+        intvec* ivec = (intvec*)h->Data();
+        intvec* jvec = (intvec*)h->next->Data();
+        intvec* r = new intvec(1); (*r)[0] = 0;
+        int validEntries = 0;
+        for (int k = 0; k <= ivec->rows() - jvec->rows(); k++)
+        {
+          if (memcmp(&(*ivec)[k], &(*jvec)[0],
+                       sizeof(int) * jvec->rows()) == 0)
+          {
+            if (validEntries == 0)
+              (*r)[0] = k + 1;
+            else
+            {
+              r->resize(validEntries + 1);
+              (*r)[validEntries] = k + 1;
+            }
+            validEntries++;
+          }
+        }
+        res->rtyp = INTVEC_CMD;
+        res->data = (void*)r;
+        return FALSE;
+      }
+      else
+      {
+        WerrorS("expected two non-empty intvecs as arguments");
+        return TRUE;
+      }
+    }
+    else
+  /* ================== intvecOverlap ======================= */
+    /* Given two non-empty intvecs, the call
+            'system("intvecOverlap", ivec, jvec);'
+         computes the longest intvec kvec such that ivec ends with kvec
+         and jvec starts with kvec. The length of this overlap is being
+         returned. If there is no overlap at all, then 0 is being returned. */
+    if(strcmp(sys_cmd, "intvecOverlap")==0)
+    {
+      if ((h       != NULL) && (h->Typ()       == INTVEC_CMD) &&
+            (h->next != NULL) && (h->next->Typ() == INTVEC_CMD) &&
+            (h->next->next == NULL))
+      {
+        intvec* ivec = (intvec*)h->Data();
+        intvec* jvec = (intvec*)h->next->Data();
+        int ir = ivec->rows(); int jr = jvec->rows();
+        int r = jr; if (ir < jr) r = ir;   /* r = min{ir, jr} */
+        while ((r >= 1) && (memcmp(&(*ivec)[ir - r], &(*jvec)[0],
+                                     sizeof(int) * r) != 0))
+          r--;
+        res->rtyp = INT_CMD;
+        res->data = (void*)(long)r;
+        return FALSE;
+      }
+      else
+      {
+        WerrorS("expected two non-empty intvecs as arguments");
+        return TRUE;
+      }
+    }
+    else
+  /*==================== Hensel's lemma ======================*/
+    if(strcmp(sys_cmd, "henselfactors")==0)
+    {
+      if ((h != NULL) && (h->Typ() == INT_CMD) &&
+        (h->next != NULL) && (h->next->Typ() == INT_CMD) &&
+        (h->next->next != NULL) && (h->next->next->Typ() == POLY_CMD) &&
+        (h->next->next->next != NULL) &&
+        (h->next->next->next->Typ() == POLY_CMD) &&
+        (h->next->next->next->next != NULL) &&
+        (h->next->next->next->next->Typ() == POLY_CMD) &&
+        (h->next->next->next->next->next != NULL) &&
+        (h->next->next->next->next->next->Typ() == INT_CMD) &&
+        (h->next->next->next->next->next->next == NULL))
+      {
+        int xIndex = (int)(long)h->Data();
+        int yIndex = (int)(long)h->next->Data();
+        poly hh    = (poly)h->next->next->Data();
+        poly f0    = (poly)h->next->next->next->Data();
+        poly g0    = (poly)h->next->next->next->next->Data();
+        int d      = (int)(long)h->next->next->next->next->next->Data();
+        poly f; poly g;
+        henselFactors(xIndex, yIndex, hh, f0, g0, d, f, g);
+        lists L = (lists)omAllocBin(slists_bin);
+        L->Init(2);
+        L->m[0].rtyp = POLY_CMD; L->m[0].data=(void*)f;
+        L->m[1].rtyp = POLY_CMD; L->m[1].data=(void*)g;
+        res->rtyp = LIST_CMD;
+        res->data = (char *)L;
+        return FALSE;
+      }
+      else
+      {
+        WerrorS( "expected argument list (int, int, poly, poly, poly, int)");
+        return TRUE;
+      }
+    }
+    else
+  /*==================== neworder =============================*/
+    if(strcmp(sys_cmd,"neworder")==0)
+    {
+      if ((h!=NULL) &&(h->Typ()==IDEAL_CMD))
+      {
+        res->rtyp=STRING_CMD;
+        res->data=(void *)singclap_neworder((ideal)h->Data(), currRing);
+        return FALSE;
+      }
+      else
+        WerrorS("ideal expected");
+    }
+    else
+  /*==================== Approx_Step  =================*/
+  #ifdef HAVE_PLURAL
+    if (strcmp(sys_cmd, "astep") == 0)
+    {
+      ideal I;
+      if ((h!=NULL) && (h->Typ()==IDEAL_CMD))
+      {
+        I=(ideal)h->CopyD();
+        res->rtyp=IDEAL_CMD;
+        if (rIsPluralRing(currRing)) res->data=Approx_Step(I);
+        else res->data=I;
+        setFlag(res,FLAG_STD);
+      }
+      else return TRUE;
+      return FALSE;
+    }
+    else
+  #endif
+  /*==================== PrintMat  =================*/
+  #ifdef HAVE_PLURAL
+    if (strcmp(sys_cmd, "PrintMat") == 0)
+    {
+      int a;
+      int b;
+      ring r;
+      int metric;
+      if (h!=NULL)
+      {
+        if (h->Typ()==INT_CMD)
+        {
+          a=(int)((long)(h->Data()));
+          h=h->next;
+        }
+        else if (h->Typ()==INT_CMD)
+        {
+          b=(int)((long)(h->Data()));
+          h=h->next;
+        }
+        else if (h->Typ()==RING_CMD)
+        {
+          r=(ring)h->Data();
+          h=h->next;
+        }
+        else
+          return TRUE;
+      }
+      else
+        return TRUE;
+      if ((h!=NULL) && (h->Typ()==INT_CMD))
+      {
+        metric=(int)((long)(h->Data()));
+      }
+      res->rtyp=MATRIX_CMD;
+      if (rIsPluralRing(r)) res->data=nc_PrintMat(a,b,r,metric);
+      else res->data=NULL;
+      return FALSE;
+    }
+    else
+  #endif
+/* ============ NCUseExtensions ======================== */
+  #ifdef HAVE_PLURAL
+    if(strcmp(sys_cmd,"NCUseExtensions")==0)
+    {
+      if ((h!=NULL) && (h->Typ()==INT_CMD))
+        res->data=(void *)(long)setNCExtensions( (int)((long)(h->Data())) );
+      else
+        res->data=(void *)(long)getNCExtensions();
+      res->rtyp=INT_CMD;
+      return FALSE;
+    }
+    else
+  #endif
+/* ============ NCGetType ======================== */
+  #ifdef HAVE_PLURAL
+    if(strcmp(sys_cmd,"NCGetType")==0)
+    {
+      res->rtyp=INT_CMD;
+      if( rIsPluralRing(currRing) )
+        res->data=(void *)(long)ncRingType(currRing);
+      else
+        res->data=(void *)(-1L);
+      return FALSE;
+    }
+    else
+  #endif
+/* ============ ForceSCA ======================== */
+  #ifdef HAVE_PLURAL
+    if(strcmp(sys_cmd,"ForceSCA")==0)
+    {
+      if( !rIsPluralRing(currRing) )
+        return TRUE;
+      int b, e;
+      if ((h!=NULL) && (h->Typ()==INT_CMD))
+      {
+        b = (int)((long)(h->Data()));
+        h=h->next;
+      }
+      else return TRUE;
+      if ((h!=NULL) && (h->Typ()==INT_CMD))
+      {
+        e = (int)((long)(h->Data()));
+      }
+      else return TRUE;
+      if( !sca_Force(currRing, b, e) )
+        return TRUE;
+      return FALSE;
+    }
+    else
+  #endif
+/* ============ ForceNewNCMultiplication ======================== */
+  #ifdef HAVE_PLURAL
+    if(strcmp(sys_cmd,"ForceNewNCMultiplication")==0)
+    {
+      if( !rIsPluralRing(currRing) )
+        return TRUE;
+      if( !ncInitSpecialPairMultiplication(currRing) ) // No Plural!
+        return TRUE;
+      return FALSE;
+    }
+    else
+  #endif
+/* ============ ForceNewOldNCMultiplication ======================== */
+  #ifdef HAVE_PLURAL
+    if(strcmp(sys_cmd,"ForceNewOldNCMultiplication")==0)
+    {
+      if( !rIsPluralRing(currRing) )
+        return TRUE;
+      if( !ncInitSpecialPowersMultiplication(currRing) ) // Enable Formula for Plural (depends on swiches)!
+        return TRUE;
+      return FALSE;
+    }
+    else
+  #endif
 /*==================== Error =================*/
       Werror( "(extended) system(\"%s\",...) %s", sys_cmd, feNotImplemented );
   }
