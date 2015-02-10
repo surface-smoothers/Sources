@@ -53,6 +53,7 @@ and @code{LIB} no brackets are allowed.
 @*List of all supported kernel functions.
 @end ifinfo
 @menu
+* align::
 * attrib::
 * bareiss::
 * betti::
@@ -220,7 +221,29 @@ and @code{LIB} no brackets are allowed.
 * write::
 @end menu
 @c ---------------------------------------
-@node attrib, bareiss, Functions, Functions
+@node align, attrib, Functions, Functions
+@subsection align
+@cindex align
+@table @code
+@item @strong{Syntax:}
+@code{align (} vector_expression, int_expression @code{)}
+@*@code{align (} module_expression, int_expression @code{)}
+@item @strong{Type:}
+type of the first argument
+@item @strong{Purpose:}
+maps module generators @code{gen(i)} to @code{gen(i+s)} for all i.
+@item @strong{Example:}
+@smallexample
+@c example
+  ring r=0,(x,y,z),(c,dp);
+  align([1,2,3],3);
+  align([0,0,1,2,3],-1);
+  align(freemodule(2),1);
+@c example
+@end smallexample
+@end table
+@c ---------------------------------------
+@node attrib, bareiss, align, Functions
 @subsection attrib
 @cindex attrib
 @table @code
@@ -281,7 +304,17 @@ Non-reserved attributes may be used, however, in procedures and can
 considerably speed up computations.
 @sp 1
 @item @strong{Reserved attributes:}
-(isSB, isHomog are used by the kernel, the other are used by libraries)
+@cindex isSB
+@cindex isHomg
+@cindex rank
+@cindex isCI
+@cindex isCM
+@cindex withSB
+@cindex withHilb
+@cindex withRes
+@cindex withDim
+@cindex withMult
+(isSB, isHomog, rank are used by the kernel, the other are used by libraries)
 @table @code
 @item isSB
 the standard basis property is set by all commands computing a standard
@@ -295,7 +328,7 @@ complete intersection property
 @item isCM
 Cohen-Macaulay property
 @item rank
-set the rank of a module (see @ref{nrows})
+set/get the rank of a module (see @ref{nrows})
 @item withSB
 value of type ideal, resp.@: module, is std
 @item withHilb
@@ -308,11 +341,10 @@ value of type int is the dimension (see @ref{dim})
 value of type int is the multiplicity (see @ref{mult})
 @end table
 @end table
-@c @c ref
-@c See
-@c @ref{Expressions};
-@c @ref{killattrib}.
-@c @c ref
+@c ref
+See
+@ref{killattrib}.
+@c ref
 @c ---------------------------------------
 @node bareiss, betti, attrib, Functions
 @subsection bareiss
@@ -1980,16 +2012,23 @@ See
 @table @code
 @item @strong{Syntax:}
 @code{fetch (} ring_name@code{,} name @code{)}
+@*@code{fetch (} ring_name@code{,} name@code{,} intvec_expression @code{)}
+@*@code{fetch (} ring_name@code{,} name@code{,} intvec_expression@code{,} intvec_expression  @code{)}
 @item @strong{Type:}
 number, poly, vector, ideal, module, matrix or list
 (the same type as the second argument)
 @item @strong{Purpose:}
 maps objects between rings.
 @code{fetch} is the identity map between rings and qrings,
-the i-th variable of the source ring is mapped to the i-th
+in the first case the i-th variable of the source ring is mapped to the i-th
 variable of the basering.
 If the basering has less variables than the source ring these variables are mapped to zero.
-The coefficient fields must be compatible.
+In the 2nd and 3rd form the intvec describes the permation of the variables:
+an i at position j maps the variable @code{var(j)} of the source to the variable
+@code{var(i)} of the destination. Negative numbers (and the fourth argument)
+describe mapping of parameters.
+@*A zero means that that variable/parameter is mapped to 0.
+@*The coefficient fields must be compatible.
 (See @ref{map} for a description of possible mappings between
 different ground fields).
 @*@code{fetch} offers a convenient way to change
@@ -2020,6 +2059,7 @@ variables, not their names.
   v;
   ideal k=fetch(q,i);
   k;
+  fetch(q,i,1..nvars(q)); // equivalent to fetch(q,i)
 @c example
 @end smallexample
 @end table
@@ -4009,9 +4049,9 @@ standard basis of K^m,
 @*- L is an (m x m) matrix in lower triangular form with all diagonal
 entries equal to 1, and
 @*- U is an (m x n) matrix in upper row echelon form.
-@*The fourth argument, b, is expected to be an (m x 1) matrix, i.e., a vector.
+@*The fourth argument, b, is expected to be an (m x 1) matrix.
 
-@code{list L=lusolve(P,L,U,b);} fills the list L with either one entry = 0
+@code{list Q=lusolve(P,L,U,b);} fills the list Q with either one entry = 0
 (signaling that A*x=b has no solution), or with the three entries 1, x, H,
 where x is any (n x 1) solution of the given linear system, and H is a
 matrix the columns of which span the solution space of the homogeneous
@@ -5956,11 +5996,13 @@ See
 @table @code
 @item @strong{Syntax:}
 @code{rank (} matrix_expression @code{)}
+#*@code{rank (} matrix_expression @code{,1)}
 @item @strong{Type:}
 int
 @item @strong{Purpose:}
 returns the rank of a given matrix which is filled with elements
-of the ground field
+of the ground field.
+@*The first variant uses a LU-decomposition, the second a row-echelon form.
 @item @strong{Note:}
 The function works by computing the row echelon form of the matrix using
 the same algorithm as for @code{ludecomp}.
@@ -7217,6 +7259,13 @@ returns names of people who contributed to the @sc{Singular} kernel as string.
 returns the number of cpus as int (for creating multiple threads/processes).
 (see @code{system("--cpus")}).
 @c ..........................
+@item @code{system("denom_list")}
+@cindex denom_list
+@cindex system, denom_list
+returns the list of denominators (number) which occured in the latest std
+computationi(s).
+Is reset to the empty list at ring changes or by this system call.
+@c ..........................
 @item @code{system("eigenvals",} matrix @code{)}
 @cindex system, eigenvals
 returns the list of the eigenvalues of the matrix (as ideal, intvec).
@@ -7264,12 +7313,19 @@ s2 must be a reserved operator with i4 operands
 (i4 may be 1,2,3; use 4 for more than 3 or a varying number of arguments)
 See @xref{Commands for user defined types}.
 @c ..........................
-@item @code{system("LLL",} m @code{)}
+@item @code{system("LLL",} B @code{)}
 @cindex system, LLL
 @cindex LLL
-m must be a matrix or an intmat.
-iinterface to NTLs LLL (Exact Arithmetic Variant over ZZ).
-Returns the same type as the input.
+B must be a matrix or an intmat.
+Interface to NTLs LLL (Exact Arithmetic Variant over ZZ).
+Returns the same type as the input.@*
+B is an m x n matrix, viewed as m rows of n-vectors.  m may be less
+than, equal to, or greater than n, and the rows need not be
+linearly independent.  B is transformed into an LLL-reduced basis.
+The first m-rank(B) rows of B are zero.@*
+More specifically, elementary row transformations are performed on
+B so that the non-zero rows of new-B form an LLL-reduced basis
+for the lattice spanned by the rows of old-B.
 @c ..........................
 @item @code{system("nblocks")} or @code{system("nblocks",} ring_name @code{)}
 @cindex nblocks
@@ -8249,15 +8305,18 @@ The first argument must be of type
 @c @code{module},
 @c @code{matrix},
 or @code{list}.
-The result will be of the same type as the first argument.
+The result will be an expression list,
+its type and format will be set by the following assign.
 The function must be a kernel command or a procedure which takes one
-argument and returns a type which can be an element of the result.
+argument and returns a a value.
 @item @strong{Example:}
 @smallexample
 @c example
 proc p(int x) {return(x^2);}
 intvec v=1,2,3;
 apply(v,p);
+intvec vv=apply(v,p);vv;
+list ll=apply(v,p);ll;
 @c example
 @end smallexample
 @end table

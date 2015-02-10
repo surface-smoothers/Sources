@@ -25,7 +25,7 @@ if HAVE_DOXYGEN
 ## doxyfile.stamp:
 html:
 	$(MAKE) doxyrun abs_top_srcdir="$(abs_top_srcdir)" abs_top_builddir="$(abs_top_builddir)" \
-	DOXYGEN_CONFIG="$(abs_srcdir)/Doxyfile.in" DOXYGEN="$(DOXYGEN)" 
+	DOXYGEN_CONFIG="$(abs_srcdir)/Doxyfile.in" DOXYGEN="$(DOXYGEN)"
 ##	echo Timestamp > doxyfile.stamp
 
 ## CLEANFILES = doxyfile.stamp
@@ -35,7 +35,8 @@ html:
 ## html: doxyfile.stamp
 
 clean-local:
+	rm -f html_dox.log tags
 	rm -rf html
-endif 
+endif
 
-EXTRA_DIST = Doxyfile.in1 Doxyfile.in
+EXTRA_DIST = Doxyfile.in logo.png DoxygenLayout.xml header.html footer.html stylesheet.css
