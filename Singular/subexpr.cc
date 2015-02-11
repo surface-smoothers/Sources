@@ -12,23 +12,22 @@
 #include <misc/intvec.h>
 #include <misc/options.h>
 
-
-#include <coeffs/ffields.h>
 #include <coeffs/numbers.h>
 #include <coeffs/bigintmat.h>
+
+#include <coeffs/ffields.h> // nfShowMipo // minpoly printing...
 
 #include <polys/monomials/maps.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
-#include <kernel/polys.h>
 
-#include <coeffs/longrat.h>
 // #include <coeffs/longrat.h>
 
+#include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <kernel/oswrapper/timer.h>
 #include <kernel/GBEngine/syz.h>
+#include <kernel/oswrapper/timer.h>
 
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
@@ -614,7 +613,7 @@ void * slInternalCopy(leftv source, const int t, void *d, Subexpr e)
       || (source->rtyp==LIST_CMD)
       || ((source->rtyp==IDHDL)
           &&((IDTYP((idhdl)source->data)==LIST_CMD)
-	    || (IDTYP((idhdl)source->data)>MAX_TOK)))
+            || (IDTYP((idhdl)source->data)>MAX_TOK)))
       || (source->rtyp>MAX_TOK))
         return (void *)omStrDup((char *)d);
       else if (e->next==NULL)
@@ -763,6 +762,11 @@ char *  sleftv::String(void *d, BOOLEAN typed, int dim)
           }
           else
             return pString((poly)d);
+
+        #ifdef SINGULAR_4_1
+        case CNUMBER_CMD:
+          return n2String((number2)d,typed);
+        #endif
 
         case NUMBER_CMD:
           StringSetS((char*) (typed ? "number(" : ""));
@@ -1646,15 +1650,15 @@ void syMake(leftv v,const char * id, idhdl packhdl)
           v->rtyp = POLY_CMD;
           v->name = id;
         }
-        if (TEST_V_ALLWARN /*&& (myynest>0)*/
-        && ((r_IsRingVar(id, currRing->names,currRing->N)>=0)
-          || ((n_NumberOfParameters(currRing->cf)>0)
-             &&(r_IsRingVar(id, (char**)n_ParameterNames(currRing->cf),
-                                n_NumberOfParameters(currRing->cf))>=0))))
-        {
-        // WARNING: do not use ring variable names in procedures
-          Warn("use of variable >>%s<< in a procedure in line %s",id,my_yylinebuf);
-        }
+        //if (TEST_V_ALLWARN /*&& (myynest>0)*/
+        //&& ((r_IsRingVar(id, currRing->names,currRing->N)>=0)
+        //  || ((n_NumberOfParameters(currRing->cf)>0)
+        //     &&(r_IsRingVar(id, (char**)n_ParameterNames(currRing->cf),
+        //                        n_NumberOfParameters(currRing->cf))>=0))))
+        //{
+        //// WARNING: do not use ring variable names in procedures
+        //  Warn("use of variable >>%s<< in a procedure in line %s",id,my_yylinebuf);
+        //}
         return;
       }
     }
@@ -1802,7 +1806,7 @@ int sleftv::Eval()
     }
     else
     {
-      sleftv tmp;
+      sleftv tmp; tmp.Init();
       int toktype=iiTokType(d->op);
       if ((toktype==CMD_M)
       ||( toktype==ROOT_DECL_LIST)

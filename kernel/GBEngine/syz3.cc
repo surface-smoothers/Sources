@@ -1787,11 +1787,7 @@ syStrategy syKosz(ideal arg,int * length)
     temp = idCopy(arg);
   if (rk_arg==0)
   {
-    for (j=0;j<IDELEMS(temp);j++)
-    {
-      if (temp->m[j]!=NULL)
-        p_Shift(&temp->m[j],1,currRing);
-    }
+    id_Shift(temp,1,currRing);
   }
   idSkipZeroes(temp);
 #ifdef WITH_SORT
@@ -1889,7 +1885,7 @@ syStrategy syKosz(ideal arg,int * length)
           ideal initial=id_Head(syzstr->res[0],currRing);
           int len=0,reg=0;
           intvec *w=NULL;
-          ring dp_C_ring = rAssure_dp_C(currRing); rChangeCurrRing(dp_C_ring);	
+          ring dp_C_ring = rAssure_dp_C(currRing); rChangeCurrRing(dp_C_ring);
           initial = idrMoveR_NoSort(initial, syzstr->syRing, dp_C_ring);
           resolvente res = sySchreyerResolvente(initial,-1,&len,TRUE, TRUE);
           intvec * dummy = syBetti(res,len,&reg, w);
@@ -2002,7 +1998,7 @@ syStrategy syKosz(ideal arg,int * length)
           {
             PrintS("Da ist was faul!!!\n");
             Print("Aber: Regularitaet %d, Grad %ld\n",
-		   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
+                   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
           }
         }
       }
