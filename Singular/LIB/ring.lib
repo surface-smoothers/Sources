@@ -3,6 +3,7 @@ version="version ring.lib 4.0.0.0 Jun_2013 "; // $Id$
 category="General purpose";
 info="
 LIBRARY:  ring.lib      Manipulating Rings and Maps
+AUTHORS: Singular team
 
 PROCEDURES:
  changechar(c[,r]); make a copy of basering [ring r] with new char c
@@ -22,6 +23,15 @@ PROCEDURES:
  rootofUnity(n);          the minimal polynomial for the n-th primitive root of unity
              (parameters in square brackets [] are optional)
  optionIsSet(opt)         check if as a string given option is set or not.
+ hasFieldCoefficient      check if the coefficient ring is considered a field
+ hasGFCoefficient         check if the coefficient ring is GF(p,k)
+ hasNumericCoeffs(rng)    check for use of floating point numbers
+ hasCommutativeVars(rng)  non-commutive or commnuative polynomial ring
+ hasGlobalOrdering(rng)   global versus mixed/local monomial ordering
+ hasMixedOrdering()       mixed versus global/local ordering
+ hasFieldCoefficient(rng) coefficients are a field
+ isQuotientRing(rng)      ring is a qotient ring
+ isSubModule(I,J)         check if I is in J as submodule
 ";
 
 LIB "inout.lib";
@@ -37,7 +47,7 @@ RETURN:      true, if the by optionName given option is active, false otherwise.
 EXAMPLE:     example optionIsSet;
 "
 {
-   def op = option(get);
+   intvec op = option(get);
    //sanity check, if option is valid. will raise an error if not
    option(optionName);    option("no" + optionName);
    option(set,op);
@@ -46,7 +56,7 @@ EXAMPLE:     example optionIsSet;
    return(pos>0);
 }
 example
-{ 
+{
     // check if the option "warn" is set.
     optionIsSet("warn");
     option("warn");
@@ -826,10 +836,10 @@ EXAMPLE: example rootofUnity; shows examples
 {
   if ( npars(basering) !=1 )
   {
-    "the procedure works only with one parameter";
-    return(0);
+    ERROR(" the procedure works only with one ring parameter variable");
   }
-  if (n<1) { return(0); }
+  if (n<0) {  ERROR(" cannot compute ("+string(n)+")-th primitive root of unity"); }
+  if (n==0) { return(number(0));}
   number mp = par(1);
   if (n==1) { return(mp-1); }
   if (n==2) { return(mp+1); }
@@ -859,24 +869,43 @@ EXAMPLE: example rootofUnity; shows examples
   {
     if ( deg(@l[j]) == d) { @d[cnt]=@l[j]; cnt++; }
   }
-  if ( size(@d)==1 )
+
+  j=1;
+  int i;
+  number pw;
+
+  int @sized = size(@d);
+
+  if (@sized==1)
   {
-    res = poly(@d[1]);
+       setring OldRing;
+       list @rl = imap(@@rR,@d);
+       mp = number(@rl[1]);
+       kill @@rR;
+       return(mp);
   }
-  else
+  def @rng;
+
+  setring OldRing;
+
+  list rl = ringlist( OldRing);
+  while ( j<=@sized )
   {
-    j=1;
-    while  ( j <= size(@d) )
-    {
-      res = @d[j]-lead(@d[j]);
-      if ( leadcoef(res) >=0 ) { j++; }
-      else { break; }
-    }
-    res = @d[j];
+     ASSUME(0, n%2 ==0);
+     setring OldRing;
+     @rng = ring(rl);
+     setring @rng;
+     list @rl = imap(@@rR,@d);
+     number mp = leadcoef( @rl[j] );
+     minpoly = mp;
+     number mp = minpoly;
+     number pw = par(1)^(n div 2);
+     if ( (pw != 1) || n==1 )  {  break;  }
+     j = j+1;
   }
   setring OldRing;
-  poly I = imap(@@rR,res);
-  mp = leadcoef(I);
+  list @rl=imap(@@rR,@d);
+  mp = leadcoef( @rl[j] );
   kill @@rR;
   return(mp);
 }
@@ -893,7 +922,7 @@ example
 
 
 
-proc isQuotientRing( rng )
+proc isQuotientRing(def rng )
 "USAGE: isQuotientRing ( rng );
 RETURN:  1 if rng is a quotient ring, 0 otherwise.
 PURPOSE: check if typeof a rng "qring"
@@ -901,24 +930,36 @@ KEYWORDS: qring ring ideal 'factor ring'
 EXAMPLE: example isQuotientRing ; shows an example
 "
 {
-    return ( size(ideal(rng)) != 0 );
+    if ( defined(basering) )  {   def BAS=basering;  }
+
+    //access to quotient ideal will fail, if basering and rng differs.
+    setring rng;
+    int result =  ( size(ideal(rng)) != 0);
+
+    if ( defined(BAS) )   {    setring BAS;   }
+
+    return (result);
 }
 example
 {
   ring rng = 0,x,dp;
   isQuotientRing(rng); //no
-  // if a certain method does not support quotient rings, 
+  // if a certain method does not support quotient rings,
   // then a parameter test could be performed:
    ASSUME( 0, 0==isQuotientRing(basering));
 
-  qring q= ideal(x);  // constructs rng/ideal(x) 
+  qring q= ideal(x);  // constructs rng/ideal(x)
   isQuotientRing(q);  // yes
 }
 
 static proc testIsQuotientRing()
 {
+   ring rng7 = 7, x, dp;
+
    ring rng = real,x,dp;
    ASSUME(0, 0== isQuotientRing(rng) ) ;
+   ASSUME(0, 0== isQuotientRing(rng7) ) ;
+   ASSUME(0, char(basering)==0); // check that basering was not changed
 
    qring qrng = 1;
    ASSUME(0, isQuotientRing(qrng) ) ;
@@ -936,56 +977,151 @@ static proc testIsQuotientRing()
    ASSUME(0, isQuotientRing(qrng3) ) ;
 }
 
-
-
-
-
-proc hasIntegerCoefficientRing( rng )
-"USAGE: hasIntegerCoefficientRing ( rng );
-RETURN:  1 if rng is has integer ring coefficients, 0 otherwise.
-KEYWORDS: integer ring coefficients 
-EXAMPLE: example hasIntegerCoefficientRing ; shows an example
+proc hasFieldCoefficient(def rng )
+"USAGE: hasFieldCoefficient ( rng );
+RETURN:  1 if the coeffcients form a field, 0 otherwise.
+KEYWORDS: ring coefficients
+EXAMPLE: example hasFieldCoefficient; shows an example
 "
-proc hasIntegerCoefficientRing(rng)
 {
-  def rl = ringlist(rng);
-  if ( not (typeof(rl[1][1])=="string")    ) { return (0); }
-  return ( rl[1][1]=="integer" );
+  return (attrib(rng,"ring_cf")==0);
 }
 example
 {
   ring rng = integer,x,dp;
-  hasIntegerCoefficientRing(rng); //yes
-  // if a certain method supports only rings with integer coefficients, 
+  hasFieldCoefficient(rng); //no
+  // if a certain method supports only rings with integer coefficients,
   // then a parameter test could be performed:
-   ASSUME( 0, hasIntegerCoefficientRing(basering)); //ok
-
-  ring rng2 = 0, x, dp; 
-  hasIntegerCoefficientRing(rng2);  // no
+  ring rng2 = 0, x, dp;
+  hasFieldCoefficient(rng2);  // yes
 }
 
-
-static proc testHasIntegerCoefficientRing()
+proc hasGFCoefficient(def rng )
+"USAGE: hasGFCoefficient ( rng );
+RETURN:  1 if the coeffcients form GF(p,k), 0 otherwise.
+KEYWORDS: ring coefficients
+EXAMPLE: example hasGFCoefficient; shows an example
+"
 {
-   ring rng = integer,x,dp;
-   ASSUME(0, hasIntegerCoefficientRing( rng ) );
-
-   qring q = ideal(x);
-   ASSUME(0, hasIntegerCoefficientRing( q ) );
-
-   ring rng2 = 0,x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng2 ) );
-
-   ring rng3 = (0,a),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng3 ) );
-
-   ring rng4 = (real,a),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng4 ) );
-
-   ring rng5 = (real),x,dp;
-   ASSUME(0, 0==hasIntegerCoefficientRing( rng5 ) );
+  return((charstr(rng)!=string(char(rng))) &&
+  (npars(rng)==1) &&
+  (find(charstr(rng),string(char(rng)))!=1) &&
+  (charstr(basering)<>"real")&&
+  (charstr(basering)<>"complex") );
+}
+example
+{
+  ring r1 = integer,x,dp;
+  hasGF(r1);
+  ring r2 = (4,a),x,dp;
+  hasGF(r2);
 }
 
+proc hasGlobalOrdering (def rng)
+"USAGE: hasGlobalOrdering ( rng );
+RETURN:  1 if rng has a global monomial ordering, 0 otherwise.
+KEYWORDS: monomial ordering
+EXAMPLE: example hasGlobalOrdering; shows an example
+"
+{
+  return (attrib(rng,"global")==1);
+}
+example
+{
+  ring rng = integer,x,dp;
+  hasGlobalOrdering(rng); //yes
+  ring rng2 = 0, x, ds;
+  hasGlobalOrdering(rng2);  // no
+}
 
+proc hasCommutativeVars (def rng)
+"USAGE: hasCommutativeVars ( rng );
+RETURN:  1 if rng is a commutative polynomial ring, 0 otherwise.
+KEYWORDS: plural
+EXAMPLE: example hasCommutativeVars; shows an example
+"
+{
+  list rl=ringlist(rng);
+  return (size(rl)==4);
+}
+example
+{
+ ring r=0,(x,y,z),dp;
+ hasCommutativeVars(r);
+}
 
+proc hasNumericCoeffs(def rng)
+"USAGE: hasNumericCoeffs ( rng );
+RETURN:  1 if rng has inexact coeffcients, 0 otherwise.
+KEYWORDS: floating point
+EXAMPLE: example hasNumericCoeffs; shows an example
+"
+{
+  ERROR("not yet implemented");
+}
+
+proc isSubModule(def I,def J)
+"USAGE: isSubModule(I,J): I, J: ideal or module
+RETURN: 1 if module(I) is in module(J), 0 otherwise
+EXAMPLE: isSubModule; shows an example
+{
+  if (attrib(J,"isSB")==1)
+  { return(size(reduce(I,J,1))==0); }
+  else
+  { return(size(reduce(I,groebner(J),1))==0); }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r=0,x,dp;
+  ideal I1=x2;
+  ideal I2=x3;
+  isSubModule(I1, I2);
+  isSubModule(I2, I1);
+}
+
+proc hasMixedOrdering()
+"USAGE:  hasMixedOrdering();
+RETURN:  1 if ordering of basering is mixed, 0 else
+EXAMPLE: example hasMixedOrdering(); shows an example
+"
+{
+   int i,p,m;
+   for(i = 1; i <= nvars(basering); i++)
+   {
+      if(var(i) > 1)
+      {
+         p++;
+      }
+      else
+      {
+         m++;
+      }
+   }
+   if((p > 0) && (m > 0)) { return(1); }
+   return(0);
+}
+example
+{ "EXAMPLE:"; echo = 2;
+   ring R1 = 0,(x,y,z),dp;
+   hasMixedOrdering();
+   ring R2 = 31,(x(1..4),y(1..3)),(ds(4),lp(3));
+   hasMixedOrdering();
+   ring R3 = 181,x(1..9),(dp(5),lp(4));
+   hasMixedOrdering();
+}
+
+proc changeordTo(def r,string o)
+{
+  list rl=ringlist(r);
+  rl[3]=list(list("C",0),list(o,1:nvars(r)));
+  def rr=ring(rl);
+  return(rr);
+}
+example
+{
+  ring r=0,(x,y),lp;
+  def rr=changeordToCdp(r,"dp");
+  rr;
+}
 

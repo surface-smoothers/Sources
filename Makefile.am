@@ -5,11 +5,11 @@ if ENABLE_FACTORY
 endif
 
 SUBDIRS = resources omalloc xalloc $(USE_FACTORY) \
-libpolys kernel gfanlib dyn_modules \
-IntegerProgramming Singular dox \
-emacs debian redhat desktop
+libpolys gfanlib IntegerProgramming \
+kernel Singular \
+dox emacs desktop
 
-EXTRA_DIST = README autogen.sh git-version-gen
+EXTRA_DIST = README README.md README.pkg autogen.sh git-version-gen doxy singular.spec.in
 
 bin_SCRIPTS = libsingular-config
 

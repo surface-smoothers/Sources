@@ -15,8 +15,7 @@
 //
 
 /* forward declaration of types */
-class idrec;
-typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
+class idrec; typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
 struct  spolyrec;
 typedef struct spolyrec    polyrec;
 typedef struct spolyrec *         poly;
@@ -246,10 +245,10 @@ struct ip_sring
   void * ext_ref;   /* libsing GAP object */
 // #ifdef HAVE_RINGS
 //   unsigned int  cf->ringtype;  /* cring = 0 => coefficient field, cring = 1 => coeffs from Z/2^m */
-//   int_number    cf->modBase; /* Z/(ringflag^cf->modExponent)=Z/cf->modNumber*/
+//   mpz_ptr    cf->modBase; /* Z/(ringflag^cf->modExponent)=Z/cf->modNumber*/
 //   unsigned long cf->modExponent;
 //   unsigned long cf->modNumber;  /* Z/cf->modNumber */
-//   int_number    cf->modNumber;
+//   mpz_ptr    cf->modNumber;
 // #endif
 
   unsigned long options; /* ring dependent options */

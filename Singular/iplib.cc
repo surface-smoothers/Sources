@@ -15,10 +15,10 @@
 #include <misc/options.h>
 #include <Singular/ipid.h>
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
 #include <polys/monomials/ring.h>
 #include <Singular/subexpr.h>
 #include <Singular/ipshell.h>
+#include <Singular/fevoices.h>
 #include <Singular/lists.h>
 
 //#include <stdlib.h>
@@ -30,7 +30,7 @@
 
 #if SIZEOF_LONG == 8
 #define SI_MAX_NEST 500
-#elif defined(ix86_Win)
+#elif defined(__CYGWIN__)
 #define SI_MAX_NEST 480
 #else
 #define SI_MAX_NEST 1000
@@ -38,7 +38,7 @@
 
 #if defined(ix86Mac_darwin) || defined(x86_64Mac_darwin) || defined(ppcMac_darwin)
 #  define MODULE_SUFFIX bundle
-#elif defined(ix86_Win)
+#elif defined(__CYGWIN__)
 #  define MODULE_SUFFIX dll
 #else
 #  define MODULE_SUFFIX so
@@ -715,21 +715,26 @@ BOOLEAN iiEStart(char* example, procinfo *pi)
   return err;
 }
 
-int SI_MOD_INIT(staticdemo)(SModulFunctions*){ PrintS("init of staticdemo\n"); return (0); }
 
-#define SI_GET_BUILTIN_MOD_INIT(name) \
- if (strcmp(libname, #name ".so") == 0){ int SI_MOD_INIT(name)(SModulFunctions*); return SI_MOD_INIT(name); }
+extern "C"
+{
+#  define SI_GET_BUILTIN_MOD_INIT0(name) int SI_MOD_INIT0(name)(SModulFunctions*);
+          SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT0)
+#  undef  SI_GET_BUILTIN_MOD_INIT0
+};
+
 
 SModulFunc_t
 iiGetBuiltinModInit(const char* libname)
 {
-  SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT)
+#  define SI_GET_BUILTIN_MOD_INIT(name) if (strcmp(libname, #name ".so") == 0){ return SI_MOD_INIT0(name); }
+          SI_FOREACH_BUILTIN(SI_GET_BUILTIN_MOD_INIT)
+#  undef  SI_GET_BUILTIN_MOD_INIT
 
   return NULL;
 }
 
 
-#undef SI_GET_BUILTIN_MOD_INIT
 
 
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
@@ -1076,7 +1081,8 @@ BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
       goto load_modules_end;
     }
   }
-  if (dynl_check_opened(FullName)) {
+  if (dynl_check_opened(FullName))
+  {
     if (BVERBOSE(V_LOAD_LIB)) Warn( "%s already loaded", fullname);
     return FALSE;
   }
@@ -1098,14 +1104,21 @@ BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
       sModulFunctions.iiArithAddCmd = iiArithAddCmd;
       if (autoexport) sModulFunctions.iiAddCproc = iiAddCprocTop;
       else            sModulFunctions.iiAddCproc = iiAddCproc;
-      (*fktn)(&sModulFunctions);
+      int ver=(*fktn)(&sModulFunctions);
+      if (ver==MAX_TOK)
+      {
+        if (BVERBOSE(V_LOAD_LIB)) Print( "// ** loaded %s\n", fullname);
+      }
+      else
+      {
+        Warn("// ** loaded %s for a different version of Singular(expected: %d, got %d)",fullname,MAX_TOK,ver);
+      }
+      currPack->loaded=1;
+      currPack=s;
+      RET=FALSE;
     }
-    else Werror("mod_init: %s\n", dynl_error());
-    if (BVERBOSE(V_LOAD_LIB)) Print( "// ** loaded %s \n", fullname);
-    currPack->loaded=1;
-    currPack=s;
+    else Werror("mod_init not found:: %s\nThis is probably not a dynamic module for Singular!\n", dynl_error());
   }
-  RET=FALSE;
 
   load_modules_end:
   return RET;

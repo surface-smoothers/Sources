@@ -27,11 +27,9 @@
 
 #include <polys/matpol.h>
 
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 
@@ -42,8 +40,6 @@
 
 #include <math.h>
 //<-
-
-extern void nPrint(number n);  // for debugging output
 
 //-----------------------------------------------------------------------------
 //-------------- vandermonde system solver ------------------------------------
@@ -188,12 +184,12 @@ number * vandermonde::interpolateDense( const number * q )
   {
     nDelete( &c[cn-1] );
     c[cn-1]= nCopy(x[0]);
-    c[cn-1]= nNeg(c[cn-1]);              // c[cn]= -x[1]
+    c[cn-1]= nInpNeg(c[cn-1]);              // c[cn]= -x[1]
 
     for ( i= 1; i < cn; i++ ) {              // i=2; i <= cn
       nDelete( &xx );
       xx= nCopy(x[i]);
-      xx= nNeg(xx);               // xx= -x[i]
+      xx= nInpNeg(xx);               // xx= -x[i]
 
       for ( j= (cn-i-1); j <= (cn-2); j++) { // j=(cn+1-i); j <= (cn-1)
         nDelete( &tmp1 );
@@ -471,7 +467,7 @@ bool rootContainer::solver( const int polishmode )
   found_roots= laguer_driver( ad, theroots, polishmode != 0 );
   if (!found_roots)
     WarnS("rootContainer::solver: No roots found!");
- 
+
   // free memory
   for ( i=0; i <= tdg; i++ ) delete ad[i];
   omFreeSize( (void *) ad, (tdg+1)*sizeof(gmp_complex*) );
@@ -935,7 +931,7 @@ void rootArranger::arrange()
             }
           }
         } // rtest
-        if (!found) 
+        if (!found)
         {
           WarnS("rootArranger::arrange: precision lost");
           mprec*=10;
@@ -964,7 +960,7 @@ void rootArranger::arrange()
         }
 //#endif
       }
-#endif      
+#endif
     } // r
   } // xkoord
 }

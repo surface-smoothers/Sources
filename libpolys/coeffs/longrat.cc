@@ -5,14 +5,94 @@
 * ABSTRACT: computation with long rational numbers (Hubert Grassmann)
 */
 
-
-
-
 #include <misc/auxiliary.h>
+#include <omalloc/omalloc.h>
 
 #include <factory/factory.h>
 
-#include <coeffs/longrat.h>
+#include <misc/sirandom.h>
+#include <reporter/reporter.h>
+
+#include "rmodulon.h" // ZnmInfo
+#include "longrat.h"
+#include "shortfl.h"
+#include "modulop.h"
+
+// allow inlining only from p_Numbers.h and if ! LDEBUG
+#if defined(DO_LINLINE) && defined(P_NUMBERS_H) && !defined(LDEBUG)
+#define LINLINE static FORCE_INLINE
+#else
+#define LINLINE
+#undef DO_LINLINE
+#endif // DO_LINLINE
+
+LINLINE BOOLEAN  nlEqual(number a, number b, const coeffs r);
+LINLINE number   nlInit(long i, const coeffs r);
+LINLINE BOOLEAN  nlIsOne(number a, const coeffs r);
+LINLINE BOOLEAN  nlIsZero(number za, const coeffs r);
+LINLINE number   nlCopy(number a, const coeffs r);
+LINLINE number   nl_Copy(number a, const coeffs r);
+LINLINE void     nlDelete(number *a, const coeffs r);
+LINLINE number   nlNeg(number za, const coeffs r);
+LINLINE number   nlAdd(number la, number li, const coeffs r);
+LINLINE number   nlSub(number la, number li, const coeffs r);
+LINLINE number   nlMult(number a, number b, const coeffs r);
+LINLINE void nlInpAdd(number &a, number b, const coeffs r);
+LINLINE void nlInpMult(number &a, number b, const coeffs r);
+
+number nlRInit (long i);
+
+
+// number nlInitMPZ(mpz_t m, const coeffs r);
+// void nlMPZ(mpz_t m, number &n, const coeffs r);
+
+void     nlNormalize(number &x, const coeffs r);
+
+number   nlGcd(number a, number b, const coeffs r);
+number nlExtGcd(number a, number b, number *s, number *t, const coeffs);
+number   nlNormalizeHelper(number a, number b, const coeffs r);   /*special routine !*/
+BOOLEAN  nlGreater(number a, number b, const coeffs r);
+BOOLEAN  nlIsMOne(number a, const coeffs r);
+int      nlInt(number &n, const coeffs r);
+number   nlBigInt(number &n);
+
+#ifdef HAVE_RINGS
+number nlMapGMP(number from, const coeffs src, const coeffs dst);
+#endif
+
+BOOLEAN  nlGreaterZero(number za, const coeffs r);
+number   nlInvers(number a, const coeffs r);
+number   nlDiv(number a, number b, const coeffs r);
+number   nlExactDiv(number a, number b, const coeffs r);
+number   nlIntDiv(number a, number b, const coeffs r);
+number   nlIntMod(number a, number b, const coeffs r);
+void     nlPower(number x, int exp, number *lu, const coeffs r);
+const char *   nlRead (const char *s, number *a, const coeffs r);
+void     nlWrite(number &a, const coeffs r);
+
+number   nlGetDenom(number &n, const coeffs r);
+number   nlGetNumerator(number &n, const coeffs r);
+void     nlCoeffWrite(const coeffs r, BOOLEAN details);
+number   nlChineseRemainder(number *x, number *q,int rl, const coeffs C);
+number   nlFarey(number nN, number nP, const coeffs CF);
+
+#ifdef LDEBUG
+BOOLEAN  nlDBTest(number a, const char *f, const int l);
+#endif
+
+extern number nlOne; // FIXME? TODO? //  move into coeffs?
+
+nMapFunc nlSetMap(const coeffs src, const coeffs dst);
+
+// in-place operations
+void nlInpIntDiv(number &a, number b, const coeffs r);
+
+#ifdef LDEBUG
+#define nlTest(a, r) nlDBTest(a,__FILE__,__LINE__, r)
+BOOLEAN nlDBTest(number a, char *f,int l, const coeffs r);
+#else
+#define nlTest(a, r) do {} while (0)
+#endif
 
 
 // 64 bit version:
@@ -20,10 +100,12 @@
 #if 0
 #define MAX_NUM_SIZE 60
 #define POW_2_28 (1L<<60)
+#define POW_2_28_32 (1L<<28)
 #define LONG long
 #else
 #define MAX_NUM_SIZE 28
 #define POW_2_28 (1L<<28)
+#define POW_2_28_32 (1L<<28)
 #define LONG int
 #endif
 
@@ -61,8 +143,6 @@ static inline number nlShort3(number x) // assume x->s==3
 #include <omalloc/omalloc.h>
 
 #include <coeffs/numbers.h>
-#include <coeffs/modulop.h>
-#include <coeffs/shortfl.h>
 #include <coeffs/mpr_complex.h>
 
 #ifndef BYTES_PER_MP_LIMB
@@ -81,9 +161,6 @@ static inline number nlShort3(number x) // assume x->s==3
 #define mpz_limb_d(A) ((A)->_mp_d)
 #define MPZ_DIV(A,B,C) mpz_tdiv_q((A),(B),(C))
 #define MPZ_EXACTDIV(A,B,C) mpz_divexact((A),(B),(C))
-
-/// Our Type!
-static const n_coeffType ID = n_Q;
 
 void    _nlDelete_NoImm(number *a);
 
@@ -117,11 +194,10 @@ void mpz_mul_si (mpz_ptr r, mpz_srcptr s, long int si)
 
 static number nlMapP(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_Zp );
 
-  number to;
-  to = nlInit(npInt(from,src), dst);
+  number to = nlInit(npInt(from,src), dst); // FIXME? TODO? // extern int     npInt         (number &n, const coeffs r);
+
   return to;
 }
 
@@ -144,6 +220,15 @@ number nlMapGMP(number from, const coeffs /*src*/, const coeffs /*dst*/)
   z->s = 3;
   z=nlShort3(z);
   return z;
+}
+
+number nlMapZ(number from, const coeffs src, const coeffs dst)
+{
+  if (SR_HDL(from) & SR_INT)
+  {
+    return from;
+  }
+  return nlMapGMP(from,src,dst);
 }
 
 /*2
@@ -257,14 +342,22 @@ BOOLEAN nlDBTest(number a, const char *f,const int l, const coeffs /*r*/)
 }
 #endif
 
-CanonicalForm nlConvSingNFactoryN( number n, BOOLEAN setChar, const coeffs /*r*/ )
+static CanonicalForm nlConvSingNFactoryN( number n, const BOOLEAN setChar, const coeffs /*r*/ )
 {
   if (setChar) setCharacteristic( 0 );
 
   CanonicalForm term;
   if ( SR_HDL(n) & SR_INT )
   {
-    term = SR_TO_INT(n);
+    int nn=SR_TO_INT(n);
+    if ((long)nn==SR_TO_INT(n))
+       term = nn;
+    else
+    {
+        mpz_t dummy;
+        mpz_init_set_si(dummy, SR_TO_INT(n));
+        term = make_cf(dummy);
+    }
   }
   else
   {
@@ -292,18 +385,19 @@ CanonicalForm nlConvSingNFactoryN( number n, BOOLEAN setChar, const coeffs /*r*/
   return term;
 }
 
-number nlConvFactoryNSingN( const CanonicalForm n, const coeffs r)
+number nlRInit (long i);
+
+static number nlConvFactoryNSingN( const CanonicalForm f, const coeffs r)
 {
-  if (n.isImm())
+  if (f.isImm())
   {
-    long lz=n.intval();
-    int iz=(int)lz;
+    const long lz=f.intval();
+    const int iz=(int)lz;
     if ((long)iz==lz)
-    {
-      return nlInit(n.intval(),r);
-    }
-    else  return nlRInit(lz);
-    return nlInit(n.intval(),r);
+      return nlInit(f.intval(),r);
+    else
+      return nlRInit(lz);
+//    return nlInit(f.intval(),r);
   }
   else
   {
@@ -311,12 +405,12 @@ number nlConvFactoryNSingN( const CanonicalForm n, const coeffs r)
 #if defined(LDEBUG)
     z->debug=123456;
 #endif
-    gmp_numerator( n, z->z );
-    if ( n.den().isOne() )
+    gmp_numerator( f, z->z );
+    if ( f.den().isOne() )
       z->s = 3;
     else
     {
-      gmp_denominator( n, z->n );
+      gmp_denominator( f, z->n );
       z->s = 0;
     }
     nlNormalize(z,r);
@@ -324,14 +418,11 @@ number nlConvFactoryNSingN( const CanonicalForm n, const coeffs r)
   }
 }
 
-number nlRInit (long i);
-
 static number nlMapR(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_R );
 
-  double f=nrFloat(from);
+  double f=nrFloat(from); // FIXME? TODO? // extern float   nrFloat(number n);
   if (f==0.0) return INT_TO_SR(0);
   int f_sign=1;
   if (f<0.0)
@@ -359,7 +450,6 @@ static number nlMapR(number from, const coeffs src, const coeffs dst)
 
 static number nlMapLongR(number from, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
   assume( getCoeffType(src) == n_long_R );
 
   gmp_float *ff=(gmp_float*)from;
@@ -533,7 +623,14 @@ int nlInt(number &i, const coeffs r)
 {
   nlTest(i, r);
   nlNormalize(i,r);
-  if (SR_HDL(i) &SR_INT) return SR_TO_INT(i);
+  if (SR_HDL(i) & SR_INT)
+  {
+    int dummy = SR_TO_INT(i);
+    if((long)dummy == SR_TO_INT(i))
+        return SR_TO_INT(i);
+    else
+        return 0;
+  }
   if (i->s==3)
   {
     if(mpz_size1(i->z)>MP_SMALL) return 0;
@@ -562,7 +659,7 @@ number nlBigInt(number &i, const coeffs r)
 {
   nlTest(i, r);
   nlNormalize(i,r);
-  if (SR_HDL(i) &SR_INT) return (i);
+  if (SR_HDL(i) & SR_INT) return (i);
   if (i->s==3)
   {
     return nlCopy(i,r);
@@ -785,13 +882,25 @@ number nlIntMod (number a, number b, const coeffs r)
   if (SR_HDL(a) & SR_HDL(b) & SR_INT)
   {
     LONG bb=SR_TO_INT(b);
-    LONG c=SR_TO_INT(a)%bb;
+    LONG c=SR_TO_INT(a) % bb;
     return INT_TO_SR(c);
   }
   if (SR_HDL(a) & SR_INT)
   {
-    /* a is a small and b is a large int: -> a */
-    return a;
+    mpz_t aa;
+    mpz_init(aa);
+    mpz_set_si(aa, SR_TO_INT(a));
+    u=ALLOC_RNUMBER();
+#if defined(LDEBUG)
+    u->debug=123456;
+#endif
+    u->s = 3;
+    mpz_init(u->z);
+    mpz_mod(u->z,aa,b->z);
+    mpz_clear(aa);
+    u=nlShort3(u);
+    nlTest(u,r);
+    return u;
   }
   number bb=NULL;
   if (SR_HDL(b) & SR_INT)
@@ -814,17 +923,63 @@ number nlIntMod (number a, number b, const coeffs r)
 #endif
     FREE_RNUMBER(bb);
   }
-  if (mpz_isNeg(u->z))
-  {
-    if (mpz_isNeg(b->z))
-      mpz_sub(u->z,u->z,b->z);
-    else
-      mpz_add(u->z,u->z,b->z);
-  }
   u=nlShort3(u);
   nlTest(u,r);
   return u;
 }
+
+BOOLEAN nlDivBy (number a,number b, const coeffs)
+{
+  if (SR_HDL(a) & SR_HDL(b) & SR_INT)
+  {
+    return ((SR_TO_INT(a) % SR_TO_INT(b))==0);
+  }
+  if (SR_HDL(b) & SR_INT)
+  {
+    return (mpz_divisible_ui_p(a->z,SR_TO_INT(b))!=0);
+  }
+  if (SR_HDL(a) & SR_INT) return FALSE;
+  return mpz_divisible_p(a->z, b->z) != 0;
+}
+
+int nlDivComp(number a, number b, const coeffs r)
+{
+  if (nlDivBy(a, b, r))
+  {
+    if (nlDivBy(b, a, r)) return 2;
+    return -1;
+  }
+  if (nlDivBy(b, a, r)) return 1;
+  return 0;
+}
+
+number  nlGetUnit (number n, const coeffs r)
+{
+  if (nlGreaterZero(n, r))
+    return INT_TO_SR(1);
+  else
+    return INT_TO_SR(-1);
+}
+
+coeffs nlQuot1(number c, const coeffs r)
+{
+  int ch = r->cfInt(c, r);
+  mpz_ptr dummy;
+  dummy = (mpz_ptr) omAlloc(sizeof(mpz_t));
+  mpz_init_set_ui(dummy, ch);
+  ZnmInfo info;
+  info.base = dummy;
+  info.exp = (unsigned long) 1;
+  coeffs rr = nInitChar(n_Zn, (void*)&info);
+  return(rr);
+}
+
+
+BOOLEAN nlIsUnit (number a, const coeffs)
+{
+  return ((SR_HDL(a) & SR_INT) && (ABS(SR_TO_INT(a))==1));
+}
+
 
 /*2
 * u := a / b
@@ -1023,8 +1178,6 @@ BOOLEAN nlIsMOne (number a, const coeffs r)
   if (a==NULL) return FALSE;
   nlTest(a, r);
 #endif
-  //if (SR_HDL(a) & SR_INT) return (a==INT_TO_SR(-1L));
-  //return FALSE;
   return  (a==INT_TO_SR(-1L));
 }
 
@@ -1102,6 +1255,12 @@ number nlGcd(number a, number b, const coeffs r)
   nlTest(result, r);
   return result;
 }
+//number nlGcd_dummy(number a, number b, const coeffs r)
+//{
+//  extern char my_yylinebuf[80];
+//  Print("nlGcd in >>%s<<\n",my_yylinebuf);
+//  return nlGcd(a,b,r);;
+//}
 
 number nlShort1(number x) // assume x->s==0/1
 {
@@ -1168,7 +1327,7 @@ void nlNormalize (number &x, const coeffs r)
 /*2
 * returns in result->z the lcm(a->z,b->n)
 */
-number nlLcm(number a, number b, const coeffs r)
+number nlNormalizeHelper(number a, number b, const coeffs r)
 {
   number result;
   nlTest(a, r);
@@ -1213,12 +1372,10 @@ number nlLcm(number a, number b, const coeffs r)
   return result;
 }
 
-// Map q \in QQ \to Zp
-// src = Q, dst = Zp (or an extension of Zp?)
+// Map q \in QQ or ZZ \to Zp or an extension of it
+// src = Q or Z, dst = Zp (or an extension of Zp)
 number nlModP(number q, const coeffs Q, const coeffs Zp)
 {
-  assume( getCoeffType(Q) == ID );
-
   const int p = n_GetChar(Zp);
   assume( p > 0 );
 
@@ -1230,22 +1387,19 @@ number nlModP(number q, const coeffs Q, const coeffs Zp)
   if (SR_HDL(q) & SR_INT)
   {
     long i = SR_TO_INT(q);
-    if (i<0L)
-      return n_Init( static_cast<int>( P - ((-i)%P) ), Zp);
-    else
-      return n_Init( static_cast<int>( i % P ), Zp );
+    return n_Init( i, Zp );
   }
 
   const unsigned long PP = p;
 
   // numerator modulo char. should fit into int
-  number z = n_Init( static_cast<int>(mpz_fdiv_ui(q->z, PP)), Zp );
+  number z = n_Init( static_cast<long>(mpz_fdiv_ui(q->z, PP)), Zp );
 
   // denominator != 1?
   if (q->s!=3)
   {
     // denominator modulo char. should fit into int
-    number n = n_Init( static_cast<int>(mpz_fdiv_ui(q->n, PP)), Zp );
+    number n = n_Init( static_cast<long>(mpz_fdiv_ui(q->n, PP)), Zp );
 
     number res = n_Div( z, n, Zp );
 
@@ -2089,9 +2243,6 @@ number _nlMult_aNoImm_OR_bNoImm(number a, number b)
 */
 number nlCopyMap(number a, const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
-  assume( getCoeffType(src) == ID );
-
   if ((SR_HDL(a) & SR_INT)||(a==NULL))
   {
     return a;
@@ -2101,31 +2252,32 @@ number nlCopyMap(number a, const coeffs src, const coeffs dst)
 
 nMapFunc nlSetMap(const coeffs src, const coeffs dst)
 {
-  assume( getCoeffType(dst) == ID );
-//  assume( getCoeffType(src) == ID );
-
-  if (nCoeff_is_Q(src))
+  if (src->rep==n_rep_gap_rat)  /*Q, coeffs_BIGINT */
   {
     return ndCopyMap;
   }
-  if (nCoeff_is_Zp(src))
+  if ((src->rep==n_rep_int) && nCoeff_is_Zp(src))
   {
     return nlMapP;
   }
-  if (nCoeff_is_R(src))
+  if ((src->rep==n_rep_float) && nCoeff_is_R(src))
   {
     return nlMapR;
   }
-  if (nCoeff_is_long_R(src))
+  if ((src->rep==n_rep_gmp_float) && nCoeff_is_long_R(src))
   {
     return nlMapLongR; /* long R -> Q */
   }
 #ifdef HAVE_RINGS
-  if (nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
+  if (src->rep==n_rep_gmp) // nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
   {
     return nlMapGMP;
   }
-  if (nCoeff_is_Ring_2toM(src))
+  if (src->rep==n_rep_gap_gmp)
+  {
+    return nlMapZ;
+  }
+  if ((src->rep==n_rep_int) && nCoeff_is_Ring_2toM(src))
   {
     return nlMapMachineInt;
   }
@@ -2421,8 +2573,6 @@ LINLINE void nlInpMult(number &a, number b, const coeffs r)
 
 static void nlMPZ(mpz_t m, number &n, const coeffs r)
 {
-  assume( getCoeffType(r) == ID );
-
   nlTest(n, r);
   nlNormalize(n, r);
   if (SR_HDL(n) & SR_INT) mpz_init_set_si(m, SR_TO_INT(n));     /* n fits in an int */
@@ -2597,9 +2747,12 @@ number nlExtGcd(number a, number b, number *s, number *t, const coeffs)
   return g;
 }
 
-void    nlCoeffWrite  (const coeffs, BOOLEAN /*details*/)
+void    nlCoeffWrite  (const coeffs r, BOOLEAN /*details*/)
 {
+  if (r->is_field)
   PrintS("//   characteristic : 0\n");
+  else
+  PrintS("//   coeff. ring is : Integers\n");
 }
 
 number   nlChineseRemainderSym(number *x, number *q,int rl, BOOLEAN sym, const coeffs CF)
@@ -2641,13 +2794,12 @@ number   nlChineseRemainder(number *x, number *q,int rl, const coeffs C)
 static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number& c, const coeffs cf)
 {
   assume(cf != NULL);
-  assume(getCoeffType(cf) == ID);
 
   numberCollectionEnumerator.Reset();
 
   if( !numberCollectionEnumerator.MoveNext() ) // empty zero polynomial?
   {
-    c = n_Init(1, cf);
+    c = nlInit(1, cf);
     return;
   }
 
@@ -2692,7 +2844,6 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
       nlNormalize(n, cf);
 
     nlInpGcd(cand, n, cf);
-
     assume( nlGreaterZero(cand,cf) );
 
     if(nlIsOne(cand,cf))
@@ -2734,13 +2885,12 @@ static void nlClearContent(ICoeffsEnumerator& numberCollectionEnumerator, number
 static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, number& c, const coeffs cf)
 {
   assume(cf != NULL);
-  assume(getCoeffType(cf) == ID);
 
   numberCollectionEnumerator.Reset();
 
   if( !numberCollectionEnumerator.MoveNext() ) // empty zero polynomial?
   {
-    c = n_Init(1, cf);
+    c = nlInit(1, cf);
 //    assume( n_GreaterZero(c, cf) );
     return;
   }
@@ -2821,14 +2971,22 @@ static void nlClearDenominators(ICoeffsEnumerator& numberCollectionEnumerator, n
   while (numberCollectionEnumerator.MoveNext() )
   {
     number &n = numberCollectionEnumerator.Current();
-    n_InpMult(n, cand, cf);
+    nlInpMult(n, cand, cf);
   }
 
 }
 
-static char* nlCoeffString(const coeffs)
+char * nlCoeffName(const coeffs r)
 {
-  return omStrDup("0");
+  if (r->cfDiv==nlDiv) return (char*)"QQ";
+  else                 return (char*)"ZZ";
+}
+
+static char* nlCoeffString(const coeffs r)
+{
+  //return omStrDup(nlCoeffName(r));
+  if (r->cfDiv==nlDiv) return omStrDup("0");
+  else                 return omStrDup("integer");
 }
 
 #define SSI_BASE 16
@@ -2841,8 +2999,11 @@ static void nlWriteFd(number n,FILE* f, const coeffs)
     fprintf(f,"4 %ld ",SR_TO_INT(n));
     #else
     long nn=SR_TO_INT(n);
-    if ((nn<POW_2_28)||(nn>= -POW_2_28))
-      fprintf(f,"4 %ld ",nn);
+    if ((nn<POW_2_28_32)&&(nn>= -POW_2_28_32))
+    {
+      int nnn=(int)nn;
+      fprintf(f,"4 %d ",nnn);
+    }
     else
     {
       mpz_t tmp;
@@ -2898,6 +3059,9 @@ static number nlReadFd(s_buff f, const coeffs)
          number n=nlRInit(0);
          s_readmpz(f,n->z);
          n->s=3; /*sub_type*/
+         #if SIZEOF_LONG == 8
+         n=nlShort3(n);
+         #endif
          return n;
        }
      case 4:
@@ -2924,6 +3088,9 @@ static number nlReadFd(s_buff f, const coeffs)
          number n=nlRInit(0);
          s_readmpz_base (f,n->z, SSI_BASE);
          n->s=sub_type=3; /*subtype-5*/
+         #if SIZEOF_LONG == 8
+         n=nlShort3(n);
+         #endif
          return n;
        }
 
@@ -2932,15 +3099,53 @@ static number nlReadFd(s_buff f, const coeffs)
   }
   return NULL;
 }
-
-BOOLEAN nlInitChar(coeffs r, void*)
+BOOLEAN nlCoeffIsEqual(const coeffs r, n_coeffType n, void *p)
 {
-  assume( getCoeffType(r) == ID );
+  /* test, if r is an instance of nInitCoeffs(n,parameter) */
+  /* if paramater is not needed */
+  if (n==r->type)
+  {
+    if ((p==NULL)&&(r->cfDiv==nlDiv)) return TRUE;
+    if ((p!=NULL)&&(r->cfDiv!=nlDiv)) return TRUE;
+  }
+  return FALSE;
+}
+
+static number nlLcm(number a,number b,const coeffs r)
+{
+  number g=nlGcd(a,b,r);
+  number n1=nlMult(a,b,r);
+  number n2=nlDiv(n1,g,r);
+  nlDelete(&g,r);
+  nlDelete(&n1,r);
+  return n2;
+}
+
+static number nlRandom(siRandProc p, number v2, number, const coeffs cf)
+{
+  number a=nlInit(p(),cf);
+  if (v2!=NULL)
+  {
+    number b=nlInit(p(),cf);
+    number c=nlDiv(a,b,cf);
+    nlDelete(&b,cf);
+    nlDelete(&a,cf);
+    a=c;
+  }
+  return a;
+}
+
+BOOLEAN nlInitChar(coeffs r, void*p)
+{
+  r->is_domain=TRUE;
+  r->rep=n_rep_gap_rat;
+
   //const int ch = (int)(long)(p);
 
-  r->nCoeffIsEqual=ndCoeffIsEqual;
-  r->cfKillChar = ndKillChar; /* dummy */
+  r->nCoeffIsEqual=nlCoeffIsEqual;
+  //r->cfKillChar = ndKillChar; /* dummy */
   r->cfCoeffString=nlCoeffString;
+  r->cfCoeffName=nlCoeffName;
 
   r->cfInitMPZ = nlInitMPZ;
   r->cfMPZ  = nlMPZ;
@@ -2948,9 +3153,26 @@ BOOLEAN nlInitChar(coeffs r, void*)
   r->cfMult  = nlMult;
   r->cfSub   = nlSub;
   r->cfAdd   = nlAdd;
-  r->cfDiv   = nlDiv;
-  r->cfIntDiv= nlIntDiv;
-  r->cfIntMod= nlIntMod;
+  if (p==NULL) /* Q */
+  {
+    r->is_field=TRUE;
+    r->cfDiv   = nlDiv;
+    //r->cfGcd  = ndGcd_dummy;
+    r->cfSubringGcd  = nlGcd;
+  }
+  else /* Z: coeffs_BIGINT */
+  {
+    r->is_field=FALSE;
+    r->cfDiv   = nlIntDiv;
+    r->cfIntMod= nlIntMod;
+    r->cfGcd  = nlGcd;
+    r->cfDivBy=nlDivBy;
+    r->cfDivComp = nlDivComp;
+    r->cfIsUnit = nlIsUnit;
+    r->cfGetUnit = nlGetUnit;
+    r->cfQuot1 = nlQuot1;
+    r->cfLcm = nlLcm;
+  }
   r->cfExactDiv= nlExactDiv;
   r->cfInit = nlInit;
   r->cfSize  = nlSize;
@@ -2958,13 +3180,7 @@ BOOLEAN nlInitChar(coeffs r, void*)
 
   r->cfChineseRemainder=nlChineseRemainderSym;
   r->cfFarey=nlFarey;
-  #ifdef HAVE_RINGS
-  //r->cfDivComp = NULL; // only for ring stuff
-  //r->cfIsUnit = NULL; // only for ring stuff
-  //r->cfGetUnit = NULL; // only for ring stuff
-  //r->cfDivBy = NULL; // only for ring stuff
-  #endif
-  r->cfNeg   = nlNeg;
+  r->cfInpNeg   = nlNeg;
   r->cfInvers= nlInvers;
   r->cfCopy  = nlCopy;
   r->cfRePart = nlCopy;
@@ -2981,15 +3197,13 @@ BOOLEAN nlInitChar(coeffs r, void*)
   r->cfPower = nlPower;
   r->cfGetDenom = nlGetDenom;
   r->cfGetNumerator = nlGetNumerator;
-  r->cfGcd  = nlGcd;
   r->cfExtGcd = nlExtGcd; // only for ring stuff and Z
-  r->cfLcm  = nlLcm;
+  r->cfNormalizeHelper  = nlNormalizeHelper;
   r->cfDelete= nlDelete;
   r->cfSetMap = nlSetMap;
   //r->cfName = ndName;
   r->cfInpMult=nlInpMult;
   r->cfInpAdd=nlInpAdd;
-  r->cfInit_bigint=nlCopyMap;
   r->cfCoeffWrite=nlCoeffWrite;
 
   r->cfClearContent = nlClearContent;
@@ -3001,6 +3215,8 @@ BOOLEAN nlInitChar(coeffs r, void*)
 #endif
   r->convSingNFactoryN=nlConvSingNFactoryN;
   r->convFactoryNSingN=nlConvFactoryNSingN;
+
+  r->cfRandom=nlRandom;
 
   // io via ssi
   r->cfWriteFd=nlWriteFd;

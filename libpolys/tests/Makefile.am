@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I ../../m4
 
 AM_CPPFLAGS = -I${top_srcdir} -I${top_builddir} \
 ${FACTORY_INCLUDES} ${RESOURCES_INCLUDES} ${OMALLOC_INCLUDES} \
-${FLINT_CFLAGS} ${NTL_CFLAGS} ${GMP_CFLAGS} 
+${FLINT_CFLAGS} ${NTL_CFLAGS} ${GMP_CFLAGS}
 
 TESTS = simple_test \
     coeffs_test \
@@ -17,8 +17,12 @@ nodist_coeffs_test_SOURCES = coeffs_test_runner.cpp
 nodist_polys_test_SOURCES = polys_test_runner.cpp
 nodist_rings_test_SOURCES = rings_test_runner.cpp
 
-coeffs_test_LDADD = ${top_builddir}/coeffs/libcoeffs.la
-polys_test_LDADD = ${top_builddir}/polys/libpolys.la
+coeffs_test_LDADD = ${top_builddir}/coeffs/libcoeffs.la \
+${top_builddir}/reporter/libreporter.la ${top_builddir}/misc/libmisc.la \
+$(FACTORY_LIBS) $(RESOURCES_LIBS) $(OMALLOC_LIBS) \
+$(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
+
+polys_test_LDADD = ${top_builddir}/polys/libpolys.la $(coeffs_test_LDADD)
 rings_test_LDADD = $(polys_test_LDADD)
 
 BUILT_SOURCES = gftables MOD \
@@ -27,10 +31,12 @@ BUILT_SOURCES = gftables MOD \
 gftables: ${top_srcdir}/../factory/gftables
 	ln -snf ${top_srcdir}/../factory/gftables ${builddir}
 
-MOD: ${top_builddir}/polys/.libs
-	ln -snf ${top_builddir}/polys/.libs/ ${builddir}/MOD
+MOD:
+	if [ -d "${top_builddir}/libpolys/polys/.libs" ]; then \
+	  ln -snf ${top_builddir}/libpolys/polys/.libs/ ${abs_builddir}/MOD; \
+	fi
 
-# How to generate *_runner.cpp 
+# How to generate *_runner.cpp
 simple_test_runner.cpp: simple_test.h
 	${srcdir}/cxxtestgen.pl --no-eh -o $@ --error-printer ${srcdir}/simple_test.h
 

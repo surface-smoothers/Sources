@@ -266,6 +266,7 @@ BOOLEAN newstruct_Assign(leftv l, leftv r)
       }
       lists n2=(lists)r->Data();
       n2=lCopy_newstruct(n2);
+      r->CleanUp();
       if (l->rtyp==IDHDL)
       {
         IDDATA((idhdl)l->data)=(char *)n2;
@@ -360,9 +361,12 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
             res->rtyp=RING_CMD;
             res->data=al->m[nm->pos-1].data;
             r=(ring)res->data;
-            if (r==NULL) { res->data=(void *)currRing; r=currRing; }
-            if (r!=NULL) r->ref++;
-            else Werror("ring of this member is not set and no basering found");
+            if (r==NULL)
+            {
+              res->data=(void *)currRing; r=currRing;
+              if (r!=NULL) r->ref++;
+              else Werror("ring of this member is not set and no basering found");
+            }
             return r==NULL;
           }
           else if (RingDependend(nm->typ)
@@ -387,6 +391,14 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
               {
                 Werror("different ring %lx(data) - %lx(basering)",
                   (long unsigned)(al->m[nm->pos-1].data),(long unsigned)currRing);
+                Werror("name of basering: %s",IDID(currRingHdl));
+                rWrite(currRing,TRUE);PrintLn();
+                idhdl hh=rFindHdl((ring)(al->m[nm->pos-1].data),NULL);
+                const char *nn="??";
+                if (hh!=NULL) nn=IDID(hh);
+                Werror("(possible) name of ring of data: %s",nn);
+                rWrite((ring)(al->m[nm->pos-1].data),TRUE);PrintLn();
+
                 return TRUE;
               }
             }
@@ -501,7 +513,7 @@ BOOLEAN newstruct_OpM(int op, leftv res, leftv args)
       return FALSE;
     }
   }
-  return blackbox_default_OpM(op,res,args);
+  return blackboxDefaultOpM(op,res,args);
 }
 
 void newstruct_destroy(blackbox */*b*/, void *d)
@@ -536,9 +548,18 @@ BOOLEAN newstruct_CheckAssign(blackbox */*b*/, leftv L, leftv R)
   int rt=R->Typ();
   if ((lt!=DEF_CMD)&&(lt!=rt))
   {
-    Werror("can not assign %s(%d) to member of type %s(%d)",
-            Tok2Cmdname(rt),rt,
-            Tok2Cmdname(lt),lt);
+    const char *rt1=Tok2Cmdname(rt);
+    const char *lt1=Tok2Cmdname(lt);
+    if ((rt>0) && (lt>0)
+    && ((strcmp(rt1,Tok2Cmdname(0))==0)||(strcmp(lt1,Tok2Cmdname(0))==0)))
+    {
+      Werror("can not assign %s(%d) to member of type %s(%d)",
+            rt1,rt,lt1,lt);
+    }
+    else
+    {
+      Werror("can not assign %s to member of type %s",rt1,lt1);
+    }
     return TRUE;
   }
   return FALSE;
@@ -673,7 +694,7 @@ void newstruct_setup(const char *n, newstruct_desc d )
   b->blackbox_Assign=newstruct_Assign;
   b->blackbox_Op1=newstruct_Op1;
   b->blackbox_Op2=newstruct_Op2;
-  //b->blackbox_Op3=blackbox_default_Op3;
+  //b->blackbox_Op3=blackboxDefaultOp3;
   b->blackbox_OpM=newstruct_OpM;
   b->blackbox_CheckAssign=newstruct_CheckAssign;
   b->blackbox_serialize=newstruct_serialize;
@@ -699,9 +720,9 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
   loop
   {
     // read type:
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     *p='\0';
     IsCmd(start,t);
     if (t==0)
@@ -718,16 +739,16 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
     elem=(newstruct_member)omAlloc0(sizeof(*elem));
     // read name:
     p++;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     c=*p;
     *p='\0';
     elem->typ=t;
     elem->pos=res->size;
-    if (*start=='\0') /*empty name*/
+    if ((*start=='\0') /*empty name*/||(isdigit(*start)))
     {
-      WerrorS("empty name for element");
+      WerrorS("illegal/empty name for element");
       goto error_in_newstruct_def;
     }
     elem->name=omStrDup(start);
@@ -738,7 +759,7 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
 
     // next ?
     *p=c;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     if (*p!=',')
     {
       if (*p!='\0')
@@ -850,6 +871,7 @@ BOOLEAN newstruct_set_proc(const char *bbname,const char *func, int args,procinf
   }
   p->args=args;
   p->p=pr; pr->ref++;
+  pr->is_static=0;
   currRingHdl = save_ring;
   return FALSE;
 }

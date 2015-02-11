@@ -27,7 +27,6 @@
 #include <polys/nc/sca.h>
 
 
-#include <kernel/febase.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/khstd.h>
@@ -1201,7 +1200,7 @@ ideal gnc_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, k
           if ( p_LmIsConstantRat(strat->P.p, currRing) )
           {
 #ifdef PDEBUG
-             Print("unit element detected:"); 
+             Print("unit element detected:");
              p_wrp(strat->P.p,currRing);
 #endif
             p_Delete(&strat->P.p,currRing, strat->tailRing);
@@ -1308,7 +1307,7 @@ ideal gnc_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, k
 #endif
 
   if( currRing != save )     rChangeCurrRing(save);
-  
+
   return (strat->Shdl);
 }
 

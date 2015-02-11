@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef PACKAGE
 #include "omConfig.h"
+#endif
 
 #ifndef OM_NDEBUG
 
@@ -36,7 +38,7 @@ void omInitRet_2_Info(const char* argv0)
   if (argv0 != NULL) // // && omFindExec(argv0, buf))
   {
     strncpy(om_this_prog, argv0, MAXPATHLEN); // // buf);
-    om_this_prog[MAXPATHLEN - 1]= '\0';    
+    om_this_prog[MAXPATHLEN - 1]= '\0';
   }
 }
 
