@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-version="version normal.lib 4.0.0.0 Jun_2013 "; // $Id$
+version="version normal.lib 4.0.1.1 Dec_2014 "; // $Id$
 category="Commutative Algebra";
 info="
 LIBRARY:  normal.lib     Normalization of Affine Rings
@@ -144,6 +144,8 @@ SEE ALSO: normalC, normalP.
 EXAMPLE: example normal; shows an example
 "
 {
+  ASSUME(0, not isQuotientRing(basering) );
+
   intvec opt = option(get);     // Save current options
 
   int i,j;
@@ -601,6 +603,8 @@ NOTE:    printlevel >=1: display comments (default: printlevel=0)
 EXAMPLE: example HomJJ;  shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+
 //---------- initialisation ---------------------------------------------------
    int isIso,isPr,isHy,isCo,isRe,isEq,oSAZ,ii,jj,q,y;
    intvec rw,rw1;
@@ -924,6 +928,7 @@ EXAMPLE: example HomJJ;  shows an example
    L = lastRing;
    L = insert(L,0,1);
    L[3] = delt;
+   setring(P);
    return(L);
 }
 example
@@ -959,7 +964,10 @@ THEORY:  If r=size(L)=2 then iMult(L) = vdim(std(L[1]+L[2])) and in general
          delta(I) = vdim (normalisation(R/I)/(R/I)), R the basering.
 EXAMPLE: example iMult; shows an example
 "
-{    int i,mul,mu;
+{
+     ASSUME(0, not isQuotientRing(basering) );
+
+     int i,mul,mu;
      int sp = size(prim);
      int y = printlevel-voice+2;
      if ( sp > 1 )
@@ -1010,6 +1018,8 @@ NOTE:    only useful in affine rings, in local rings vdim does the check
 EXAMPLE: example locAtZero; shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+
    int ii,jj, caz;                   //caz: conzentrated at zero
    int dbp = printlevel-voice+2;
    int nva = nvars(basering);
@@ -1105,6 +1115,7 @@ RETURN:   a list of rings, say nor, and an integer, the delta-invariant
 EXAMPLE: example normalizationPrimes; shows an example
 "
 {
+   ASSUME(1, not isQuotientRing(basering) );
    //Note: this procedure calls itself as long as the test for
    //normality, i.e if R==Hom(J,J), is negative.
 
@@ -2013,6 +2024,8 @@ static proc substpart(ideal endid, ideal endphi, int homo, intvec rw)
 //fj and hence the order does'nt matter when substitutinp xi by fi
 
 {
+   ASSUME(1, not isQuotientRing(basering) );
+
    def newRing = basering;
    int ii,jj;
    map phi = newRing,maxideal(1);    //identity map
@@ -2119,6 +2132,7 @@ Versuch: subst statt phi
 ///////////////////////////////////////////////////////////////////////////////
 static proc deltaP(ideal I)
 {
+   ASSUME(1, not isQuotientRing(basering) );
    def R=basering;
    int c,d,i;
    int n=nvars(R);
@@ -2168,6 +2182,12 @@ NOTE:    genus always treats projective curves and takes projective closure if i
 EXAMPLE: example genus; shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+   if ( string(minpoly) !="0" )
+   {
+      ERROR("genus does not yet support extension fields");
+   }
+
    int w = printlevel-voice+2;  // w=printlevel (default: w=0)
 
    int ono,rpr,ll;
@@ -2224,7 +2244,7 @@ EXAMPLE: example genus; shows an example
      setring R0;
      return(pa);
    }
-   if(!rpr)
+   if(rpr)
    {
       list LZ=minAssGTZ(I);
       if(size(LZ)>1)
@@ -2240,6 +2260,10 @@ EXAMPLE: example genus; shows an example
       {
          I=LZ[1];
       }
+   }
+   else
+   {
+     I=radical(I);
    }
    I=std(I);
    if(dim(I)!=1)
@@ -2263,21 +2287,30 @@ EXAMPLE: example genus; shows an example
    list N=findvars(I,0);
    if(size(N[1])==1)
    {
-
       poly p=I[1];
      // if(deg(squarefree(p))<deg(p)){ERROR("Curve is not reduced");}
       return(-deg(p)+1);
    }
    if(size(N[1]) < nvars(R0))
    {
-      string newvar=string(N[1]);
-      execute("ring R=("+charstr(R0)+"),("+newvar+"),dp;");
-      ideal I =imap(R0,I);
-      attrib(I,"isSB",1);
+     string newvar=string(N[1]);
+     execute("ring R=("+charstr(R0)+"),("+newvar+"),dp;");
+     ideal I =imap(R0,I);
+     if((ringlist(R0)[3][1][1]=="dp")&&(size(ringlist(R0)[3])==2))
+     {
+       attrib(I,"isSB",1);
+     }
+     else
+     {
+       I=std(I);
+     }
    }
    else
    {
-      def R=basering;
+     def R=changeord(list(list("dp",1:nvars(basering))));
+     setring R;
+     ideal I=imap(R0,I);
+     I=std(I);
    }
    if(dim(I)==2)
    {
@@ -2285,6 +2318,8 @@ EXAMPLE: example genus; shows an example
    }
    else
    {
+      short=0;
+      string smp = string(minpoly);
       if(dim(I)==0)
       {
          execute("ring Rhelp=("+charstr(R0)+"),(@s,@t),dp;");
@@ -2293,6 +2328,8 @@ EXAMPLE: example genus; shows an example
       {
          execute("ring Rhelp=("+charstr(R0)+"),(@s),dp;");
       }
+      if (smp!="0")
+      { execute("minpoly = "+smp+";");}
       def newR=R+Rhelp;
       setring newR;
       ideal I=imap(R,I);
@@ -2617,6 +2654,8 @@ KEYWORDS: delta invariant; Tjurina number
 EXAMPLE: example deltaLoc;  shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+
    intvec save_opt=option(get);
    option(redSB);
    def R=basering;
@@ -2750,6 +2789,7 @@ EXAMPLE: example deltaLoc;  shows an example
           nb=nb+gcd(NP[i][2]-NP[i+1][2],NP[i][1]-NP[i+1][1]);
         }
         if(w>=1){"Newton-Polygon is non-degenerated";"";}
+        setring R;
         option(set,save_opt);
         return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
       }
@@ -2804,7 +2844,8 @@ EXAMPLE: example deltaLoc;  shows an example
          return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
       }
       list HNEXP=hnexpansion(f);
-      if (typeof(HNEXP[1])=="ring") {
+      if (typeof(HNEXP[1])=="ring")
+      {
         def altring = basering;
         def HNEring = HNEXP[1]; setring HNEring;
         nb=size(hne);
@@ -2815,6 +2856,7 @@ EXAMPLE: example deltaLoc;  shows an example
       {
         nb=size(HNEXP);
       }
+      setring R;
       option(set,save_opt);
       return(list(d*(mu+nb-1) div 2,d*tau,d*nb));
    }
@@ -2823,6 +2865,7 @@ EXAMPLE: example deltaLoc;  shows an example
       f=jet(f,deg(hc)+2);
       if(w>=1){"now we have to use Hamburger-Noether (Puiseux) expansion";}
       delt=delta(f);
+      setring R;
       option(set,save_opt);
       return(list(d*delt,d*tau,d));
    }
@@ -3198,7 +3241,11 @@ EXAMPLE:  example closureFrac; shows an example
   int i,j,k,l,n2,n3;
   intvec V;
   string mapstr;
-  for (i=1; i<=n; i++) { def R(i) = L[i]; }
+  for (i=1; i<=n; i++)
+  {
+    ASSUME(0, not isQuotientRing( L[i] ) );
+    def R(i) = L[i];
+  }
 
 // The quotient representing f is computed as in 'closureGenerators' with
 // the differences that
@@ -3375,7 +3422,8 @@ proc closureGenerators(list L);
 
   for (int i=1; i<=n; i++)
   {
-     def R(i)=L[i];          //give the rings from L a name
+     ASSUME(0, not isQuotientRing(L[i]) );
+     def R(i) = L[i];          //give the rings from L a name
   }
 
   // For each variable (counter j) and for each intermediate ring (counter k):
@@ -3385,6 +3433,7 @@ proc closureGenerators(list L);
   for (j=1; j <= length+1; j++ )
   {
       setring R(n);
+
       if (j==1)
       {
         poly p;
@@ -3559,6 +3608,8 @@ SEE ALSO: normal, normalC
 EXAMPLE: example normalP; shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+
    int i,j,y, sr, del, co;
    intvec deli;
    list resu, Resu, prim, Gens, mstdid;
@@ -3792,6 +3843,8 @@ example
 
 static proc normalityTest(list mstdid)
 {
+   ASSUME(1, not isQuotientRing(basering) );
+
    int y = printlevel-voice+2;
    intvec op = option(get);
    option(redSB);
@@ -3877,8 +3930,8 @@ static proc normalityTest(list mstdid)
          //if ( y >= 1)
          //{ "module generators are U[i]/U[1], with U:"; U;
          //  ""; pause(); }
-         option(set,op);
          setring R;
+         option(set,op);
          ideal U = imap(Q,U);
          return(U);
       }
@@ -3890,6 +3943,8 @@ static proc normalityTest(list mstdid)
 
 static proc substpartSpecial(ideal endid, ideal endphi)
 {
+   ASSUME(1, not isQuotientRing(basering) );
+
    //Note: newRing is of the form (R the original basering):
    //char(R),(T(1..N),X(1..nvars(R))),(dp(N),...);
 
@@ -3963,7 +4018,10 @@ static proc substpartSpecial(ideal endid, ideal endphi)
 
         for ( jj = n(ii-1)+1; jj<=n(ii); jj++)
         {
-          if( Le[4][jj] !=0 )     //jj=index of var which was not substituted
+          if(  Le[4][jj] !=0 or                                             // jj=index of var which was not substituted
+               (  (ii==n3-1) and ( jj==n(ii) ) and  (size(newg2)==0) )      // or we have no variables yet in the new ring and
+                                                                            // want to keep at least the last one!
+            )
           {
             kk=kk+1;
             newg2[kk] = g2[jj];   //not substituted var from varlist
@@ -4028,6 +4086,7 @@ static proc substpartSpecial(ideal endid, ideal endphi)
       export(norid);
       export(normap);
       list L = newBAS;
+      setring BAS;
       return(L);
 
    //Hier scheint interred gut zu sein, da es Ergebnis relativ schnell
@@ -4048,6 +4107,8 @@ static proc substpartSpecial(ideal endid, ideal endphi)
 // attempted.
 static proc computeRing(ideal J, ideal I, list #)
 {
+  ASSUME(1, not isQuotientRing(basering) );
+
   int i, ii,jj;
   intvec V;                          // to be used for variable weights
   int y = printlevel-voice+2;
@@ -4076,7 +4137,6 @@ static proc computeRing(ideal J, ideal I, list #)
       ideal norid = I;
       ideal normap =  maxid;  */
 
-    list gnirlist = ringlist(R);
     def R1 = ring(gnirlist);
     setring R1;
     ideal norid = imap(R, I);
@@ -4242,6 +4302,7 @@ static proc computeRing(ideal J, ideal I, list #)
       "//   number of substituted variables:", nvars(newR)-nvars(lastRing);
       pause();"";
     }
+    setring R;
     return(lastRing);
   }
   else
@@ -4304,6 +4365,8 @@ static proc normalM(ideal I, int decomp, int withDelta, int denomOption, ideal i
 
 // denomOption = 0      -> Uses the smallest degree polynomial
 // denomOption = i > 0  -> Uses a polynomial in the i-th variable
+
+  ASSUME(1, not isQuotientRing(basering) );
 
   intvec save_opt=option(get);
   option(redSB);
@@ -4603,6 +4666,7 @@ static proc normalMEqui(ideal I, ideal origJ, poly condu, poly D, int withDelta)
 // condu is a non-zerodivisor in the conductor or 0 if it was not computed.
 // If withDelta = 1, computes the delta invariant.
 {
+  ASSUME(1, not isQuotientRing(basering) );
   int step = 0;                       // Number of steps. (for debugging)
   int dbg = printlevel - voice + 2;   // dbg = printlevel (default: dbg = 0)
   int i;                              // counter
@@ -4829,6 +4893,9 @@ NOTE:    Works only over rings of two variables.@*
 EXAMPLE: example getOneVar; shows an example
 "
 {
+  ASSUME(0, nvars(basering)==2 );
+  ASSUME(0, (vari==2) || (vari==1) );
+
   def R = basering;
   list RL = ringlist(R);
   // We keep everything from R but we change the ordering to lp, and we
@@ -4869,6 +4936,7 @@ NOTE:    It looks only at the generator of J, not at all the polynomials in
 EXAMPLE: example getSmallest; shows an example
 "
 {
+
 // Computes the polynomial of smallest degree of J.
 //
   int i;
@@ -4915,6 +4983,7 @@ example
 
 static proc getGenerators(ideal J, ideal U, poly c)
 {
+
 // Computes the generators of J as an ideal in the original ring,
 // where J is given by generators in the new ring.
 
@@ -4952,6 +5021,9 @@ static proc getGenerators(ideal J, ideal U, poly c)
 
 static proc testIdeal(ideal I, ideal U, ideal origJ, poly c, poly D)
 {
+
+  ASSUME(1, not isQuotientRing(basering) );
+
 // Internal procedure, used in normalM.
 // Computes the test ideal in the new ring.
 // It takes the original test ideal and computes the radical of it in the
@@ -5001,7 +5073,7 @@ static proc testIdeal(ideal I, ideal U, ideal origJ, poly c, poly D)
 
 
   // ----- computation of the test ideal using the ring structure of Ai -----
- 
+
   option(redSB);
   option(returnSB);
 
@@ -5125,6 +5197,7 @@ NOTE:    It assumes that such U2 exists. It is intended maninly as an auxiliary
 EXAMPLE: example changeDenominator; shows an example
 "
 {
+  ASSUME(0, not isQuotientRing(basering) );
 // Let A = R / I. Given an A-module in the form 1/c1 * U1 (U1 ideal of A), it
 // computes a new ideal U2 such that the the A-module is 1/c2 * U2.
 // The base ring is R, but the computations are to be done in R / I.
@@ -5226,6 +5299,7 @@ static proc checkInclusions(ideal U1, ideal U2)
 
 static proc degSubring(poly p, intvec @v)
 {
+  ASSUME(1, not isQuotientRing(basering) );
 // Computes the degree of a polynomial taking only some variables as variables
 // and the others as parameters.
 
@@ -5245,6 +5319,8 @@ static proc degSubring(poly p, intvec @v)
 
 static proc mapBackIdeal(ideal I, poly c, intvec @v)
 {
+   ASSUME(1, not isQuotientRing(basering) );
+
 // Modifies all polynomials in I so that a map x(i) -> y(i)/c can be
 // carried out.
 
@@ -5262,6 +5338,8 @@ static proc mapBackIdeal(ideal I, poly c, intvec @v)
 
 static proc mapBackPoly(poly p, poly c, intvec @v)
 {
+  ASSUME(1, not isQuotientRing(basering) );
+
 // Multiplies each monomial of p by a power of c so that a map x(i) -> y(i)/c
 // can be carried out.
 
@@ -5603,6 +5681,8 @@ SEE ALSO: normal, normalP.
 EXAMPLE: example normalC; shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
+
    int i,j;
    int withGens, withEqui, withPrim, isPrim, noFac;
    int dbg = printlevel-voice+2;
@@ -6273,6 +6353,8 @@ example
 
 proc timeNormal(ideal I, list #)
 {
+  ASSUME(0, not isQuotientRing(basering) );
+
   def r = basering;
 
   //--------------------------- define the method ---------------------------
@@ -6509,6 +6591,7 @@ NOTE:    For big examples it can be hard to fully test correctness; the
 EXAMPLE: example norTest; shows an example
 "
 {
+   ASSUME(0, not isQuotientRing(basering) );
 //### Sollte erweitert werden auf den reduziblen Fall: einen neuen affinen
 // Ring nor[1][1]+...+nor[1][r] (direkte Summe) erzeugen, map dorthin
 // definieren und dann testen.
@@ -6611,14 +6694,24 @@ EXAMPLE: example norTest; shows an example
 //"injective:";
     a = is_injective(Qnormap,QAS);          //a. Test for injectivity of Qnormap
     dbprint ( prl, "injective: "+string(a) );
-    if ( n==1 ) { return (a); }
+    if ( n==1 )
+    {
+     intvec result = intvec(a);
+     setring BAS;
+     return (result);
+   }
    a;
 
     //------------------------ check finiteness ---------------------------
     setring newR;
     b = mapIsFinite(normap,BAS,lnorid[2]);  //b. Test for finiteness of normap
     dbprint ( prl, "finite: "+string(b) );
-    if ( n==2 ) { return (intvec(a,b)); }
+    if ( n==2 )
+    {
+       intvec result = intvec(a,b);
+       setring BAS;
+       return (result);
+    }
    b;
 
     //------------------------ check normality ---------------------------
@@ -6629,13 +6722,14 @@ EXAMPLE: example norTest; shows an example
     //norid und normap werden innnerhalb von proc computeRing ueberschrieben
     //Die Kopie newR scheint das Problem zu loesen
 
-    printlevel=prl;
 
     d = testnor[3][2];             //d = delta
     kill testnor;                              //### sollte ueberfluessig sein
     int d1 = (d==0);                           //d1=1 if delta=0
     dbprint ( prl, "delta: "+string(d) );
-    return(intvec(a,b,d1));
+    intvec result = intvec(a,b,d1);
+    setring BAS;
+    return(result);
 }
 example
 { "EXAMPLE:"; echo = 2;

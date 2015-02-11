@@ -13,11 +13,11 @@
 //
 //**************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <Singular/si_signals.h>
+
 #include <kernel/mod2.h>
+
+#include <reporter/si_signals.h>
+
 #ifdef HAVE_DBM
 #ifndef HPUX_9
 #include <strings.h>
@@ -191,7 +191,7 @@ int dbm_store(register DBM *db, datum key, datum dat, int replace)
     errno = EPERM;
     return (-1);
   }
-   
+
 _loop:
   dbm_access(db, dcalchash(key));
   if ((i = finddatum(db->dbm_pagbuf, key)) >= 0)
@@ -275,7 +275,7 @@ datum dbm_nextkey(register DBM *db)
   struct stat statb;
   datum item;
 
-  if (dbm_error(db) 
+  if (dbm_error(db)
        || singular_fstat(db->dbm_pagf, &statb) < 0
   )
                 goto err;

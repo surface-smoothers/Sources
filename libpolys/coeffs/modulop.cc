@@ -5,27 +5,73 @@
 * ABSTRACT: numbers modulo p (<=32003)
 */
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
 #include <misc/auxiliary.h>
+#include <omalloc/omalloc.h>
 
 #include <factory/factory.h>
 
-#include <string.h>
-#include <omalloc/omalloc.h>
-#include <coeffs/coeffs.h>
-#include <reporter/reporter.h>
-#include <coeffs/numbers.h>
-#include <coeffs/longrat.h>
-#include <coeffs/mpr_complex.h>
 #include <misc/mylimits.h>
-#include <coeffs/modulop.h>
+#include <misc/sirandom.h>
 
-// int npGen=0;
+#include <reporter/reporter.h>
+
+#include <coeffs/coeffs.h>
+#include <coeffs/numbers.h>
+#include <coeffs/mpr_complex.h>
+
+#include "longrat.h"
+#include "modulop.h"
+
+#include <string.h>
 
 /// Our Type!
 static const n_coeffType ID = n_Zp;
+
+BOOLEAN npGreaterZero (number k, const coeffs r);
+number  npMult        (number a, number b, const coeffs r);
+number  npInit        (long i, const coeffs r);
+int     npInt         (number &n, const coeffs r);
+number  npAdd         (number a, number b,const coeffs r);
+number  npSub         (number a, number b,const coeffs r);
+void    npPower       (number a, int i, number * result,const coeffs r);
+BOOLEAN npIsZero      (number a,const coeffs r);
+BOOLEAN npIsOne       (number a,const coeffs r);
+BOOLEAN npIsMOne       (number a,const coeffs r);
+number  npDiv         (number a, number b,const coeffs r);
+number  npNeg         (number c,const coeffs r);
+number  npInvers      (number c,const coeffs r);
+BOOLEAN npGreater     (number a, number b,const coeffs r);
+BOOLEAN npEqual       (number a, number b,const coeffs r);
+void    npWrite       (number &a, const coeffs r);
+void    npCoeffWrite  (const coeffs r, BOOLEAN details);
+const char *  npRead  (const char *s, number *a,const coeffs r);
+#ifdef LDEBUG
+BOOLEAN npDBTest      (number a, const char *f, const int l, const coeffs r);
+#define npTest(A,r)     npDBTest(A,__FILE__,__LINE__, r)
+#else
+#define npTest(A,r)     (0)
+#endif
+
+//int     npGetChar();
+
+nMapFunc npSetMap(const coeffs src, const coeffs dst);
+number  npMapP(number from, const coeffs src, const coeffs r);
+
+// extern int npGen; // obsolete
+
+// int npGen=0;
+
+/*-------specials for spolys, do NOT use otherwise--------------------------*/
+/* for npMultM, npSubM, npNegM, npEqualM : */
+#ifdef HAVE_DIV_MOD
+extern unsigned short *npInvTable;
+#else
+#ifndef HAVE_MULT_MOD
+extern long npPminus1M;
+extern unsigned short *npExpTable;
+extern unsigned short *npLogTable;
+#endif
+#endif
 
 #ifdef NV_OPS
 #pragma GCC diagnostic ignored "-Wlong-long"
@@ -44,7 +90,7 @@ static inline number nvMultM(number a, number b, const coeffs r)
 number  nvMult        (number a, number b, const coeffs r);
 number  nvDiv         (number a, number b, const coeffs r);
 number  nvInvers      (number c, const coeffs r);
-void    nvPower       (number a, int i, number * result, const coeffs r);
+//void    nvPower       (number a, int i, number * result, const coeffs r);
 #endif
 
 
@@ -52,7 +98,7 @@ void    nvPower       (number a, int i, number * result, const coeffs r);
 
 BOOLEAN npGreaterZero (number k, const coeffs r)
 {
-  assume( n_Test(k, r) );
+  n_Test(k, r);
 
   int h = (int)((long) k);
   return ((int)h !=0) && (h <= (r->ch>>1));
@@ -68,13 +114,13 @@ BOOLEAN npGreaterZero (number k, const coeffs r)
 
 number npMult (number a,number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
   if (((long)a == 0) || ((long)b == 0))
     return (number)0;
   number c = npMultM(a,b, r);
-  assume( n_Test(c, r) );
+  n_Test(c, r);
   return c;
 }
 
@@ -87,7 +133,7 @@ number npInit (long i, const coeffs r)
   if (ii <  0L)                         ii += (long)r->ch;
 
   number c = (number)ii;
-  assume( n_Test(c, r) );
+  n_Test(c, r);
   return c;
 
 }
@@ -98,7 +144,7 @@ number npInit (long i, const coeffs r)
  */
 int npInt(number &n, const coeffs r)
 {
-  assume( n_Test(n, r) );
+  n_Test(n, r);
 
   if ((long)n > (((long)r->ch) >>1)) return (int)((long)n -((long)r->ch));
   else                               return (int)((long)n);
@@ -106,45 +152,45 @@ int npInt(number &n, const coeffs r)
 
 number npAdd (number a, number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
   number c = npAddM(a,b, r);
 
-  assume( n_Test(c, r) );
+  n_Test(c, r);
 
   return c;
 }
 
 number npSub (number a, number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
   number c = npSubM(a,b,r);
 
-  assume( n_Test(c, r) );
+  n_Test(c, r);
 
   return c;
 }
 
 BOOLEAN npIsZero (number  a, const coeffs r)
 {
-  assume( n_Test(a, r) );
+  n_Test(a, r);
 
   return 0 == (long)a;
 }
 
 BOOLEAN npIsOne (number a, const coeffs r)
 {
-  assume( n_Test(a, r) );
+  n_Test(a, r);
 
   return 1 == (long)a;
 }
 
 BOOLEAN npIsMOne (number a, const coeffs r)
 {
-  assume( n_Test(a, r) );
+  n_Test(a, r);
 
   return ((r->npPminus1M == (long)a)&&((long)1!=(long)a));
 }
@@ -199,7 +245,7 @@ long InvMod(long a, const coeffs R)
 
 inline number npInversM (number c, const coeffs r)
 {
-  assume( n_Test(c, r) );
+  n_Test(c, r);
 #ifndef HAVE_DIV_MOD
   number d = (number)(long)r->npExpTable[r->npPminus1M - r->npLogTable[(long)c]];
 #else
@@ -211,15 +257,15 @@ inline number npInversM (number c, const coeffs r)
   }
   number d = (number)inv;
 #endif
-  assume( n_Test(d, r) );
+  n_Test(d, r);
   return d;
 
 }
 
 number npDiv (number a,number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
 //#ifdef NV_OPS
 //  if (r->ch>NV_MAX_PRIME)
@@ -245,13 +291,13 @@ number npDiv (number a,number b, const coeffs r)
   d = npMultM(a,inv,r);
 #endif
 
-  assume( n_Test(d, r) );
+  n_Test(d, r);
   return d;
 
 }
 number  npInvers (number c, const coeffs r)
 {
-  assume( n_Test(c, r) );
+  n_Test(c, r);
 
   if ((long)c==0)
   {
@@ -260,32 +306,32 @@ number  npInvers (number c, const coeffs r)
   }
   number d = npInversM(c,r);
 
-  assume( n_Test(d, r) );
+  n_Test(d, r);
   return d;
 
 }
 
 number npNeg (number c, const coeffs r)
 {
-  assume( n_Test(c, r) );
+  n_Test(c, r);
 
   if ((long)c==0) return c;
 
 #if 0
   number d = npNegM(c,r);
-  assume( n_Test(d, r) );
+  n_Test(d, r);
   return d;
 #else
   c = npNegM(c,r);
-  assume( n_Test(c, r) );
+  n_Test(c, r);
   return c;
 #endif
 }
 
 BOOLEAN npGreater (number a,number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
   //return (long)a != (long)b;
   return (long)a > (long)b;
@@ -293,8 +339,8 @@ BOOLEAN npGreater (number a,number b, const coeffs r)
 
 BOOLEAN npEqual (number a,number b, const coeffs r)
 {
-  assume( n_Test(a, r) );
-  assume( n_Test(b, r) );
+  n_Test(a, r);
+  n_Test(b, r);
 
 //  return (long)a == (long)b;
 
@@ -303,15 +349,16 @@ BOOLEAN npEqual (number a,number b, const coeffs r)
 
 void npWrite (number &a, const coeffs r)
 {
-  assume( n_Test(a, r) );
+  n_Test(a, r);
 
   if ((long)a>(((long)r->ch) >>1)) StringAppend("-%d",(int)(((long)r->ch)-((long)a)));
   else                             StringAppend("%d",(int)((long)a));
 }
 
+#if 0
 void npPower (number a, int i, number * result, const coeffs r)
 {
-  assume( n_Test(a, r) );
+  n_Test(a, r);
 
   if (i==0)
   {
@@ -328,6 +375,7 @@ void npPower (number a, int i, number * result, const coeffs r)
     *result = npMultM(a,*result,r);
   }
 }
+#endif
 
 static const char* npEati(const char *s, int *i, const coeffs r)
 {
@@ -342,7 +390,7 @@ static const char* npEati(const char *s, int *i, const coeffs r)
       if (ii >= (MAX_INT_VAL / 10)) ii = ii % r->ch;
     }
     while (((*s) >= '0') && ((*s) <= '9'));
-    if (ii >= r->ch) ii = ii % r->ch;
+    if (ii >= (unsigned long)r->ch) ii = ii % r->ch;
     *i=(int)ii;
   }
   else (*i) = 1;
@@ -375,7 +423,7 @@ const char * npRead (const char *s, number *a, const coeffs r)
         *a = npDiv((number)(long)z,(number)(long)n,r);
     }
   }
-  assume( n_Test(*a, r) );
+  n_Test(*a, r);
   return s;
 }
 
@@ -431,6 +479,24 @@ static char* npCoeffString(const coeffs r)
   return s;
 }
 
+static void npWriteFd(number n, FILE* f, const coeffs r)
+{
+  fprintf(f,"%d ",(int)(long)n);
+}
+
+static number npReadFd(s_buff f, const coeffs r)
+{
+  // read int
+  int dd;
+  dd=s_readint(f);
+  return (number)(long)dd;
+}
+
+static number npRandom(siRandProc p, number, number, const coeffs cf)
+{
+  return npInit(p(),cf);
+}
+
 BOOLEAN npInitChar(coeffs r, void* p)
 {
   assume( getCoeffType(r) == ID );
@@ -439,6 +505,10 @@ BOOLEAN npInitChar(coeffs r, void* p)
   assume( c > 0 );
 
   int i, w;
+
+  r->is_field=TRUE;
+  r->is_domain=TRUE;
+  r->rep=n_rep_int;
 
   r->ch = c;
   r->npPminus1M = c /*r->ch*/ - 1;
@@ -452,9 +522,6 @@ BOOLEAN npInitChar(coeffs r, void* p)
   r->cfSub   = npSub;
   r->cfAdd   = npAdd;
   r->cfDiv   = npDiv;
-  r->cfIntDiv= npDiv;
-  //r->cfIntMod= ndIntMod;
-  r->cfExactDiv= npDiv;
   r->cfInit = npInit;
   //r->cfSize  = ndSize;
   r->cfInt  = npInt;
@@ -465,7 +532,7 @@ BOOLEAN npInitChar(coeffs r, void* p)
   //r->cfExtGcd = NULL; // only for ring stuff
   // r->cfDivBy = NULL; // only for ring stuff
   #endif
-  r->cfNeg   = npNeg;
+  r->cfInpNeg   = npNeg;
   r->cfInvers= npInvers;
   //r->cfCopy  = ndCopy;
   //r->cfRePart = ndCopy;
@@ -479,16 +546,15 @@ BOOLEAN npInitChar(coeffs r, void* p)
   r->cfIsOne = npIsOne;
   r->cfIsMOne = npIsMOne;
   r->cfGreaterZero = npGreaterZero;
-  r->cfPower = npPower;
-  r->cfGetDenom = ndGetDenom;
-  r->cfGetNumerator = ndGetNumerator;
+  //r->cfPower = npPower;
+  //r->cfGetDenom = ndGetDenom;
+  //r->cfGetNumerator = ndGetNumerator;
   //r->cfGcd  = ndGcd;
   //r->cfLcm  = ndGcd;
   //r->cfDelete= ndDelete;
   r->cfSetMap = npSetMap;
   //r->cfName = ndName;
-  r->cfInpMult=ndInpMult;
-  r->cfInit_bigint= nlModP; // npMap0;
+  //r->cfInpMult=ndInpMult;
 #ifdef NV_OPS
   if (c>NV_MAX_PRIME)
   {
@@ -496,7 +562,7 @@ BOOLEAN npInitChar(coeffs r, void* p)
     r->cfDiv   = nvDiv;
     r->cfExactDiv= nvDiv;
     r->cfInvers= nvInvers;
-    r->cfPower= nvPower;
+    //r->cfPower= nvPower;
   }
 #endif
   r->cfCoeffWrite=npCoeffWrite;
@@ -507,6 +573,12 @@ BOOLEAN npInitChar(coeffs r, void* p)
 
   r->convSingNFactoryN=npConvSingNFactoryN;
   r->convFactoryNSingN=npConvFactoryNSingN;
+
+  r->cfRandom=npRandom;
+
+  // io via ssi
+  r->cfWriteFd=npWriteFd;
+  r->cfReadFd=npReadFd;
 
   // the variables:
   r->nNULL = (number)0;
@@ -536,8 +608,7 @@ BOOLEAN npInitChar(coeffs r, void* p)
         loop
         {
           i++;
-          r->npExpTable[i] =(int)(((long)w * (long)r->npExpTable[i-1])
-                               % r->ch);
+          r->npExpTable[i] =(int)(((long)w * (long)r->npExpTable[i-1]) % r->ch);
           r->npLogTable[r->npExpTable[i]] = i;
           if /*(i == r->ch - 1 ) ||*/ (/*(*/ r->npExpTable[i] == 1 /*)*/)
             break;
@@ -661,15 +732,25 @@ static number npMapLongR(number from, const coeffs /*src*/, const coeffs dst_r)
 */
 number npMapGMP(number from, const coeffs /*src*/, const coeffs dst)
 {
-  int_number erg = (int_number) omAlloc(sizeof(mpz_t)); // evtl. spaeter mit bin
+  mpz_ptr erg = (mpz_ptr) omAlloc(sizeof(mpz_t)); // evtl. spaeter mit bin
   mpz_init(erg);
 
-  mpz_mod_ui(erg, (int_number) from, dst->ch);
+  mpz_mod_ui(erg, (mpz_ptr) from, dst->ch);
   number r = (number) mpz_get_si(erg);
 
   mpz_clear(erg);
   omFree((void *) erg);
   return (number) r;
+}
+
+number npMapZ(number from, const coeffs src, const coeffs dst)
+{
+  if (SR_HDL(from) & SR_INT)
+  {
+    long f_i=SR_TO_INT(from);
+    return npInit(f_i,dst);
+  }
+  return npMapGMP(from,src,dst);
 }
 
 /*2
@@ -692,20 +773,24 @@ number npMapCanonicalForm (number a, const coeffs /*src*/, const coeffs dst)
 nMapFunc npSetMap(const coeffs src, const coeffs dst)
 {
 #ifdef HAVE_RINGS
-  if (nCoeff_is_Ring_2toM(src))
+  if ((src->rep==n_rep_int) && nCoeff_is_Ring_2toM(src))
   {
     return npMapMachineInt;
   }
-  if (nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
+  if (src->rep==n_rep_gmp) //nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_PtoM(src) || nCoeff_is_Ring_ModN(src))
   {
     return npMapGMP;
   }
-#endif
-  if (nCoeff_is_Q(src))
+  if (src->rep==n_rep_gap_gmp) //nCoeff_is_Ring_Z(src)
   {
-    return nlModP; // npMap0;
+    return npMapZ;
   }
-  if ( nCoeff_is_Zp(src) )
+#endif
+  if (src->rep==n_rep_gap_rat)  /* Q, Z */
+  {
+    return nlModP; // npMap0; // FIXME? TODO? // extern number nlModP(number q, const coeffs Q, const coeffs Zp); // Map q \in QQ \to Zp // FIXME!
+  }
+  if ((src->rep==n_rep_int) &&  nCoeff_is_Zp(src) )
   {
     if (n_GetChar(src) == n_GetChar(dst))
     {
@@ -716,7 +801,7 @@ nMapFunc npSetMap(const coeffs src, const coeffs dst)
       return npMapP;
     }
   }
-  if (nCoeff_is_long_R(src))
+  if ((src->rep==n_rep_gmp_float) && nCoeff_is_long_R(src))
   {
     return npMapLongR;
   }
@@ -817,6 +902,7 @@ number  nvInvers (number c, const coeffs r)
   }
   return nvInversM(c,r);
 }
+#if 0
 void nvPower (number a, int i, number * result, const coeffs r)
 {
   if (i==0)
@@ -834,6 +920,7 @@ void nvPower (number a, int i, number * result, const coeffs r)
     *result = nvMultM(a,*result,r);
   }
 }
+#endif
 #endif
 
 void    npCoeffWrite  (const coeffs r, BOOLEAN /*details*/)

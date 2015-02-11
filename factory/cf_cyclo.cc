@@ -2,20 +2,19 @@
 //*****************************************************************************
 /** @file cf_cyclo.cc
  *
- * @author Martin Lee
- * @date 29.01.2010
- *
  * Compute cyclotomic polynomials and factorize integers by brute force
  *
  * @par Copyright:
  *   (c) by The SINGULAR Team, see LICENSE file
  *
+ * @author Martin Lee
+ * @date 29.01.2010
 **/
 //*****************************************************************************
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "canonicalform.h"
 #include "cf_primes.h"
@@ -26,10 +25,6 @@
 #include <NTL/ZZ.h>
 #endif
 
-
-/// integer factorization using table look-ups,
-/// function may fail if integer contains primes which exceed the largest prime
-/// in our table
 int* integerFactorizer (const long integer, int& length, bool& fail)
 {
   ASSERT (integer != 0 && integer != 1 && integer != -1,
@@ -110,8 +105,6 @@ int* makeDistinct (int* factors, const int factors_length, int& length)
   return result;
 }
 
-/// compute the n-th cyclotomic polynomial,
-/// function may fail if integer_factorizer fails to factorize n
 CanonicalForm cyclotomicPoly (int n, bool& fail)
 {
   fail= false;
@@ -131,15 +124,13 @@ CanonicalForm cyclotomicPoly (int n, bool& fail)
   int prod= 1;
   for (int i= 0; i < distinct_factors_length; i++)
   {
-    result= result (power (x, distinct_factors[i]), x)/result;
+    result= leftShift (result, distinct_factors[i])/result;
     prod *= distinct_factors[i];
   }
-  return result (power (x, n/prod), x);
+  return leftShift (result, n/prod);
 }
 
 #ifdef HAVE_NTL
-/// checks if alpha is a primitive element, alpha is assumed to be an algebraic
-/// variable over some finite prime field
 bool isPrimitive (const Variable& alpha, bool& fail)
 {
   int p= getCharacteristic();

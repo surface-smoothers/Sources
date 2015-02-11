@@ -12,12 +12,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+#include <kernel/mod2.h>
 #include <misc/auxiliary.h>
 
-#include <kernel/mod2.h>
 #include <misc/mylimits.h>
 #include <omalloc/omalloc.h>
 #include <Singular/tok.h>
@@ -26,10 +23,11 @@
 #include <Singular/fehelp.h>
 #include <Singular/ipid.h>
 #include <misc/intvec.h>
-#include <kernel/febase.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
-#include <kernel/kstd1.h>
+#include <kernel/GBEngine/kstd1.h>
 #include <Singular/subexpr.h>
 #include <Singular/ipshell.h>
 #include <Singular/ipconv.h>
@@ -37,13 +35,12 @@
 #include <kernel/ideals.h>
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
-#include <kernel/stairc.h>
-#include <kernel/timer.h>
+#include <kernel/combinatorics/stairc.h>
+#include <kernel/oswrapper/timer.h>
 #include <Singular/cntrlc.h>
 #include <polys/monomials/maps.h>
-#include <kernel/syz.h>
+#include <kernel/GBEngine/syz.h>
 #include <Singular/lists.h>
-#include <libpolys/coeffs/longrat.h>
 #include <Singular/libparse.h>
 #include <coeffs/bigintmat.h>
 
@@ -172,9 +169,6 @@ void yyerror(const char * fmt)
   {
     Werror("leaving %s",VoiceName());
   }
-  // libfac:
-  extern int libfac_interruptflag;
-  libfac_interruptflag=0;
 }
 
 %}
@@ -192,6 +186,7 @@ void yyerror(const char * fmt)
 %token NOTEQUAL
 %token PLUSPLUS
 %token COLONCOLON
+%token ARROW
 
 /* types, part 1 (ring indep.)*/
 %token <i> GRING_CMD
@@ -354,7 +349,7 @@ void yyerror(const char * fmt)
 %left EQUAL_EQUAL NOTEQUAL
 %left '<'
 %left '+' '-' ':'
-%left '/' '*'
+%left '/'
 %left UMINUS NOT
 %left  '^'
 %left '[' ']'
@@ -362,6 +357,7 @@ void yyerror(const char * fmt)
 %left PLUSPLUS MINUSMINUS
 %left COLONCOLON
 %left '.'
+%left ARROW
 
 %%
 lines:
@@ -679,7 +675,9 @@ elemexpr:
           }
         | CMD_M '(' exprlist ')'
           {
-            if(iiExprArithM(&$$,&$3,$1)) YYERROR;
+            int b=iiExprArithM(&$$,&$3,$1); // handle branchTo
+            if (b==TRUE) YYERROR;
+            if (b==2) YYACCEPT;
           }
         | mat_cmd '(' expr ',' expr ',' expr ')'
           {
@@ -696,6 +694,10 @@ elemexpr:
         | RING_CMD '(' expr ')'
           {
             if(iiExprArith1(&$$,&$3,RING_CMD)) YYERROR;
+          }
+        | extendedid  ARROW BLOCKTOK
+          {
+            if (iiARROW(&$$,$1,$3)) YYERROR;
           }
         ;
 
@@ -777,12 +779,12 @@ expr:   expr_arithmetic
             siq--;
             #endif
           }
-	| assume_start expr ',' expr quote_end
-	  {
-	    iiTestAssume(&$2,&$4);
+        | assume_start expr ',' expr quote_end
+          {
+            iiTestAssume(&$2,&$4);
             memset(&$$,0,sizeof($$));
             $$.rtyp=NONE;
-	  }
+          }
         | EVAL  '('
           {
             #ifdef SIQ
@@ -878,13 +880,13 @@ expr_arithmetic:
           {
             if (siq>0)
             { if (iiExprArith1(&$$,&$2,NOT)) YYERROR; }
-	    else
-	    {
+            else
+            {
               memset(&$$,0,sizeof($$));
               int i; TESTSETINT($2,i);
               $$.rtyp  = INT_CMD;
               $$.data = (void *)(long)(i == 0 ? 1 : 0);
-	    }
+            }
           }
         | '-' expr %prec UMINUS
           {
@@ -1369,6 +1371,11 @@ ringcmd:
             yyInRingConstruction = FALSE;
             $2.CleanUp();
           }
+        | ringcmd1 elemexpr cmdeq elemexpr
+          {
+            yyInRingConstruction = FALSE;
+            if (iiAssignCR(&$2,&$4)) YYERROR;
+          }
         ;
 
 scriptcmd:
@@ -1390,7 +1397,7 @@ setringcmd:
             && ($2.rtyp==IDHDL))
             {
               idhdl h=(idhdl)$2.data;
-              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL, NULL);
+              if ($2.e!=NULL) h=rFindHdl((ring)$2.Data(),NULL);
               //Print("setring %s lev %d (ptr:%x)\n",IDID(h),IDLEV(h),IDRING(h));
               if ($1==KEEPRING_CMD)
               {

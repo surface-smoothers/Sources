@@ -1,7 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include "mod2.h"
+#include <kernel/mod2.h>
 
 #include <omalloc/omalloc.h>
 #include <misc/auxiliary.h>
@@ -66,129 +63,124 @@ char *iiArithGetCmd(int nPos){return NULL; }
 
 
 // HEADERS:
-#include "hutil.h"
-//#include "idrec.h" // moved to Singular
-#include "stairc.h"
-#include "ideals.h"
-#include "syz.h"
-#include "fast_maps.h"
-#include "febase.h"
-#include "walkProc.h"
-#include "walkMain.h"
-#include "walkSupport.h"
-#include "khstd.h"
-/// #include "sparsmat.h" // TODO: install polys/this!
+#include <kernel/combinatorics/hutil.h>
+#include <kernel/combinatorics/stairc.h>
+#include <kernel/ideals.h>
+#include <kernel/GBEngine/syz.h>
+#include <kernel/maps/fast_maps.h>
+#include <kernel/groebner_walk/walkProc.h>
+#include <kernel/groebner_walk/walkMain.h>
+#include <kernel/groebner_walk/walkSupport.h>
+#include <kernel/GBEngine/khstd.h>
+/// #include <kernel/sparsmat.h> // TODO: install polys/this!
 //+
 
-#include "fglm.h"
-#include "kstd1.h"
-#include "fglmgauss.h"
-#include "fglmvec.h"
-#include "kstdfac.h"
-#include "kmatrix.h"
-#include "GMPrat.h"
-#include "multicnt.h"
-#include "npolygon.h"
-#include "semic.h"
-#include "spectrum.h"
-#include "splist.h"
-#include "multicnt.h"
-#include "eigenval.h"
-#include "units.h"
-#include "ratgring.h"
-#include "shiftgb.h"
-// #include "mmalloc.h" // move to Singular!?
+#include <kernel/fglm/fglm.h>
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/fglm/fglmgauss.h>
+#include <kernel/fglm/fglmvec.h>
+#include <kernel/GBEngine/kstdfac.h>
+#include <kernel/spectrum/kmatrix.h>
+#include <kernel/spectrum/GMPrat.h>
+#include <kernel/spectrum/multicnt.h>
+#include <kernel/spectrum/npolygon.h>
+#include <kernel/spectrum/semic.h>
+#include <kernel/spectrum/spectrum.h>
+#include <kernel/spectrum/splist.h>
+#include <kernel/spectrum/multicnt.h>
+#include <kernel/linear_algebra/eigenval.h>
+#include <kernel/GBEngine/units.h>
+#include <kernel/GBEngine/ratgring.h>
+#include <kernel/GBEngine/shiftgb.h>
 
-#include "kutil.h"
 
-// #include "dbm_sl.h" // TODO: needs si_link// already moved to Singular/!
+#include <kernel/GBEngine/kutil.h>
 
 // #include "CCRing.h" // Too old!
-#include "digitech.h"
-#include "eigenval.h"
-#include "fast_maps.h"
-#include "fast_mult.h"
-#include "febase.h"
+#include <kernel/digitech.h>
+#include <kernel/linear_algebra/eigenval.h>
+#include <kernel/maps/fast_maps.h>
+#include <kernel/fast_mult.h>
 
-#include "fglmgauss.h"
-#include "fglm.h"
-#include "fglmvec.h"
+#include <kernel/fglm/fglmgauss.h>
+#include <kernel/fglm/fglm.h>
+#include <kernel/fglm/fglmvec.h>
 
-////////#include "F5cData.h"
-#include "f5c.h"
-#include "f5data.h"
-#include "f5gb.h"
-#include "f5lists.h"
-////////#include "F5cLists.h"
+////////#include <kernel/F5cData.h>
+#include <kernel/GBEngine/f5c.h>
+#include <kernel/GBEngine/f5data.h>
+#include <kernel/GBEngine/f5gb.h>
+#include <kernel/GBEngine/f5lists.h>
+////////#include <kernel/F5cLists.h>
 
 
-#include "GMPrat.h"
-
-// #include "htmlhelp.h" // For Windows //
-#include "hutil.h"
 // #include "Ideal.h" // Too old?
 
 
-#include "ideals.h"
+#include <kernel/ideals.h>
 
-#include "kmatrix.h"
-#include "kstd1.h"
-#include "kstdfac.h"
-#include "khstd.h"
+#include <kernel/spectrum/kmatrix.h>
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/GBEngine/kstdfac.h>
+#include <kernel/GBEngine/khstd.h>
 
-#include "linearAlgebra.h"
+#include <kernel/linear_algebra/linearAlgebra.h>
 
 
 
-// #include "lplist.h" // Too old!
-#include "multicnt.h"
-#include "npolygon.h"
+// #include <kernel/lplist.h> // Too old!
+#include <kernel/spectrum/multicnt.h>
+#include <kernel/spectrum/npolygon.h>
 // #include "Number.h" // Too old?
 // #include "Poly.h" // Too old?
 // #include "PowerSeries.h" // Too old?
 
-#include "preimage.h"
+#include <kernel/preimage.h>
 
-#include "nc.h"
+#include <kernel/GBEngine/nc.h>
 
-#include "ratgring.h"
-#include "ringgb.h"
-// #include "run.h" // moved to Singular
-#include "semic.h"
-#include "shiftgb.h"
-// #include "si_gmp.h" // remove it...
-#include "spectrum.h"
-#include "splist.h"
-#include "stairc.h"
-#include "structs.h"
-#include "syz.h"
-// #include "testpoly.h" // Too old?
+#include <kernel/GBEngine/ratgring.h>
+#include <kernel/GBEngine/ringgb.h>
+#include <kernel/spectrum/semic.h>
+#include <kernel/GBEngine/shiftgb.h>
+#include <kernel/spectrum/spectrum.h>
+#include <kernel/spectrum/splist.h>
+#include <kernel/structs.h>
+#include <kernel/GBEngine/syz.h>
+// #include <kernel/testpoly.h> // Too old?
 
-#include "tgbgauss.h"
-#include "tgb.h"
+#include <kernel/GBEngine/tgbgauss.h>
+#include <kernel/GBEngine/tgb.h>
 
-#include "timer.h"
 
-#include "units.h"
-#include "walkMain.h"
-#include "walkProc.h"
-#include "walkSupport.h"
+#include <kernel/GBEngine/units.h>
+#include <kernel/groebner_walk/walkMain.h>
+#include <kernel/groebner_walk/walkProc.h>
+#include <kernel/groebner_walk/walkSupport.h>
 
+#include <kernel/GBEngine/janet.h>
+#include <kernel/linear_algebra/interpolation.h>
+#include <kernel/linear_algebra/minpoly.h>
+
+#include <kernel/linear_algebra/Minor.h>
+#include <kernel/linear_algebra/MinorInterface.h>
+#include <kernel/linear_algebra/MinorProcessor.h>
+#include <kernel/linear_algebra/Cache.h>
+#include <kernel/linear_algebra/CacheImplementation.h>
 
 // #include <polys/clapconv.h> // due to factory? :(
-// #include "tgb_internal.h" // :(
-// #include "F4.h" // uses tgb_internal // :(
-// #include "IIntvec.h" // :(
+// #include <kernel/tgb_internal.h> // :(
+// #include <kernel/F4.h> // uses tgb_internal // :(
 
 
 
 
-// #include "fglmzero.cc" // looks like <factory/templates/ftmpl_list.h> must be installed!
+// #include <kernel/fglm/fglmzero.cc> // looks like <factory/templates/ftmpl_list.h> must be installed!
 // TODO: looks like <coeffs/mpr_complex.h> must be installed!
 
 
 
-#include "polys.h"
+#include <kernel/polys.h>
 
 void TestGBEngine()
 {
@@ -384,7 +376,7 @@ void TestGBEngine()
   rChangeCurrRing(R);
 
   {
-    ideal G = kStd(I, currQuotient, testHomog, NULL);
+    ideal G = kStd(I, currRing->qideal, testHomog, NULL);
 
 #ifdef PDEBUG
     PrintS("GB: ");
@@ -558,9 +550,9 @@ void TestSimpleRingArithmetcs()
 
   poly pp = pp_Mult_qq( p, p, R);
 
-  Print("p: "); p_Write0(p, R); Print(", deg(p): %d", p_Totaldegree(p, R)); assume( 1 == p_Totaldegree(p, R) );
+  Print("p: "); p_Write0(p, R); Print(", deg(p): %ld", p_Totaldegree(p, R)); assume( 1 == p_Totaldegree(p, R) );
 
-  Print("; p*p : "); p_Write0(pp, R); Print("deg(pp): %d\n", p_Totaldegree(pp, R)); assume( 2 == p_Totaldegree(pp, R) );
+  Print("; p*p : "); p_Write0(pp, R); Print("deg(pp): %ld\n", p_Totaldegree(pp, R)); assume( 2 == p_Totaldegree(pp, R) );
 
 
   p_Delete(&p, R);

@@ -6,30 +6,22 @@
 *
 * ngc == number gnu complex
 */
-
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
-
+#include <misc/auxiliary.h>
 #include <omalloc/omalloc.h>
 
-#include <misc/auxiliary.h>
 #include <misc/mylimits.h>
-
 #include <reporter/reporter.h>
 
-#include <coeffs/coeffs.h>
-#include <coeffs/numbers.h>
+#include "coeffs.h"
+#include "numbers.h"
 
-#include <coeffs/longrat.h>
-#include <coeffs/modulop.h>
+#include "mpr_complex.h"
 
-#include <coeffs/gnumpc.h>
-#include <coeffs/gnumpfl.h>
-#include <coeffs/shortfl.h>
-
-#include <coeffs/mpr_complex.h>
-
+#include "gnumpc.h"
+#include "longrat.h"
+#include "gnumpfl.h"
+#include "modulop.h"
+#include "shortfl.h"
 
 /// Get a mapping function from src into the domain of this type: long_C!
 nMapFunc  ngcSetMap(const coeffs src, const coeffs dst);
@@ -387,7 +379,7 @@ const char * ngcRead (const char * s, number * a, const coeffs r)
   if ((*s >= '0') && (*s <= '9'))
   {
     gmp_float *re=NULL;
-    s=ngfRead(s,(number *)&re, r);
+    s=ngfRead(s,(number *)&re, r); // FIXME? TODO? // extern const char *   ngfRead (const char *s, number *a, const coeffs r);
     gmp_complex *aa=new gmp_complex(*re);
     *a=(number)aa;
     delete re;
@@ -414,14 +406,12 @@ void ngcWrite (number &a, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 
-  extern size_t gmp_output_digits; /// comes from mpr_complex.cc
-
   if (a==NULL)
     StringAppendS("0");
   else
   {
     char *out;
-    out= complexToStr(*(gmp_complex*)a, gmp_output_digits, r);
+    out= complexToStr(*(gmp_complex*)a, r->float_len, r);
     StringAppendS(out);
     //    omFreeSize((void *)out, (strlen(out)+1)* sizeof(char) );
     omFree( (void *)out );
@@ -474,13 +464,16 @@ static char* ngcCoeffString(const coeffs r)
 BOOLEAN ngcInitChar(coeffs n, void* parameter)
 {
   assume( getCoeffType(n) == ID );
+  n->is_field=TRUE;
+  n->is_domain=TRUE;
+  n->rep=n_rep_gmp_complex;
 
   n->cfKillChar = ngcKillChar;
   n->ch = 0;
   n->cfCoeffString=ngcCoeffString;
 
   n->cfDelete  = ngcDelete;
-  n->cfNormalize=ndNormalize;
+  //n->cfNormalize=ndNormalize;
   n->cfInit   = ngcInit;
   n->cfInt    = ngcInt;
   n->cfAdd     = ngcAdd;
@@ -488,7 +481,7 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   n->cfMult    = ngcMult;
   n->cfDiv     = ngcDiv;
   n->cfExactDiv= ngcDiv;
-  n->cfNeg     = ngcNeg;
+  n->cfInpNeg     = ngcNeg;
   n->cfInvers  = ngcInvers;
   n->cfCopy   = ngcCopy;
   n->cfGreater = ngcGreater;
@@ -509,14 +502,12 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   n->cfCoeffWrite = ngcCoeffWrite;
     // cfSize  = ndSize;
 #ifdef LDEBUG
-  n->cfDBTest  = ndDBTest; // not yet implemented: ngcDBTest
+  //n->cfDBTest  = ndDBTest; // not yet implemented: ngcDBTest
 #endif
 
   n->nCoeffIsEqual = ngcCoeffIsEqual;
 
   n->cfSetChar=ngcSetChar;
-
-  n->cfInit_bigint=ngcMapQ;
 
 // we need to initialize n->nNULL at least for minpoly printing
   n->nNULL  = n->cfInit(0,n);
@@ -529,7 +520,6 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   r->cfSub   = nlSub;
   r->cfAdd   = nlAdd;
   r->cfDiv   = nlDiv;
-  r->cfIntDiv= nlIntDiv;
   r->cfIntMod= nlIntMod;
   r->cfExactDiv= nlExactDiv;
   r->cfInit = nlInit;
@@ -541,7 +531,7 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   r->cfGetUnit = NULL; // only for ring stuff
   r->cfExtGcd = NULL; // only for ring stuff
 #endif
-  r->cfNeg   = nlNeg;
+  r->cfInpNeg   = nlNeg;
   r->cfInvers= nlInvers;
   r->cfCopy  = nl_Copy;
   r->cfRePart = nl_Copy;
@@ -590,6 +580,8 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
   {
     LongComplexInfo* p = (LongComplexInfo*)parameter;
     pParameterNames[0] = omStrDup(p->par_name);
+    // fix wrong parameters:
+    if (p->float_len<SHORT_REAL_LENGTH) p->float_len=SHORT_REAL_LENGTH;
     n->float_len = p->float_len;
     n->float_len2 = p->float_len2;
 
@@ -600,8 +592,6 @@ BOOLEAN ngcInitChar(coeffs n, void* parameter)
     n->float_len2 = SHORT_REAL_LENGTH;
   }
 
-  assume( n->float_len <= n->float_len2 );
-  assume( n->float_len2 >= SHORT_REAL_LENGTH );
   assume( pParameterNames != NULL );
   assume( pParameterNames[0] != NULL );
 
@@ -623,11 +613,32 @@ void ngcSetChar(const coeffs r)
 number ngcMapQ(number from, const coeffs aRing, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
-  assume( getCoeffType(aRing) == n_Q );
+  assume( aRing->rep == n_rep_gap_rat);
 
   if ( from != NULL )
   {
     gmp_complex *res=new gmp_complex(numberFieldToFloat(from,QTOF,aRing));
+    return (number)res;
+  }
+  else
+    return NULL;
+}
+
+number ngcMapZ(number from, const coeffs aRing, const coeffs r)
+{
+  assume( getCoeffType(r) == ID );
+  assume( aRing->rep == n_rep_gap_gmp);
+
+  if ( from != NULL )
+  {
+    if (SR_HDL(from) & SR_INT)
+    {
+      gmp_float f_i= gmp_float(SR_TO_INT(from));
+      gmp_complex *res=new gmp_complex(f_i);
+      return (number)res;
+    }
+    gmp_float f_i=(mpz_ptr)from;
+    gmp_complex *res=new gmp_complex(f_i);
     return (number)res;
   }
   else
@@ -655,7 +666,7 @@ static number ngcMapR(number from, const coeffs aRing, const coeffs r)
 
   if ( from != NULL )
   {
-    gmp_complex *res=new gmp_complex((double)nrFloat(from));
+    gmp_complex *res=new gmp_complex((double)nrFloat(from)); // FIXME? TODO? // extern float   nrFloat(number n);
     return (number)res;
   }
   else
@@ -668,7 +679,7 @@ static number ngcMapP(number from, const coeffs aRing, const coeffs r)
   assume( getCoeffType(aRing) ==  n_Zp );
 
   if ( from != NULL )
-    return ngcInit(npInt(from, aRing), r);
+    return ngcInit(npInt(from, aRing), r); // FIXME? TODO? // extern int     npInt         (number &n, const coeffs r);
   else
     return NULL;
 }
@@ -691,23 +702,27 @@ nMapFunc ngcSetMap(const coeffs src, const coeffs dst)
 {
   assume( getCoeffType(dst) == ID );
 
-  if (nCoeff_is_Q(src))
+  if (src->rep==n_rep_gap_rat) /* Q, Z*/
   {
     return ngcMapQ;
   }
-  if (nCoeff_is_long_R(src))
+  if (src->rep==n_rep_gap_gmp) /* Z */
+  {
+    return ngcMapZ;
+  }
+  if ((src->rep==n_rep_gmp_float) && nCoeff_is_long_R(src))
   {
     return ngcMapLongR;
   }
-  if (nCoeff_is_long_C(src))
+  if ((src->rep==n_rep_gmp_complex) && nCoeff_is_long_C(src))
   {
     return ngcCopyMap;
   }
-  if (nCoeff_is_R(src))
+  if ((src->rep==n_rep_float) && nCoeff_is_R(src))
   {
     return ngcMapR;
   }
-  if (nCoeff_is_Zp(src))
+  if ((src->rep==n_rep_int) && nCoeff_is_Zp(src))
   {
     return ngcMapP;
   }

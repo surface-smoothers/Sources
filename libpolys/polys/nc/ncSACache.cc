@@ -3,9 +3,9 @@
 ****************************************/
 /***************************************************************
  *  File:    ncSACache.cc
- *  Purpose: implementation of special Cache+Hash for Multiplier 
+ *  Purpose: implementation of special Cache+Hash for Multiplier
  *  Author:  motsak
- *  Created: 
+ *  Created:
  *******************************************************************/
 
 #define MYTEST 0
@@ -17,9 +17,9 @@
 #endif
 
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #ifndef SING_NDEBUG
@@ -29,7 +29,7 @@
 #endif
 
 #if OUTPUT
-namespace 
+namespace
 {
   static const char* m_Typenames[2] = {"lookup", "store"};
 }

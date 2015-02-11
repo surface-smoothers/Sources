@@ -6,26 +6,28 @@
 * ABSTRACT: attributes to leftv and idhdl
 */
 
+#include <kernel/mod2.h>
+
+#include <omalloc/omalloc.h>
+
+#include <misc/options.h>
+#include <misc/intvec.h>
+
+#include <polys/matpol.h>
+
+#include <kernel/polys.h>
+#include <kernel/ideals.h>
+
+#include <Singular/tok.h>
+#include <Singular/ipid.h>
+#include <Singular/ipshell.h>
+#include <Singular/attrib.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <kernel/mod2.h>
-#include <omalloc/omalloc.h>
-#include <misc/options.h>
-#include <Singular/tok.h>
-#include <Singular/ipid.h>
-#include <misc/intvec.h>
-#include <kernel/polys.h>
-#include <kernel/ideals.h>
-#include <polys/matpol.h>
-#include <Singular/ipshell.h>
-#include <Singular/attrib.h>
 
 static omBin sattr_bin = omGetSpecBin(sizeof(sattr));
 
@@ -38,21 +40,18 @@ void sattr::Print()
 
 attr sattr::Copy()
 {
-  if (this!=NULL)
+  assume (this!=NULL);
+
+  omCheckAddrSize(this,sizeof(sattr));
+  attr n=(attr)omAlloc0Bin(sattr_bin);
+  n->atyp=atyp;
+  if (name!=NULL) n->name=omStrDup(name);
+  n->data=CopyA();
+  if (next!=NULL)
   {
-    omCheckAddrSize(this,sizeof(sattr));
-    attr n=(attr)omAlloc0Bin(sattr_bin);
-    n->atyp=atyp;
-    if (name!=NULL) n->name=omStrDup(name);
-    n->data=CopyA();
-    if (next!=NULL)
-    {
-      n->next=next->Copy();
-    }
-    return n;
+    n->next=next->Copy();
   }
-  else
-    return NULL;
+  return n;
 }
 
 // in subexr.cc:

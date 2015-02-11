@@ -1,15 +1,19 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
-#ifdef HAVE_CONFIG_H
+/**
+ * @file cf_char.cc
+ *
+ * getting and setting the characteristic of a finite field
+**/
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 
 #include "cf_defs.h"
 #include "canonicalform.h"
 #include "imm.h"
-#include "int_pp.h"
 #include "cf_primes.h"
 #include "cf_util.h"
 
@@ -33,14 +37,6 @@ void setCharacteristic( int c )
         if (c > 536870909) factoryError("characteristic is too large(max is 2^29)");
         ff_setprime( c );
     }
-}
-
-void setCharacteristic( int c, int n )
-{
-    ASSERT( c > 1 && n > 0, "illegal characteristic" );
-    setCharacteristic( c );
-    InternalPrimePower::setPrimePower( c, n );
-    CFFactory::settype( PrimePowerDomain );
 }
 
 void setCharacteristic( int c, int n, char name )

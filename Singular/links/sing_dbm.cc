@@ -8,25 +8,21 @@
 //
 //**************************************************************************/
 
+#include <kernel/mod2.h>
+
 #  include <stdio.h>
 #  include <fcntl.h>
 #  include <errno.h>
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
-#include <kernel/mod2.h>
-
 #ifdef HAVE_DBM
 
+#  include <omalloc/omalloc.h>
 #  include <Singular/tok.h>
-#  include <kernel/febase.h>
-#include <omalloc/omalloc.h>
 #  include <Singular/ipid.h>
 #  include <Singular/links/silink.h>
 #  include <Singular/links/sing_dbm.h>
 
-// #ifdef ix86_Win
+// #ifdef __CYGWIN__
 // #  define USE_GDBM
 // #  define BLOCKSIZE 1
 // #  define GDBM_STATIC
@@ -63,7 +59,7 @@ LINKAGE BOOLEAN dbOpen(si_link l, short flag, leftv u)
   }
   if(flag & SI_LINK_READ)
     {
-      if (strcmp(l->mode,"rw")==0) mode="rw";	
+      if (strcmp(l->mode,"rw")==0) mode="rw";
     }
   //if (((db = (DBM_info *)omAlloc(sizeof *db)) != NULL)
   //&&((db->db = dbm_open(l->name, dbm_flags, 0664 )) != NULL ))

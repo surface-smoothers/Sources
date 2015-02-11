@@ -10,14 +10,13 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "timing.h"
 
 #include "cf_map.h"
-#include "algext.h"
 #include "cf_map_ext.h"
 #include "templates/ftmpl_functions.h"
 #include "ExtensionInfo.h"

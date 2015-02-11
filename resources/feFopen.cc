@@ -1,3 +1,7 @@
+#include "resourcesconfig.h"
+#include "feResource.h"
+#include "feFopen.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,18 +10,10 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifdef HAVE_CONFIG_H
-#include "resourcesconfig.h"
-#endif /* HAVE_CONFIG_H */
-
 #if defined(HAVE_PWD_H) && defined(HAVE_GETPWNAM)
 #include <pwd.h>
 #endif
 
-//#include <reporter/reporter.h>
-
-#include "feFopen.h"
-#include "feResource.h"
 
 
 
@@ -56,7 +52,7 @@ FILE * feFopen(const char *path, const char *mode, char *where,
     if (path[1] == DIR_SEP)
     {
       const char* home = getenv("HOME");
-#ifdef ix86_Win
+#ifdef __CUGWIN__
       if ((home==NULL)||(!access(home,X_OK)))
         home = getenv("SINGHOME");
 #endif
@@ -169,7 +165,7 @@ FILE * feFopen(const char *path, const char *mode, char *where,
 // Make sure that mode contains binary option
 FILE* myfopen(const char *path, const char *mode)
 {
-#if (defined(CYGWIN) || defined(ix86_Win))
+#if (defined(__CUGWIN__))
   char mmode[4];
   int i;
   int done = 0;

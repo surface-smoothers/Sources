@@ -47,22 +47,13 @@ char* feGetResource(const char id, int warn = -1);
 
 // This needs to be called before the first call to feResource
 // Initializes Resources, SearchPath, and extends PATH
-void feInitResources(const char* argv0 = NULL);
+void feInitResources(const char* argv0);
 // Re-inits resources, should be called after changing env. variables
 void feReInitResources();
 #endif /* end ifdef __cplusplus */
 
-extern char* feArgv0; 
+extern char* feArgv0;
 
-const char fePathSep =
-/* not really cygwin, applies to all windows systems:*/
-#if (defined(CYGWIN) || defined(ix86_Win))
-                ';'
-#else
-                ':'
-#endif
-                ;
-
-
+const char fePathSep = ':' ;
 
 #endif

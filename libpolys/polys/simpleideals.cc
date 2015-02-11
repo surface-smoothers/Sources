@@ -7,9 +7,9 @@
 
 
 /* includes */
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -33,8 +33,6 @@ static poly * idpower;
 /*collects the monomials in makemonoms, must be allocated befor*/
 static int idpowerpoint;
 /*index of the actual monomial in idpower*/
-static poly * givenideal;
-/*the ideal from which a power is computed*/
 
 /*2
 * initialise an ideal
@@ -78,14 +76,14 @@ void idShow(const ideal id, const ring lmRing, const ring tailRing, const int de
 }
 #endif
 
-/// index of generator with leading term in ground ring (if any); 
+/// index of generator with leading term in ground ring (if any);
 /// otherwise -1
 int id_PosConstant(ideal id, const ring r)
 {
   id_Test(id, r);
-  const int N = IDELEMS(id) - 1; 
-  const poly * m = id->m + N; 
- 
+  const int N = IDELEMS(id) - 1;
+  const poly * m = id->m + N;
+
   for (int k = N; k >= 0; --k, --m)
   {
     const poly p = *m;
@@ -93,7 +91,7 @@ int id_PosConstant(ideal id, const ring r)
        if (p_LmIsConstantComp(p, r) == TRUE)
 	 return k;
   }
-   
+
   return -1;
 }
 
@@ -418,7 +416,7 @@ ideal id_Copy(ideal h1, const ring r)
 }
 
 #ifdef PDEBUG
-void id_DBTest(ideal h1, int level, const char *f,const int l, const ring r)
+void id_DBTest(ideal h1, int level, const char *f,const int l, const ring r, const ring tailRing)
 {
   int i;
 
@@ -427,10 +425,12 @@ void id_DBTest(ideal h1, int level, const char *f,const int l, const ring r)
     // assume(IDELEMS(h1) > 0); for ideal/module, does not apply to matrix
     omCheckAddrSize(h1,sizeof(*h1));
     omdebugAddrSize(h1->m,h1->ncols*h1->nrows*sizeof(poly));
+
     /* to be able to test matrices: */
     for (i=(h1->ncols*h1->nrows)-1; i>=0; i--)
-      _p_Test(h1->m[i], r, level);
-    int new_rk=id_RankFreeModule(h1,r);
+      _pp_Test(h1->m[i], r, tailRing, level);
+
+    int new_rk=id_RankFreeModule(h1, r, tailRing);
     if(new_rk > h1->rank)
     {
       dReportError("wrong rank %d (should be %d) in %s:%d\n",
@@ -996,70 +996,6 @@ ideal id_MaxIdeal(int deg, const ring r)
   return id;
 }
 
-/*2
-*computes recursively all generators of a certain degree
-*of the ideal "givenideal"
-*elms is the number elements in the given ideal
-*actelm is the actual element to handle
-*deg is the degree of the power to compute
-*gendeg is the actual degree of the generator in consideration
-*/
-static void makepotence(int elms,int actelm,int deg,int gendeg, const ring r)
-{
-  poly p;
-  int i=0;
-
-  if ((idpowerpoint == 0) && (actelm ==1))
-  {
-    idpower[idpowerpoint] = p_One(r);
-    gendeg = 0;
-  }
-  while (i<=deg)
-  {
-    if (deg == gendeg)
-    {
-      idpowerpoint++;
-      return;
-    }
-    if (actelm == elms)
-    {
-      p=p_Power(p_Copy(givenideal[actelm-1],r),deg-gendeg,r);
-      idpower[idpowerpoint]=p_Mult_q(idpower[idpowerpoint],p,r);
-      idpowerpoint++;
-      return;
-    }
-    else
-    {
-      p = p_Copy(idpower[idpowerpoint],r);
-      makepotence(elms,actelm+1,deg,gendeg,r);
-      idpower[idpowerpoint] = p;
-    }
-    gendeg++;
-    idpower[idpowerpoint]=p_Mult_q(idpower[idpowerpoint],p_Copy(givenideal[actelm-1],r),r);
-    i++;
-  }
-}
-
-/*2
-*returns the deg-th power of the ideal gid
-*/
-//ideal idPower(ideal gid,int deg)
-//{
-//  int i;
-//  ideal id;
-//
-//  if (deg < 1) deg = 1;
-//  i = binom(IDELEMS(gid)+deg-1,deg);
-//  id=idInit(i,1);
-//  idpower = id->m;
-//  givenideal = gid->m;
-//  idpowerpoint = 0;
-//  makepotence(IDELEMS(gid),1,deg,0);
-//  idpower = NULL;
-//  givenideal = NULL;
-//  idpowerpoint = 0;
-//  return id;
-//}
 static void id_NextPotence(ideal given, ideal result,
   int begin, int end, int deg, int restdeg, poly ap, const ring r)
 {

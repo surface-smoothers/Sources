@@ -7,12 +7,11 @@
 // to produce a non-inline version from lists.h
 #define LISTS_CC
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 #include <Singular/tok.h>
-#include <kernel/febase.h>
 //#include "ipid.h"
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
@@ -105,7 +104,7 @@ lists lInsert0(lists ul, leftv v, int pos)
   l->m[pos].data=v->CopyD();
   l->m[pos].flag=v->flag;
   attr *a=v->Attribute();
-  if (a!=NULL)
+  if ((a!=NULL)&&(*a!=NULL))
   {
     l->m[pos].attribute=(*a)->Copy();
   }

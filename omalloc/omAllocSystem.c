@@ -11,10 +11,10 @@
 #include <mylimits.h>
 
 
-#include <omalloc/omConfig.h>
-#include <omalloc/omDefaultConfig.h>
-#include <omalloc/omMalloc.h>
-#include <omalloc/omalloc.h>
+#include "omConfig.h"
+#include "omDefaultConfig.h"
+#include "omMalloc.h"
+#include "omalloc.h"
 /* include after omMalloc.h */
 #include <string.h>
 
