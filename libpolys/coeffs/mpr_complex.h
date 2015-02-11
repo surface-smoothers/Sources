@@ -12,7 +12,7 @@
 
 //-> include & define stuff
 // must have gmp version >= 2
-#include "si_gmp.h"
+#include <coeffs/si_gmp.h>
 #include <coeffs/mpr_global.h>
 
 #define ZTOF 1
@@ -21,7 +21,6 @@
 #define CTOF 4
 
 void setGMPFloatDigits( size_t digits, size_t rest );
-size_t getGMPFloatDigits();
 
 //-> class gmp_float
 /**
@@ -110,7 +109,7 @@ public:
     mpf_t b;
     mpf_init(b);
     mpf_pow_ui( b, this->t, (unsigned long)exp );
-    return gmp_float(b); 
+    return gmp_float(b);
   };
 
   friend bool operator == ( const gmp_float & a, const gmp_float & b );
@@ -205,7 +204,7 @@ public:
   ~gmp_complex() {}
 
   gmp_complex & neg ( );
-  
+
   friend gmp_complex operator + ( const gmp_complex & a, const gmp_complex & b );
   friend gmp_complex operator - ( const gmp_complex & a, const gmp_complex & b );
   friend gmp_complex operator * ( const gmp_complex & a, const gmp_complex & b );

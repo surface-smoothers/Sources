@@ -5,23 +5,66 @@
 *Dense Integer Polynomials
 */
 //Schauen was hier überhaupt sinn macht
-#include "libpolysconfig.h"
+
 #include <misc/auxiliary.h>
 
+#ifdef SINGULAR_4_1
+
+#include <omalloc/omalloc.h>
 #include <factory/factory.h>
+#include <misc/mylimits.h>
+#include <reporter/reporter.h>
+
+#include "coeffs.h"
+#include "numbers.h"
+#include "mpr_complex.h"
+#include "AEQ.h"
+#include "modulop.h"
 
 #include <string.h>
-#include <omalloc/omalloc.h>
-#include <coeffs/coeffs.h>
-#include <reporter/reporter.h>
-#include <coeffs/numbers.h>
-#include <coeffs/longrat.h>
-#include <coeffs/modulop.h>
-#include <coeffs/mpr_complex.h>
-#include <misc/mylimits.h>
-#include <coeffs/OPAEQ.h>
-#include <coeffs/AEQ.h>
 
+BOOLEAN nAEQCoeffIsEqual     (number a, number b, const coeffs r);
+number  nAEQMult        (number a, number b, const coeffs r);
+number  nAEQSub         (number a, number b, const coeffs r);
+number  nAEQAdd         (number a, number b, const coeffs r);
+number  nAEQDiv         (number a, number b, const coeffs r);
+number  nAEQIntMod      (number a, number b, const coeffs r);// Hir wollte wir was gucken
+number  nAEQExactDiv    (number a, number b, const coeffs r);
+number  nAEQInit        (long i, const coeffs r);
+number  nAEQInitMPZ     (mpz_t m, const coeffs r); //nachgucken/fragen
+int     nAEQSize        (number a, const coeffs r);///
+int     nAEQInt         (number &a, const coeffs r);
+number  nAEQMPZ         (number a, const coeffs r); //nachgucken/fragen
+number  nAEQNeg         (number c, const coeffs r);
+number  nAEQCopy        (number a, number b, const coeffs r); // nachgicken
+number  nAEQRePart      (number a, number b, const coeffs r); // nachgicken
+number  nAEQImPart      (number a, number b, const coeffs r); // nachgicken
+
+void    nAEQWriteLong   (number &a, const coeffs r);//
+void    nAEQWriteShort  (number &a, const coeffs r);//
+
+
+const char *  nAEQRead  (const char *s, number *a, const coeffs r);
+number nAEQNormalize    (number a, number b, const coeffs r);//
+BOOLEAN nAEQGreater     (number a, number b, const coeffs r);//
+BOOLEAN nAEQEqual       (number a, number b, const coeffs r);
+BOOLEAN nAEQIsZero      (number a, const coeffs r);
+BOOLEAN nAEQIsOne       (number a, const coeffs r);
+BOOLEAN nAEQIsMOne      (number a, const coeffs r);
+BOOLEAN nAEQGreaterZero (number a, number b, const coeffs r);
+void    nAEQPower       (number a, int i, number * result, const coeffs r);
+number nAEQGetDenom     (number &a, const coeffs r);//
+number nAEQGetNumerator (number &a, const coeffs r);//
+number nAEQGcd          (number a, number b, const coeffs r);
+number nAEQLcm          (number a, number b, const coeffs r);
+
+void    nAEQDelete       (number *a, const coeffs r);//
+number    nAEQSetMap      (number a, const coeffs r);//
+void    nAEQInpMult      (number &a ,number b, const coeffs r);//
+void    nAEQCoeffWrite   (const coeffs r, BOOLEAN details);//
+
+BOOLEAN nAEQClearContent  (number a, const coeffs r);//
+BOOLEAN nAEQClearDenominators  (number a, const coeffs r);//
 
 
 
@@ -70,17 +113,6 @@ number  nAEQDiv(number a, number b, const coeffs)
     return (number) res;
 }
 
-
-number  nAEQIntDiv(number a, number b, const coeffs)
-{
-
-    Q_poly* f=reinterpret_cast<Q_poly*> (a);
-    mpz_t* i= reinterpret_cast<mpz_t*> (b);
-    Q_poly *res=new Q_poly;
-    res->Q_poly_set(*f);
-    res->Q_poly_scalar_div_to(*i);
-    return (number) res;
-}
 
 number  nAEQIntMod(number a, number, const coeffs)
 {
@@ -266,13 +298,6 @@ number    nAEQSetMap        (number a, const coeffs)
         return a;
 }
 */
-char*    nAEQName       (number, const coeffs)
-{
-    char* c=new char;
-    *c='c';
-
-    return c;
-}
 
 void    nAEQInpMult       (number &, number, const coeffs)
 {
@@ -294,6 +319,10 @@ BOOLEAN nAEQClearDenominators  (number, const coeffs)
     return FALSE;
 }
 
+static char * n_QAECoeffName(const coeffs r)
+{
+  return (char *)"QAE";
+}
 
 
 //INITIALISIERUNG FÜR SINGULAR
@@ -301,19 +330,20 @@ BOOLEAN nAEQClearDenominators  (number, const coeffs)
 
 BOOLEAN n_QAEInitChar(coeffs r, void *)
 {
+    // r->is_field,is_domain?
     r->ch=0;
-    r->cfKillChar=NULL;
-    r->nCoeffIsEqual=ndCoeffIsEqual;
+    //r->cfKillChar=ndKillChar;
+    //r->nCoeffIsEqual=ndCoeffIsEqual;
     r->cfMult  = nAEQMult;
     r->cfSub   = nAEQSub;
     r->cfAdd   = nAEQAdd;
     r->cfDiv   = nAEQDiv;
-    r->cfIntDiv= nAEQIntDiv;
     r->cfIntMod= nAEQIntMod;
     r->cfExactDiv= nAEQExactDiv;
     r->cfInit = nAEQInit;
     r->cfSize  = nAEQSize;
     r->cfInt  = nAEQInt;
+    r->cfCoeffName = n_QAECoeffName;
 #ifdef HAVE_RINGS
     //r->cfDivComp = NULL; // only for ring stuff
     //r->cfIsUnit = NULL; // only for ring stuff
@@ -321,7 +351,7 @@ BOOLEAN n_QAEInitChar(coeffs r, void *)
     //r->cfExtGcd = NULL; // only for ring stuff
     // r->cfDivBy = NULL; // only for ring stuff
 #endif
-    r->cfNeg   = nAEQNeg;
+    r->cfInpNeg   = nAEQNeg;
     r->cfInvers= NULL;
     //r->cfCopy  = ndCopy;
     //r->cfRePart = ndCopy;
@@ -341,10 +371,10 @@ BOOLEAN n_QAEInitChar(coeffs r, void *)
     r->cfGcd  = nAEQGcd;
     r->cfLcm  = nAEQLcm; // ZU BEARBEITEN
     r->cfDelete= nAEQDelete;
-    r->cfSetMap = npSetMap;
-    r->cfName = nAEQName;
+
+    r->cfSetMap = npSetMap; // extern nMapFunc npSetMap(const coeffs src, const coeffs dst); // FIXME: WHY??? // TODO: this seems to be a bug!
+
     r->cfInpMult=nAEQInpMult; //????
-    r->cfInit_bigint= NULL; // nAEQMap0;
     r->cfCoeffWrite=nAEQCoeffWrite; //????
 
 
@@ -355,4 +385,4 @@ BOOLEAN n_QAEInitChar(coeffs r, void *)
     r->has_simple_Inverse=TRUE;
     return FALSE;
 }
-
+#endif

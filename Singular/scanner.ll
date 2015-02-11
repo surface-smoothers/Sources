@@ -12,7 +12,8 @@
 #include <Singular/tok.h>
 #include <Singular/stype.h>
 #include <Singular/ipshell.h>
-#include <kernel/febase.h>
+#include <Singular/fevoices.h>
+#include <kernel/oswrapper/feread.h>
 
 int feReadLine(char* b, int l);
 #define ALLOC(a) omAlloc((a))
@@ -284,6 +285,7 @@ proc[ \t]+{name}[ \t]*\( {
 "!="                     { return NOTEQUAL; }
 "<>"                     { return NOTEQUAL; }
 "**"                     { return '^'; }
+"->"                     { return ARROW; }
 \\                       { return '\\'; }
 newline                  {
                            lvalp->name = omStrDup("\n");

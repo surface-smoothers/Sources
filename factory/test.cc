@@ -1,4 +1,8 @@
 #include <factory/factory.h>
+#ifdef SINGULAR
+#include <resources/feFopen.h>
+#include <resources/feResource.h>
+#endif
 #include "cf_assert.h"
 
 int test2 (int p)
@@ -88,6 +92,10 @@ int main( int, char *argv[] )
     return(1);
   }
 
+#ifdef SINGULAR
+  feInitResources(argv[0]);
+#endif
+
 //  On (SW_USE_EZGCD); On (SW_USE_EZGCD_P); // TODO&NOTE: these switches lead to failed tests (with nonzero p)!
 
   Off (SW_USE_EZGCD);
@@ -111,14 +119,14 @@ int main( int, char *argv[] )
   t= test2 (3);
   if (t < 0)
     ret += t;
-  
+
   t= test2 (101);
   if (t < 0)
     ret += t;
-  
+
   t= test2 (43051);
   if (t < 0)
     ret += t;
-  
+
   return ret;
 }

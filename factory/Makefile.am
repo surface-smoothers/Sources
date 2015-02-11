@@ -1,17 +1,17 @@
 ACLOCAL_AMFLAGS = -I ../m4
 
-SUBDIRS=include/factory libfac
+SUBDIRS=include/factory
 
 #-I${srcdir} -I${srcdir}/.. -I${includedir}
 
-AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include -I${srcdir} -I${srcdir}/.. -I${includedir}  $(FLINT_CFLAGS) $(GMP_CFLAGS) $(NTL_CFLAGS) $(OMALLOC_CFLAGS) 
+AM_CPPFLAGS = -I${builddir}/include -I${srcdir}/include -I${srcdir} -I${srcdir}/.. -I${includedir} $(OMALLOC_INCLUDES) $(RESOURCES_INCLUDES)  $(FLINT_CFLAGS) $(GMP_CFLAGS) $(NTL_CFLAGS) $(OMALLOC_CFLAGS) $(GMP_CFLAGS)
 
 lib_LTLIBRARIES = libfactory.la 
 
 #${builddir}/../resources/libresources.la
 
 libfactory_la_LIBADD     = ${builddir}/libfac/libfac.la   -L$(builddir)/../resources/.libs/ -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc \
-$(OMALLOC_LDFLAGS) $(OMALLOC_R_LDADD) $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
+$(OMALLOC_LDFLAGS) $(OMALLOC_R_LDADD) $(FLINT_LIBS) $(NTL_LIBS) $(GMP_LIBS)
 
 # -L$(builddir)/../resources/.libs/ -L$(PREFIX)/lib/ -L$(builddir)/../omalloc/.libs/ -L$(PREFIX)/lib/  -lresources -lomalloc
 
@@ -19,17 +19,20 @@ libfactory_la_LDFLAGS    = -release ${PACKAGE_VERSION}
 
 # factory source files
 SOURCES = \
-		algext.cc \
 		canonicalform.cc \
 		cf_algorithm.cc \
 		cf_char.cc \
+		cfCharSets.cc \
+		cfCharSetsUtil.cc \
 		cf_chinese.cc \
 		cf_cyclo.cc \
 		cf_eval.cc \
+		cfEzgcd.cc \
 		cf_factor.cc \
 		cf_factory.cc \
 		cf_gcd.cc \
-		cf_gcd_smallp.cc \
+		cfGcdAlgExt.cc \
+		cfGcdUtil.cc \
 		cf_generator.cc \
 		cf_globals.cc \
 		cf_hnf.cc \
@@ -40,23 +43,28 @@ SOURCES = \
 		cf_linsys.cc \
 		cf_map.cc \
 		cf_map_ext.cc \
+		cfModGcd.cc \
 		cfNewtonPolygon.cc \
+		cfNTLzzpEXGCD.cc \
 		cfModResultant.cc \
 		cf_ops.cc \
 		cf_primes.cc \
 		cf_random.cc \
 		cf_resultant.cc \
 		cf_reval.cc \
+		cfSubResGcd.cc \
 		cf_switches.cc \
 		cf_util.cc \
+		cfUnivarGcd.cc \
 		debug.cc \
 		DegreePattern.cc \
 		ExtensionInfo.cc \
 		facAbsBiFact.cc \
 		facAbsFact.cc \
 		facAlgExt.cc \
+		facAlgFunc.cc \
+		facAlgFuncUtil.cc \
 		facBivar.cc \
-		fac_ezgcd.cc \
 		facFactorize.cc \
 		fac_sqrfree.cc \
 		fac_util.cc \
@@ -68,7 +76,6 @@ SOURCES = \
 		facHensel.cc \
 		facIrredTest.cc \
 		facMul.cc \
-		facNTLzzpEXGCD.cc \
 		facSparseHensel.cc \
 		ffops.cc \
 		FLINTconvert.cc \
@@ -99,32 +106,42 @@ factory_headers = \
 		cf_assert.h \
 		canonicalform.h \
 		cf_algorithm.h \
+		cfCharSets.h \
+		cfCharSetsUtil.h \
 		cf_cyclo.h \
 		cf_defs.h \
 		cf_eval.h \
+		cfEzgcd.h \
 		cf_factory.h \
 		cf_generator.h \
 		cf_globals.h \
-		cf_gcd_smallp.h \
+		cfGcdAlgExt.h \
+		cfGcdUtil.h \
 		cf_hnf.h \
 		cf_irred.h \
 		cf_iter.h \
 		cf_map.h \
 		cf_map_ext.h \
+		cfModGcd.h \
 		cfNewtonPolygon.h \
+		cfNTLzzpEXGCD.h \
 		cfModResultant.h \
 		cf_primes.h \
 		cf_primetab.h \
 		cf_random.h \
 		cf_reval.h \
+		cfSubResGcd.h \
 		cf_switches.h \
 		cf_util.h \
+		cfUnivarGcd.h \
 		debug.h \
 		DegreePattern.h \
 		ExtensionInfo.h \
 		facAbsBiFact.h \
 		facAbsFact.h \
 		facAlgExt.h \
+		facAlgFunc.h \
+		facAlgFuncUtil.h \
 		facBivar.h \
 		facFactorize.h \
 		fac_sqrfree.h \
@@ -137,7 +154,6 @@ factory_headers = \
 		facHensel.h \
 		facIrredTest.h \
 		facMul.h \
-		facNTLzzpEXGCD.h \
 		facSparseHensel.h \
 		ffops.h \
 		FLINTconvert.h \
@@ -152,7 +168,6 @@ factory_headers = \
 		timing.h \
 		variable.h \
 		NTLconvert.h \
-		algext.h \
 		singext.h \
 		parseutil.h
 
@@ -166,16 +181,6 @@ nodist_libfactory_include_HEADERS = cplusplus.h factory.h factoryconf.h
 ####################################################
 # Documentation
 include $(srcdir)/aminclude.am
-
-doxysrc = $(SOURCES) parseutil.cc
-doxyincl = $(factory_headers) parseutil.h
-
-# doxygen targets
-doxy:		factory.cfg $(doxysrc) $(doxyincl)
-		doxygen $<
-
-doxyclean:
-		rm -rf doxygen
 
 ####################################################
 # the precomputed GF(q)-tables
@@ -201,7 +206,7 @@ gftables/5329 gftables/54289 gftables/57121 gftables/58081 \
 gftables/59049 gftables/6241 gftables/625 gftables/63001 \
 gftables/64 gftables/6561 gftables/6859 gftables/6889 gftables/729 \
 gftables/7921 gftables/8 gftables/81 gftables/8192 gftables/841 \
-gftables/9 gftables/9409 gftables/961 
+gftables/9 gftables/9409 gftables/961
 
 
 ####################################################
@@ -211,7 +216,7 @@ gftables/9 gftables/9409 gftables/961
 # generating gftable but the tables are not necessarily needed to
 # compile and use libfactory (though it will be a lot slower).
 
-EXTRA_PROGRAMS = gengftables 
+EXTRA_PROGRAMS = gengftables
 gengftables_SOURCES = gengftables-conway.cc
 gengftables_LDADD = libfactory.la $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS)
 
@@ -233,7 +238,7 @@ hdrtemplsrc = 	factoryconf.template \
 
 EXTRA_DIST =	test_install.cc \
 		$(templatesrc) $(hdrtemplsrc) \
-		doxygen.cfg factory.cfg \
+		doxygen.cfg \
 		examples/application.cc \
 		examples/factorize.cc examples/gcd.cc \
 		bin/folding.el bin/fold-docu.el \
@@ -255,7 +260,7 @@ DISTCLEANFILES =  config.h readcf.cc
 
 cplusplus_SOURCES = cplusplus.cc
 
-cplusplus.h: cplusplus$(EXEEXT) 
+cplusplus.h: cplusplus$(EXEEXT)
 	./cplusplus$(EXEEXT)  >$@
 	cp $@ include/factory/
 
@@ -270,23 +275,21 @@ cplusplus.h: cplusplus$(EXEEXT)
 all-local:
 	[ -d ${builddir}/gftables ] || ln -s ${srcdir}/gftables ${builddir}
 
+
 ####################################################
 ## Test program
 ##
+
 TESTS = test
 
 check_PROGRAMS = $(TESTS)
 
-TESTSSOURCES = test.cc
+test_SOURCES = test.cc
+test_LDADD   = libfactory.la $(libfactory_la_LIBADD)
 
-# The following ('..') is a hack for a while... 
-TESTADDLIBDIRS = ${OMALLOC_LDFLAGS}
-TESTADDLIB = $(TESTADDLIBDIRS) $(OMALLOC_R_LDADD)
-TESTADDLIBDEBUG = $(TESTADDLIBDIRS) $(OMALLOC_G_LDADD)
-
-test_SOURCES = $(TESTSSOURCES)
-test_LDADD = libfactory.la $(FLINT_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(TESTADDLIB)
-
+####################################################
+## PKG config
+##
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = factory.pc

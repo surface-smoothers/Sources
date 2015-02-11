@@ -1,8 +1,13 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
-#ifdef HAVE_CONFIG_H
+/**
+ * @file cf_char.cc
+ *
+ * getting and setting the characteristic of a finite field
+**/
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 

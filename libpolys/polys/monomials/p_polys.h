@@ -52,6 +52,9 @@ poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, const ring R);
  ***************************************************************/
 unsigned long p_GetShortExpVector(poly a, const ring r);
 
+/// p_GetShortExpVector of p * pp
+unsigned long p_GetShortExpVector(const poly p, const poly pp, const ring r);
+
 #ifdef HAVE_RINGS
 /*! divisibility check over ground ring (which may contain zero divisors);
    TRUE iff LT(f) divides LT(g), i.e., LT(f)*c*m = LT(g), for some
@@ -241,9 +244,7 @@ static inline   void p_SetCompP(poly p, int i, ring r)
 {
   if (p != NULL)
   {
-#ifdef PDEBUG
     p_Test(p, r);
-#endif
     if (rOrd_SetCompRequiresSetm(r))
     {
       do
@@ -653,7 +654,7 @@ static inline int p_Comp_k_n(poly a, poly b, int k, ring r)
  * Allocation/Initalization/Deletion
  *
  ***************************************************************/
-#if PDEBUG > 2
+#if (OM_TRACK > 2) && defined(OM_TRACK_CUSTOM)
 static inline poly p_New(const ring r, omBin bin)
 #else
 static inline poly p_New(const ring /*r*/, omBin bin)
@@ -799,16 +800,20 @@ p_GetTotalDegree(const unsigned long l, const ring r)
  * Dispatcher to r->p_Procs, they do the tests/checks
  *
  ***************************************************************/
-// returns a copy of p
+/// returns a copy of p (without any additional testing)
+static inline poly p_Copy_noCheck(poly p, const ring r)
+{
+  assume(r != NULL); assume(r->p_Procs != NULL); assume(r->p_Procs->p_Copy != NULL);
+  return r->p_Procs->p_Copy(p, r);
+}
+
+/// returns a copy of p
 static inline poly p_Copy(poly p, const ring r)
 {
-#ifdef PDEBUG
-  poly pp= r->p_Procs->p_Copy(p, r);
+  p_Test(p,r);
+  const poly pp = p_Copy_noCheck(p, r);
   p_Test(pp,r);
   return pp;
-#else
-  return r->p_Procs->p_Copy(p, r);
-#endif
 }
 
 static inline poly p_Head(poly p, const ring r)
@@ -827,14 +832,14 @@ static inline poly p_Head(poly p, const ring r)
 // returns a copy of p with Lm(p) from lmRing and Tail(p) from tailRing
 static inline poly p_Copy(poly p, const ring lmRing, const ring tailRing)
 {
-#ifndef PDEBUG
-  if (tailRing == lmRing)
-    return tailRing->p_Procs->p_Copy(p, tailRing);
-#endif
   if (p != NULL)
   {
+#ifndef PDEBUG
+    if (tailRing == lmRing)
+      return p_Copy_noCheck(p, tailRing);
+#endif
     poly pres = p_Head(p, lmRing);
-    pNext(pres) = tailRing->p_Procs->p_Copy(pNext(p), tailRing);
+    pNext(pres) = p_Copy_noCheck(pNext(p), tailRing);
     return pres;
   }
   else
@@ -844,22 +849,24 @@ static inline poly p_Copy(poly p, const ring lmRing, const ring tailRing)
 // deletes *p, and sets *p to NULL
 static inline void p_Delete(poly *p, const ring r)
 {
+  assume( p!= NULL );
   r->p_Procs->p_Delete(p, r);
 }
 
 static inline void p_Delete(poly *p,  const ring lmRing, const ring tailRing)
 {
-#ifndef PDEBUG
-  if (tailRing == lmRing)
-  {
-    tailRing->p_Procs->p_Delete(p, tailRing);
-    return;
-  }
-#endif
+  assume( p!= NULL );
   if (*p != NULL)
   {
+#ifndef PDEBUG
+    if (tailRing == lmRing)
+    {
+      p_Delete(p, tailRing);
+      return;
+    }
+#endif
     if (pNext(*p) != NULL)
-      tailRing->p_Procs->p_Delete(&pNext(*p), tailRing);
+      p_Delete(&pNext(*p), tailRing);
     p_LmDelete(p, lmRing);
   }
 }
@@ -896,6 +903,8 @@ static inline poly p_Mult_nn(poly p, number n, const ring r)
 {
   if (n_IsOne(n, r->cf))
     return p;
+  else if (n_IsZero(n, r->cf))
+    return NULL;
   else
     return r->p_Procs->p_Mult_nn(p, n, r);
 }
@@ -905,9 +914,7 @@ static inline poly p_Mult_nn(poly p, number n, const ring lmRing,
 {
 #ifndef PDEBUG
   if (lmRing == tailRing)
-  {
     return p_Mult_nn(p, n, tailRing);
-  }
 #endif
   poly pnext = pNext(p);
   pNext(p) = NULL;
@@ -1114,7 +1121,7 @@ static inline poly p_Plus_mm_Mult_qq(poly p, poly m, poly q, int &lp, int lq,
   int shorter;
   number n_old = pGetCoeff(m);
   number n_neg = n_Copy(n_old, r->cf);
-  n_neg = n_Neg(n_neg, r->cf);
+  n_neg = n_InpNeg(n_neg, r->cf);
   pSetCoeff0(m, n_neg);
   res = r->p_Procs->p_Minus_mm_Mult_qq(p, m, q, shorter, NULL, r);
   lp = (lp + lq) - shorter;
@@ -1773,20 +1780,21 @@ static inline BOOLEAN p_IsConstantComp(const poly p, const ring r)
 
 static inline BOOLEAN p_IsConstant(const poly p, const ring r)
 {
-  assume( p_Test(p, r) );
   if (p == NULL) return TRUE;
+  p_Test(p, r);
   return (pNext(p)==NULL) && p_LmIsConstant(p, r);
 }
 
 /// either poly(1)  or gen(k)?!
 static inline BOOLEAN p_IsOne(const poly p, const ring R)
 {
-  assume( p_Test(p, R) );
+  p_Test(p, R);
   return (p_IsConstant(p, R) && n_IsOne(p_GetCoeff(p, R), R->cf));
 }
 
 static inline BOOLEAN p_IsConstantPoly(const poly p, const ring r)
 {
+  p_Test(p, r);
   poly pp=p;
   while(pp!=NULL)
   {

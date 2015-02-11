@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -19,7 +19,7 @@
 
 
 // #include <kernel/structs.h>
-// #include <kernel/kstd1.h>
+// #include <kernel/GBEngine/kstd1.h>
 // #include <kernel/polys.h>
 
 #include <misc/intvec.h>
@@ -1422,7 +1422,7 @@ void mp_MinorToResult(ideal result, int &elems, matrix a, int r, int c,
       q1 = &(a->m)[i*a->ncols];
       //for (j=c-1;j>=0;j--)
       //{
-      //  if (q1[j]!=NULL) q1[j] = kNF(R,currQuotient,q1[j]);
+      //  if (q1[j]!=NULL) q1[j] = kNF(R,currRing->qideal,q1[j]);
       //}
     }
   }
@@ -1462,7 +1462,7 @@ void mp_MinorToResult(ideal result, int &elems, matrix a, int r, int c,
       q1 = &(a->m)[i*a->ncols];
       for (j=c-1;j>=0;j--)
       {
-        if (q1[j]!=NULL) q1[j] = kNF(R,currQuotient,q1[j]);
+        if (q1[j]!=NULL) q1[j] = kNF(R,currRing->qideal,q1[j]);
       }
     }
   }

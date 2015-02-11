@@ -1,8 +1,8 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 
@@ -67,7 +67,7 @@ CFFList sqrFreeZ ( const CanonicalForm & a )
     CFFList F;
     Variable v = aa.mvar();
     CanonicalForm lcinv;
-    while ( ! c.degree(v) == 0 )
+    while ( c.degree(v) != 0 )
     {
         y = gcd( w, c ); z = w / y;
         if ( degree( z, v ) > 0 )
@@ -107,7 +107,7 @@ CFFList sqrFreeZ ( const CanonicalForm & a )
     return F;
 }
 
-CanonicalForm 
+CanonicalForm
 sqrfPart (const CanonicalForm& F)
 {
   if (F.inCoeffDomain())

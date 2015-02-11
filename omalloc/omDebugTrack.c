@@ -6,12 +6,12 @@
  *******************************************************************/
 #include <mylimits.h>
 #include <string.h>
-#include <omalloc/omConfig.h>
-#include <omalloc/omDerivedConfig.h>
+#include "omConfig.h"
+#include "omDerivedConfig.h"
 
 #ifdef OM_HAVE_TRACK
-#include <omalloc/omDefaultConfig.h>
-#include <omalloc/omalloc.h>
+#include "omDefaultConfig.h"
+#include "omalloc.h"
 
 /*******************************************************************
  *
@@ -675,10 +675,10 @@ static void _omMarkAsStatic(void* addr)
 {
   omTrackAddr d_addr = (omTrackAddr) addr;
   if (!omCheckPtr(addr, omError_MaxError, OM_FLR))
-  {  
+  {
     omAssume(omIsTrackAddr(addr) && omOutAddr_2_TrackAddr(addr) == d_addr);
     d_addr->flags |= OM_FSTATIC;
-  }  
+  }
 }
 
 static void _omUnMarkAsStatic(void* addr)
@@ -731,7 +731,7 @@ void* omGetCustomOfTrackAddr(void* addr)
 #ifndef OM_NDEBUG
 
 #ifndef OM_HAVE_TRACK
-#include <omalloc/omalloc.h>
+#include "omalloc.h"
 #endif
 
 int omIsInKeptAddrList(void* addr)

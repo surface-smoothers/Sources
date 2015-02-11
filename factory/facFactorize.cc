@@ -10,11 +10,11 @@
  **/
 /*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
 
-#include "assert.h"
+#include "config.h"
+
+
+#include "cf_assert.h"
 #include "debug.h"
 #include "timing.h"
 
@@ -24,11 +24,10 @@
 #include "facFqFactorize.h"
 #include "cf_random.h"
 #include "facHensel.h"
-#include "cf_gcd_smallp.h"
 #include "cf_map_ext.h"
-#include "algext.h"
 #include "cf_reval.h"
 #include "facSparseHensel.h"
+#include "cfUnivarGcd.h"
 
 TIMING_DEFINE_PRINT(fac_bi_factorizer)
 TIMING_DEFINE_PRINT(fac_hensel_lift)
@@ -220,7 +219,9 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
   //bivariate case
   if (A.level() == 2)
   {
-    CFList buf= biFactorize (F, v);
+    CFList buf= ratBiSqrfFactorize (F, v);
+    if (buf.getFirst().inCoeffDomain())
+      buf.removeFirst();
     return buf;
   }
 
@@ -277,7 +278,14 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
 
   A *= bCommonDen (A);
   CFList Aeval, list, evaluation, bufEvaluation, bufAeval;
-  int factorNums= 1;
+  int factorNums= 2;
+  //p is irreducible. But factorize does not recognizes this. However, if you
+  //change factorNums to 2 at line 281 in facFactorize.cc it will. That change
+  //might impair performance in some cases since you do twice as many
+  //bivariate factorizations as before. Otherwise you need to change
+  //precomputeLeadingCoeff to detect these cases and trigger more bivariate
+  // factorizations.
+  // (http://www.singular.uni-kl.de:8002/trac/ticket/666)
   CFList biFactors, bufBiFactors;
   CanonicalForm evalPoly;
   int lift, bufLift, lengthAeval2= A.level()-2;
@@ -394,6 +402,22 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
     refineBiFactors (A, biFactors, Aeval2, evaluation, minFactorsLength);
   minFactorsLength= tmin (minFactorsLength, biFactors.length());
 
+  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
+
+  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, biFactors, evaluation);
+
+  minFactorsLength= tmin (minFactorsLength, biFactors.length());
+
+  if (minFactorsLength == 1)
+  {
+    factors.append (A);
+    appendSwapDecompress (factors, contentAFactors, N, 0, 0, x);
+    if (isOn (SW_RATIONAL))
+      normalize (factors);
+    delete [] Aeval2;
+    return factors;
+  }
+
   if (differentSecondVar == lengthAeval2)
   {
     bool zeroOccured= false;
@@ -421,10 +445,6 @@ multiFactorize (const CanonicalForm& F, const Variable& v)
       //TODO case where factors.length() > 0
     }
   }
-
-  CFList uniFactors= buildUniFactors (biFactors, evaluation.getLast(), y);
-
-  sortByUniFactors (Aeval2, lengthAeval2, uniFactors, evaluation);
 
   CFList * oldAeval= new CFList [lengthAeval2];
   for (int i= 0; i < lengthAeval2; i++)

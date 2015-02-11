@@ -16,10 +16,8 @@
 #ifndef MISC_AUXILIARY_H
 #define MISC_AUXILIARY_H
 
-#ifdef HAVE_CONFIG_H
+/* please include libpolysconfig.h exclusively via <misc/auxiliary.h> and before any other header */
 #include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
-
 
 // ----------------- which parts/extensions of Singular to build
 #ifndef HAVE_RINGS
@@ -55,8 +53,6 @@
 #undef DISABLE_GMP_CPP
 #endif
 
-#ifdef HAVE_FACTORY
-
 #ifndef SINGULAR
 #undef SINGULAR
 #endif
@@ -65,13 +61,29 @@
 #undef NOSTREAMIO
 #endif
 
-#endif
-// #ifdef HAVE_FACTORY
-
+/* the following cunstruct is to make it painless to add -DHAVE_NUMSTATS to CPPFLAGS for configure */
+#ifndef HAVE_NUMSTATS
+/* #define HAVE_NUMSTATS */
+#undef HAVE_NUMSTATS
+#endif /* HAVE_NUMSTATS */
 // ----------------  end of parts/extensions
 
 // ---------------- Singular standard types etc.
-// BOOLEAN
+/* SI_INTEGER_VARIANT: 1: from longrat.cc
+ *                     2: GMP
+ *                     3: rintegers.cc */
+#define SI_INTEGER_VARIANT 2
+
+/* SI_BIGINT_VARIANT: 1: from longrat.cc
+ *                    2: given by SI_INTEGER_VARIANT */
+#define SI_BIGINT_VARIANT 1
+
+/* preparation for versio 4.1.0: */
+#ifndef SINGULAR_4_1
+/* #define SINGULAR_4_1 */
+#undef SINGULAR_4_1
+#endif /* SINGULAR_4_1 */
+
 #ifndef SIZEOF_LONG
 
 #include <misc/mylimits.h>
@@ -203,7 +215,7 @@ static inline unsigned long si_min(const unsigned long a, const unsigned long b)
        including mod2.h, provided ! PDEBUG is defined in mod2.h E.g.:
 
        #define PDEBUG 2
-       #include <kernel/mod2.h>
+
        ...
 
        makes sure that all poly operations in your file are done with
@@ -248,7 +260,7 @@ static inline unsigned long si_min(const unsigned long a, const unsigned long b)
      #define OM_CHECK 3
      #define OM_TRACK 5
      #define OM_KEEP  1
-     #include <kernel/mod2.h>
+
      #include <omalloc/omalloc.h>
    ensures that all memory allocs/free in this file are done with
    OM_CHECK==3 and OM_TRACK==5, and that all addresses allocated/freed

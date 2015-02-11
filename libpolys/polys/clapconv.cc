@@ -7,17 +7,18 @@
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "libpolysconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <misc/auxiliary.h>
+#include <omalloc/omalloc.h>
 
 #include <factory/factory.h>
 
-#include <omalloc/omalloc.h>
 #include <coeffs/coeffs.h>
-#include <coeffs/longrat.h>
-#include <coeffs/modulop.h>
+
+#include <coeffs/longrat.h> // snumber is necessary
+
 #include <polys/monomials/p_polys.h>
 #include <polys/sbuckets.h>
 #include <polys/clapconv.h>
@@ -90,6 +91,8 @@ CanonicalForm convSingPFactoryP( poly p, const ring r )
   int e, n = rVar(r);
   BOOLEAN setChar=TRUE;
 
+  p=pReverse(p);
+  poly op=p;
   while ( p!=NULL )
   {
     CanonicalForm term;
@@ -103,7 +106,8 @@ CanonicalForm convSingPFactoryP( poly p, const ring r )
     }
     result += term;
     pIter( p );
-  }
+ }
+ op=pReverse(op);
  return result;
 }
 
@@ -243,39 +247,11 @@ CanonicalForm convSingAFactoryA ( poly p , const Variable & a, const ring r )
 
 static number convFactoryNSingAN( const CanonicalForm &f, const ring r)
 {
-  if ( f.isImm() )
-  {
-    long longf=f.intval();
-    int intf=(int) longf;
-    if((long)intf==longf)
-    {
-      assume (r->cf->extRing != NULL);
-      return n_Init(f.intval(),r->cf->extRing->cf);
-    }
-    else return nlRInit( longf );
-  }
-  else
-  {
-    number z=ALLOC_RNUMBER();
-#if defined(LDEBUG)
-    z->debug=123456;
-#endif
-    gmp_numerator( f, z->z );
-    if ( f.den().isOne() )
-    {
-      z->s = 3;
-    }
-    else
-    {
-      gmp_denominator( f, z->n );
-      z->s = 0;
-      nlNormalize(z,r->cf->extRing->cf);
-    }
-    /*#ifdef LDEBUG
-    nlTest(z,r->cf->extRing->cf);
-    #endif*/
-    return z;
-  }
+  assume (r != NULL);
+  assume (r->cf != NULL);
+  assume (r->cf->extRing != NULL);
+  // r->cf->extRing->cf has to be Q or Z/p (the supported types of factory)
+  return n_convFactoryNSingN( f, r->cf->extRing->cf );
 }
 
 poly convFactoryASingA ( const CanonicalForm & f, const ring r )

@@ -1,6 +1,6 @@
-#ifdef HAVE_CONFIG_H
+
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+
 
 #include "cf_assert.h"
 
@@ -47,18 +47,18 @@ NTL_CLIENT
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertFacCF2NTLZZpX                                                 //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Conversion routine for Factory-type canonicalform into ZZpX of NTL,        //
-// i.e. polynomials over F_p. As a precondition for correct execution,        //
-// the characteristic has to a a prime number.                                //
-//                                                                            //
-// INPUT:  A canonicalform f                                                  //
-// OUTPUT: The converted NTL-polynomial over F_p of type ZZpX                 //
+/// NAME: convertFacCF2NTLZZpX
+///
+/// DESCRIPTION:
+/// Conversion routine for Factory-type canonicalform into ZZpX of NTL,
+/// i.e. polynomials over F_p. As a precondition for correct execution,
+/// the characteristic has to a a prime number.
+///
+/// INPUT:  A canonicalform f
+/// OUTPUT: The converted NTL-polynomial over F_p of type ZZpX
 ////////////////////////////////////////////////////////////////////////////////
 
-ZZ_pX convertFacCF2NTLZZpX(CanonicalForm f)
+ZZ_pX convertFacCF2NTLZZpX(const CanonicalForm & f)
 {
   ZZ_pX ntl_poly;
 
@@ -99,7 +99,7 @@ ZZ_pX convertFacCF2NTLZZpX(CanonicalForm f)
 
   return ntl_poly;
 }
-zz_pX convertFacCF2NTLzzpX(CanonicalForm f)
+zz_pX convertFacCF2NTLzzpX(const CanonicalForm & f)
 {
   zz_pX ntl_poly;
 
@@ -159,24 +159,24 @@ zz_pX convertFacCF2NTLzzpX(CanonicalForm f)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertFacCF2NTLGF2X                                                 //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Conversion routine for Factory-type canonicalform into GF2X of NTL,        //
-// i.e. polynomials over F_2. As precondition for correct execution,          //
-// the characteristic must equal two.                                         //
-// This is a special case of the more general conversion routine for          //
-// canonicalform to ZZpX. It is included because NTL provides additional      //
-// support and faster algorithms over F_2, moreover the conversion code       //
-// can be optimized, because certain steps are either completely obsolent     //
-// (like normalizing the polynomial) or they can be made significantly        //
-// faster (like building up the NTL-polynomial).                              //
-//                                                                            //
-// INPUT:  A canonicalform f                                                  //
-// OUTPUT: The converted NTL-polynomial over F_2 of type GF2X                 //
+/// NAME: convertFacCF2NTLGF2X
+///
+/// DESCRIPTION:
+/// Conversion routine for Factory-type canonicalform into GF2X of NTL,
+/// i.e. polynomials over F_2. As precondition for correct execution,
+/// the characteristic must equal two.
+/// This is a special case of the more general conversion routine for
+/// canonicalform to ZZpX. It is included because NTL provides additional
+/// support and faster algorithms over F_2, moreover the conversion code
+/// can be optimized, because certain steps are either completely obsolent
+/// (like normalizing the polynomial) or they can be made significantly
+/// faster (like building up the NTL-polynomial).
+///
+/// INPUT:  A canonicalform f
+/// OUTPUT: The converted NTL-polynomial over F_2 of type GF2X
 ////////////////////////////////////////////////////////////////////////////////
 
-GF2X convertFacCF2NTLGF2X(CanonicalForm f)
+GF2X convertFacCF2NTLGF2X(const CanonicalForm & f)
 {
   //printf("convertFacCF2NTLGF2X\n");
   GF2X ntl_poly;
@@ -228,26 +228,26 @@ GF2X convertFacCF2NTLGF2X(CanonicalForm f)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLZZpX2CF                                                    //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Conversion routine for NTL-Type ZZpX to Factory-Type canonicalform.        //
-// Additionally a variable x is needed as a parameter indicating the          //
-// main variable of the computed canonicalform. To guarantee the correct      //
-// execution of the algorithm, the characteristic has a be an arbitrary       //
-// prime number.                                                              //
-//                                                                            //
-// INPUT:  A canonicalform f, a variable x                                    //
-// OUTPUT: The converted Factory-polynomial of type canonicalform,            //
-//         built by the main variable x                                       //
+/// NAME: convertNTLZZpX2CF
+///
+/// DESCRIPTION:
+/// Conversion routine for NTL-Type ZZpX to Factory-Type canonicalform.
+/// Additionally a variable x is needed as a parameter indicating the
+/// main variable of the computed canonicalform. To guarantee the correct
+/// execution of the algorithm, the characteristic has a be an arbitrary
+/// prime number.
+///
+/// INPUT:  A canonicalform f, a variable x
+/// OUTPUT: The converted Factory-polynomial of type canonicalform,
+///         built by the main variable x
 ////////////////////////////////////////////////////////////////////////////////
 
-CanonicalForm convertNTLZZpX2CF(ZZ_pX poly,Variable x)
+CanonicalForm convertNTLZZpX2CF(const ZZ_pX & poly,const Variable & x)
 {
   return convertNTLZZX2CF (to_ZZX (poly), x);
 }
 
-CanonicalForm convertNTLzzpX2CF(zz_pX poly,Variable x)
+CanonicalForm convertNTLzzpX2CF(const zz_pX & poly,const Variable & x)
 {
   //printf("convertNTLzzpX2CF\n");
   CanonicalForm bigone;
@@ -277,7 +277,7 @@ CanonicalForm convertNTLzzpX2CF(zz_pX poly,Variable x)
   return bigone;
 }
 
-CanonicalForm convertNTLZZX2CF(ZZX polynom,Variable x)
+CanonicalForm convertNTLZZX2CF(const ZZX & polynom,const Variable & x)
 {
   //printf("convertNTLZZX2CF\n");
   CanonicalForm bigone;
@@ -299,22 +299,22 @@ CanonicalForm convertNTLZZX2CF(ZZX polynom,Variable x)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLGF2X2CF                                                    //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Conversion routine for NTL-Type GF2X to Factory-Type canonicalform,        //
-// the routine is again an optimized special case of the more general         //
-// conversion to ZZpX. Additionally a variable x is needed as a               //
-// parameter indicating the main variable of the computed canonicalform.      //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has a be an arbitrary prime number.                                        //
-//                                                                            //
-// INPUT:  A canonicalform f, a variable x                                    //
-// OUTPUT: The converted Factory-polynomial of type canonicalform,            //
-//         built by the main variable x                                       //
+/// NAME: convertNTLGF2X2CF
+///
+/// DESCRIPTION:
+/// Conversion routine for NTL-Type GF2X to Factory-Type canonicalform,
+/// the routine is again an optimized special case of the more general
+/// conversion to ZZpX. Additionally a variable x is needed as a
+/// parameter indicating the main variable of the computed canonicalform.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has a be an arbitrary prime number.
+///
+/// INPUT:  A canonicalform f, a variable x
+/// OUTPUT: The converted Factory-polynomial of type canonicalform,
+///         built by the main variable x
 ////////////////////////////////////////////////////////////////////////////////
 
-CanonicalForm convertNTLGF2X2CF(GF2X poly,Variable x)
+CanonicalForm convertNTLGF2X2CF(const GF2X & poly,const Variable & x)
 {
   //printf("convertNTLGF2X2CF\n");
   CanonicalForm bigone;
@@ -346,27 +346,27 @@ CanonicalForm convertNTLGF2X2CF(GF2X poly,Variable x)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLvec_pair_ZZpX_long2FacCFFList                              //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for converting a vector of polynomials from ZZpX to                //
-// a CFFList of Factory. This routine will be used after a successful         //
-// factorization of NTL to convert the result back to Factory.                //
-//                                                                            //
-// Additionally a variable x and the computed multiplicity, as a type ZZp     //
-// of NTL, is needed as parameters indicating the main variable of the        //
-// computed canonicalform and the multiplicity of the original polynomial.    //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has a be an arbitrary prime number.                                        //
-//                                                                            //
-// INPUT:  A vector of polynomials over ZZp of type vec_pair_ZZ_pX_long and   //
-//         a variable x and a multiplicity of type ZZp                        //
-// OUTPUT: The converted list of polynomials of type CFFList, all polynomials //
-//         have x as their main variable                                      //
+/// NAME: convertNTLvec_pair_ZZpX_long2FacCFFList
+///
+/// DESCRIPTION:
+/// Routine for converting a vector of polynomials from ZZpX to
+/// a CFFList of Factory. This routine will be used after a successful
+/// factorization of NTL to convert the result back to Factory.
+///
+/// Additionally a variable x and the computed multiplicity, as a type ZZp
+/// of NTL, is needed as parameters indicating the main variable of the
+/// computed canonicalform and the multiplicity of the original polynomial.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has a be an arbitrary prime number.
+///
+/// INPUT:  A vector of polynomials over ZZp of type vec_pair_ZZ_pX_long and
+///         a variable x and a multiplicity of type ZZp
+/// OUTPUT: The converted list of polynomials of type CFFList, all polynomials
+///         have x as their main variable
 ////////////////////////////////////////////////////////////////////////////////
 
 CFFList convertNTLvec_pair_ZZpX_long2FacCFFList
-                                  (vec_pair_ZZ_pX_long e,ZZ_p multi,Variable x)
+                                  (const vec_pair_ZZ_pX_long & e,const ZZ_p & multi,const Variable & x)
 {
   //printf("convertNTLvec_pair_ZZpX_long2FacCFFList\n");
   CFFList result;
@@ -391,7 +391,7 @@ CFFList convertNTLvec_pair_ZZpX_long2FacCFFList
   return result;
 }
 CFFList convertNTLvec_pair_zzpX_long2FacCFFList
-                                  (vec_pair_zz_pX_long e,zz_p multi,Variable x)
+                                  (const vec_pair_zz_pX_long & e,const zz_p multi,const Variable & x)
 {
   //printf("convertNTLvec_pair_zzpX_long2FacCFFList\n");
   CFFList result;
@@ -417,28 +417,28 @@ CFFList convertNTLvec_pair_zzpX_long2FacCFFList
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLvec_pair_GF2X_long2FacCFFList                              //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for converting a vector of polynomials of type GF2X from           //
-// NTL to a list CFFList of Factory. This routine will be used after a        //
-// successful factorization of NTL to convert the result back to Factory.     //
-// As usual this is simply a special case of the more general conversion      //
-// routine but again speeded up by leaving out unnecessary steps.             //
-// Additionally a variable x and the computed multiplicity, as type           //
-// GF2 of NTL, are needed as parameters indicating the main variable of the   //
-// computed canonicalform and the multiplicity of the original polynomial.    //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has a be an arbitrary prime number.                                        //
-//                                                                            //
-// INPUT:  A vector of polynomials over GF2 of type vec_pair_GF2X_long and    //
-//         a variable x and a multiplicity of type GF2                        //
-// OUTPUT: The converted list of polynomials of type CFFList, all             //
-//         polynomials have x as their main variable                          //
+/// NAME: convertNTLvec_pair_GF2X_long2FacCFFList
+///
+/// DESCRIPTION:
+/// Routine for converting a vector of polynomials of type GF2X from
+/// NTL to a list CFFList of Factory. This routine will be used after a
+/// successful factorization of NTL to convert the result back to Factory.
+/// As usual this is simply a special case of the more general conversion
+/// routine but again speeded up by leaving out unnecessary steps.
+/// Additionally a variable x and the computed multiplicity, as type
+/// GF2 of NTL, are needed as parameters indicating the main variable of the
+/// computed canonicalform and the multiplicity of the original polynomial.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has a be an arbitrary prime number.
+///
+/// INPUT:  A vector of polynomials over GF2 of type vec_pair_GF2X_long and
+///         a variable x and a multiplicity of type GF2
+/// OUTPUT: The converted list of polynomials of type CFFList, all
+///         polynomials have x as their main variable
 ////////////////////////////////////////////////////////////////////////////////
 
 CFFList convertNTLvec_pair_GF2X_long2FacCFFList
-    (vec_pair_GF2X_long e, GF2 /*multi*/, Variable x)
+    (const vec_pair_GF2X_long& e, GF2 /*multi*/, const Variable & x)
 {
   //printf("convertNTLvec_pair_GF2X_long2FacCFFList\n");
   CFFList result;
@@ -473,23 +473,22 @@ CFFList convertNTLvec_pair_GF2X_long2FacCFFList
   return result;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// NAME: convertZZ2CF                                                         //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for conversion of integers represented in NTL as Type ZZ to        //
-// integers in Factory represented as canonicalform.                          //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has to equal zero.                                                         //
-//                                                                            //
-// INPUT:  The value coefficient of type ZZ that has to be converted          //
-// OUTPUT: The converted Factory-integer of type canonicalform                //
-////////////////////////////////////////////////////////////////////////////////
-
 static unsigned char *cf_stringtemp;
 static unsigned long cf_stringtemp_l=0L;
+////////////////////////////////////////////////////////////////////////////////
+/// NAME: convertZZ2CF
+///
+/// DESCRIPTION:
+/// Routine for conversion of integers represented in NTL as Type ZZ to
+/// integers in Factory represented as canonicalform.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has to equal zero.
+///
+/// INPUT:  The value coefficient of type ZZ that has to be converted
+/// OUTPUT: The converted Factory-integer of type canonicalform
+////////////////////////////////////////////////////////////////////////////////
 CanonicalForm
-convertZZ2CF (ZZ a)
+convertZZ2CF (const ZZ & a)
 {
   long coeff_long=to_long(a);
 
@@ -549,7 +548,7 @@ convertZZ2CF (ZZ a)
 /*static char *cf_stringtemp;
 static char *cf_stringtemp2;
 static int cf_stringtemp_l=0;
-CanonicalForm convertZZ2CF(ZZ coefficient)
+CanonicalForm convertZZ2CF(const ZZ & coefficient)
 {
   long coeff_long;
   //CanonicalForm tmp=0;
@@ -646,18 +645,18 @@ CanonicalForm convertZZ2CF(ZZ coefficient)
 }*/
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertFacCF2NTLZZX                                                  //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for conversion of canonicalforms in Factory to polynomials         //
-// of type ZZX of NTL. To guarantee the correct execution of the              //
-// algorithm the characteristic has to equal zero.                            //
-//                                                                            //
-// INPUT:  The canonicalform that has to be converted                         //
-// OUTPUT: The converted NTL-polynom of type ZZX                              //
+/// NAME: convertFacCF2NTLZZX
+///
+/// DESCRIPTION:
+/// Routine for conversion of canonicalforms in Factory to polynomials
+/// of type ZZX of NTL. To guarantee the correct execution of the
+/// algorithm the characteristic has to equal zero.
+///
+/// INPUT:  The canonicalform that has to be converted
+/// OUTPUT: The converted NTL-polynom of type ZZX
 ////////////////////////////////////////////////////////////////////////////////
 
-ZZ convertFacCF2NTLZZ(const CanonicalForm f)
+ZZ convertFacCF2NTLZZ(const CanonicalForm & f)
 {
   ZZ temp;
   if (f.isImm()) temp=f.intval();
@@ -678,7 +677,7 @@ ZZ convertFacCF2NTLZZ(const CanonicalForm f)
   return temp;
 }
 
-ZZX convertFacCF2NTLZZX(CanonicalForm f)
+ZZX convertFacCF2NTLZZX(const CanonicalForm & f)
 {
     ZZX ntl_poly;
 
@@ -721,25 +720,26 @@ ZZX convertFacCF2NTLZZX(CanonicalForm f)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLvec_pair_ZZX_long2FacCFFList                               //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for converting a vector of polynomials from ZZ to a list           //
-// CFFList of Factory. This routine will be used after a successful           //
-// factorization of NTL to convert the result back to Factory.                //
-// Additionally a variable x and the computed multiplicity, as a type         //
-// ZZ of NTL, is needed as parameters indicating the main variable of the     //
-// computed canonicalform and the multiplicity of the original polynomial.    //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has to equal zero.                                                         //
-//                                                                            //
-// INPUT:  A vector of polynomials over ZZ of type vec_pair_ZZX_long and      //
-//         a variable x and a multiplicity of type ZZ                         //
-// OUTPUT: The converted list of polynomials of type CFFList, all             //
-//         have x as their main variable                                      //
+/// NAME: convertNTLvec_pair_ZZX_long2FacCFFList
+///
+/// DESCRIPTION:
+/// Routine for converting a vector of polynomials from ZZ to a list
+/// CFFList of Factory. This routine will be used after a successful
+/// factorization of NTL to convert the result back to Factory.
+/// Additionally a variable x and the computed multiplicity, as a type
+/// ZZ of NTL, is needed as parameters indicating the main variable of the
+/// computed canonicalform and the multiplicity of the original polynomial.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has to equal zero.
+///
+/// INPUT:  A vector of polynomials over ZZ of type vec_pair_ZZX_long and
+///         a variable x and a multiplicity of type ZZ
+/// OUTPUT: The converted list of polynomials of type CFFList, all
+///         have x as their main variable
 ////////////////////////////////////////////////////////////////////////////////
 
-CFFList convertNTLvec_pair_ZZX_long2FacCFFList(vec_pair_ZZX_long e,ZZ multi,Variable x)
+CFFList
+convertNTLvec_pair_ZZX_long2FacCFFList (const vec_pair_ZZX_long & e,const ZZ & multi,const Variable & x)
 {
   CFFList result;
   ZZX polynom;
@@ -767,51 +767,52 @@ CFFList convertNTLvec_pair_ZZX_long2FacCFFList(vec_pair_ZZX_long e,ZZ multi,Vari
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLZZpX2CF                                                    //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for conversion of elements of arbitrary extensions of ZZp,         //
-// having type ZZpE, of NTL to their corresponding values of type             //
-// canonicalform in Factory.                                                  //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has to be an arbitrary prime number and Factory has to compute in an       //
-// extension of F_p.                                                          //
-//                                                                            //
-// INPUT:  The coefficient of type ZZpE and the variable x indicating the main//
-//         variable of the computed canonicalform                             //
-// OUTPUT: The converted value of coefficient as type canonicalform           //
+/// NAME: convertNTLZZpX2CF
+///
+/// DESCRIPTION:
+/// Routine for conversion of elements of arbitrary extensions of ZZp,
+/// having type ZZpE, of NTL to their corresponding values of type
+/// canonicalform in Factory.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has to be an arbitrary prime number and Factory has to compute in an
+/// extension of F_p.
+///
+/// INPUT:  The coefficient of type ZZpE and the variable x indicating the main//
+///         variable of the computed canonicalform
+/// OUTPUT: The converted value of coefficient as type canonicalform
 ////////////////////////////////////////////////////////////////////////////////
 
-CanonicalForm convertNTLZZpE2CF(ZZ_pE coefficient,Variable x)
+CanonicalForm convertNTLZZpE2CF(const ZZ_pE & coefficient,const Variable & x)
 {
   return convertNTLZZpX2CF(rep(coefficient),x);
 }
-CanonicalForm convertNTLzzpE2CF(zz_pE coefficient,Variable x)
+CanonicalForm convertNTLzzpE2CF(const zz_pE & coefficient,const Variable & x)
 {
   return convertNTLzzpX2CF(rep(coefficient),x);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLvec_pair_ZZpEX_long2FacCFFList                             //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for converting a vector of polynomials from ZZpEX to a CFFList     //
-// of Factory. This routine will be used after a successful factorization     //
-// of NTL to convert the result back to Factory.                              //
-// Additionally a variable x and the computed multiplicity, as a type         //
-// ZZpE of NTL, is needed as parameters indicating the main variable of the   //
-// computed canonicalform and the multiplicity of the original polynomial.    //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has a be an arbitrary prime number p and computations have to be done      //
-// in an extention of F_p.                                                    //
-//                                                                            //
-// INPUT:  A vector of polynomials over ZZpE of type vec_pair_ZZ_pEX_long and //
-//         a variable x and a multiplicity of type ZZpE                       //
-// OUTPUT: The converted list of polynomials of type CFFList, all polynomials //
-//         have x as their main variable                                      //
+/// NAME: convertNTLvec_pair_ZZpEX_long2FacCFFList
+///
+/// DESCRIPTION:
+/// Routine for converting a vector of polynomials from ZZpEX to a CFFList
+/// of Factory. This routine will be used after a successful factorization
+/// of NTL to convert the result back to Factory.
+/// Additionally a variable x and the computed multiplicity, as a type
+/// ZZpE of NTL, is needed as parameters indicating the main variable of the
+/// computed canonicalform and the multiplicity of the original polynomial.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has a be an arbitrary prime number p and computations have to be done
+/// in an extention of F_p.
+///
+/// INPUT:  A vector of polynomials over ZZpE of type vec_pair_ZZ_pEX_long and
+///         a variable x and a multiplicity of type ZZpE
+/// OUTPUT: The converted list of polynomials of type CFFList, all polynomials
+///         have x as their main variable
 ////////////////////////////////////////////////////////////////////////////////
 
-CFFList convertNTLvec_pair_ZZpEX_long2FacCFFList(vec_pair_ZZ_pEX_long e,ZZ_pE multi,Variable x,Variable alpha)
+CFFList
+convertNTLvec_pair_ZZpEX_long2FacCFFList(const vec_pair_ZZ_pEX_long & e,const ZZ_pE & multi,const Variable & x,const Variable & alpha)
 {
   CFFList result;
   ZZ_pEX polynom;
@@ -855,7 +856,8 @@ CFFList convertNTLvec_pair_ZZpEX_long2FacCFFList(vec_pair_ZZ_pEX_long e,ZZ_pE mu
   //return the computed CFFList
   return result;
 }
-CFFList convertNTLvec_pair_zzpEX_long2FacCFFList(vec_pair_zz_pEX_long e,zz_pE multi,Variable x,Variable alpha)
+CFFList
+convertNTLvec_pair_zzpEX_long2FacCFFList(const vec_pair_zz_pEX_long & e,const zz_pE & multi,const Variable & x,const Variable & alpha)
 {
   CFFList result;
   zz_pEX polynom;
@@ -901,50 +903,50 @@ CFFList convertNTLvec_pair_zzpEX_long2FacCFFList(vec_pair_zz_pEX_long e,zz_pE mu
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLGF2E2CF                                                    //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for conversion of elements of extensions of GF2, having type       //
-// GF2E, of NTL to their corresponding values of type canonicalform in        //
-// Factory.                                                                   //
-// To guarantee the correct execution of the algorithm, the characteristic    //
-// must equal two and Factory has to compute in an extension of F_2.          //
-// As usual this is an optimized special case of the more general conversion  //
-// routine from ZZpE to Factory.                                              //
-//                                                                            //
-// INPUT:  The coefficient of type GF2E and the variable x indicating the     //
-//         main variable of the computed canonicalform                        //
-// OUTPUT: The converted value of coefficient as type canonicalform           //
+/// NAME: convertNTLGF2E2CF
+///
+/// DESCRIPTION:
+/// Routine for conversion of elements of extensions of GF2, having type
+/// GF2E, of NTL to their corresponding values of type canonicalform in
+/// Factory.
+/// To guarantee the correct execution of the algorithm, the characteristic
+/// must equal two and Factory has to compute in an extension of F_2.
+/// As usual this is an optimized special case of the more general conversion
+/// routine from ZZpE to Factory.
+///
+/// INPUT:  The coefficient of type GF2E and the variable x indicating the
+///         main variable of the computed canonicalform
+/// OUTPUT: The converted value of coefficient as type canonicalform
 ////////////////////////////////////////////////////////////////////////////////
 
-CanonicalForm convertNTLGF2E2CF(GF2E coefficient,Variable x)
+CanonicalForm convertNTLGF2E2CF(const GF2E & coefficient,const Variable & x)
 {
   return convertNTLGF2X2CF(rep(coefficient),x);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME: convertNTLvec_pair_GF2EX_long2FacCFFList                             //
-//                                                                            //
-// DESCRIPTION:                                                               //
-// Routine for converting a vector of polynomials from GF2EX to a CFFList     //
-// of Factory. This routine will be used after a successful factorization     //
-// of NTL to convert the result back to Factory.                              //
-// This is a special, but optimized case of the more general conversion       //
-// from ZZpE to canonicalform.                                                //
-// Additionally a variable x and the computed multiplicity, as a type GF2E    //
-// of NTL, is needed as parameters indicating the main variable of the        //
-// computed canonicalform and the multiplicity of the original polynomial.    //
-// To guarantee the correct execution of the algorithm the characteristic     //
-// has to equal two and computations have to be done in an extention of F_2.  //
-//                                                                            //
-// INPUT:  A vector of polynomials over GF2E of type vec_pair_GF2EX_long and  //
-//         a variable x and a multiplicity of type GF2E                       //
-// OUTPUT: The converted list of polynomials of type CFFList, all polynomials //
-//         have x as their main variable                                      //
+/// NAME: convertNTLvec_pair_GF2EX_long2FacCFFList
+///
+/// DESCRIPTION:
+/// Routine for converting a vector of polynomials from GF2EX to a CFFList
+/// of Factory. This routine will be used after a successful factorization
+/// of NTL to convert the result back to Factory.
+/// This is a special, but optimized case of the more general conversion
+/// from ZZpE to canonicalform.
+/// Additionally a variable x and the computed multiplicity, as a type GF2E
+/// of NTL, is needed as parameters indicating the main variable of the
+/// computed canonicalform and the multiplicity of the original polynomial.
+/// To guarantee the correct execution of the algorithm the characteristic
+/// has to equal two and computations have to be done in an extention of F_2.
+///
+/// INPUT:  A vector of polynomials over GF2E of type vec_pair_GF2EX_long and
+///         a variable x and a multiplicity of type GF2E
+/// OUTPUT: The converted list of polynomials of type CFFList, all polynomials
+///         have x as their main variable
 ////////////////////////////////////////////////////////////////////////////////
 
 CFFList convertNTLvec_pair_GF2EX_long2FacCFFList
-    (vec_pair_GF2EX_long e, GF2E /*multi*/, Variable x, Variable alpha)
+    (const vec_pair_GF2EX_long & e, const GF2E & multi, const Variable & x, const Variable & alpha)
 {
   CFFList result;
   GF2EX polynom;
@@ -985,14 +987,18 @@ CFFList convertNTLvec_pair_GF2EX_long2FacCFFList
     result.append(CFFactor(bigone,exponent));
 
   }
+
+  if (!IsOne(multi))
+    result.insert(CFFactor(convertNTLGF2E2CF(multi,alpha),1));
+
   // return the computed CFFList
   return result;
 }
 
 ////////////////////////////////////////////////////
-// CanonicalForm in Z_2(a)[X] to NTL GF2EX        //
+/// CanonicalForm in Z_2(a)[X] to NTL GF2EX
 ////////////////////////////////////////////////////
-GF2EX convertFacCF2NTLGF2EX(CanonicalForm f,GF2X mipo)
+GF2EX convertFacCF2NTLGF2EX(const CanonicalForm & f,const GF2X & mipo)
 {
   GF2E::init(mipo);
   GF2EX result;
@@ -1020,9 +1026,9 @@ GF2EX convertFacCF2NTLGF2EX(CanonicalForm f,GF2X mipo)
   return result;
 }
 ////////////////////////////////////////////////////
-// CanonicalForm in Z_p(a)[X] to NTL ZZ_pEX       //
+/// CanonicalForm in Z_p(a)[X] to NTL ZZ_pEX
 ////////////////////////////////////////////////////
-ZZ_pEX convertFacCF2NTLZZ_pEX(CanonicalForm f, ZZ_pX mipo)
+ZZ_pEX convertFacCF2NTLZZ_pEX(const CanonicalForm & f, const ZZ_pX & mipo)
 {
   ZZ_pE::init(mipo);
   ZZ_pEX result;
@@ -1049,7 +1055,7 @@ ZZ_pEX convertFacCF2NTLZZ_pEX(CanonicalForm f, ZZ_pX mipo)
   result.normalize();
   return result;
 }
-zz_pEX convertFacCF2NTLzz_pEX(CanonicalForm f, zz_pX mipo)
+zz_pEX convertFacCF2NTLzz_pEX(const CanonicalForm & f, const zz_pX & mipo)
 {
   zz_pE::init(mipo);
   zz_pEX result;
@@ -1077,7 +1083,7 @@ zz_pEX convertFacCF2NTLzz_pEX(CanonicalForm f, zz_pX mipo)
   return result;
 }
 
-CanonicalForm convertNTLzz_pEX2CF (zz_pEX f, Variable x, Variable alpha)
+CanonicalForm convertNTLzz_pEX2CF (const zz_pEX& f, const Variable & x, const Variable & alpha)
 {
   CanonicalForm bigone;
   if (deg (f) > 0)
@@ -1100,7 +1106,7 @@ CanonicalForm convertNTLzz_pEX2CF (zz_pEX f, Variable x, Variable alpha)
   return bigone;
 }
 
-CanonicalForm convertNTLZZ_pEX2CF (ZZ_pEX f, Variable x, Variable alpha)
+CanonicalForm convertNTLZZ_pEX2CF (const ZZ_pEX& f, const Variable & x, const Variable & alpha)
 {
   CanonicalForm bigone;
   if (deg (f) > 0)
@@ -1123,7 +1129,7 @@ CanonicalForm convertNTLZZ_pEX2CF (ZZ_pEX f, Variable x, Variable alpha)
   return bigone;
 }
 //----------------------------------------------------------------------
-mat_ZZ* convertFacCFMatrix2NTLmat_ZZ(CFMatrix &m)
+mat_ZZ* convertFacCFMatrix2NTLmat_ZZ(const CFMatrix &m)
 {
   mat_ZZ *res=new mat_ZZ;
   res->SetDims(m.rows(),m.columns());
@@ -1138,7 +1144,7 @@ mat_ZZ* convertFacCFMatrix2NTLmat_ZZ(CFMatrix &m)
   }
   return res;
 }
-CFMatrix* convertNTLmat_ZZ2FacCFMatrix(mat_ZZ &m)
+CFMatrix* convertNTLmat_ZZ2FacCFMatrix(const mat_ZZ &m)
 {
   CFMatrix *res=new CFMatrix(m.NumRows(),m.NumCols());
   int i,j;
@@ -1152,7 +1158,7 @@ CFMatrix* convertNTLmat_ZZ2FacCFMatrix(mat_ZZ &m)
   return res;
 }
 
-mat_zz_p* convertFacCFMatrix2NTLmat_zz_p(CFMatrix &m)
+mat_zz_p* convertFacCFMatrix2NTLmat_zz_p(const CFMatrix &m)
 {
   mat_zz_p *res=new mat_zz_p;
   res->SetDims(m.rows(),m.columns());
@@ -1168,7 +1174,7 @@ mat_zz_p* convertFacCFMatrix2NTLmat_zz_p(CFMatrix &m)
   }
   return res;
 }
-CFMatrix* convertNTLmat_zz_p2FacCFMatrix(mat_zz_p &m)
+CFMatrix* convertNTLmat_zz_p2FacCFMatrix(const mat_zz_p &m)
 {
   CFMatrix *res=new CFMatrix(m.NumRows(),m.NumCols());
   int i,j;
@@ -1181,7 +1187,7 @@ CFMatrix* convertNTLmat_zz_p2FacCFMatrix(mat_zz_p &m)
   }
   return res;
 }
-mat_zz_pE* convertFacCFMatrix2NTLmat_zz_pE(CFMatrix &m)
+mat_zz_pE* convertFacCFMatrix2NTLmat_zz_pE(const CFMatrix &m)
 {
   mat_zz_pE *res=new mat_zz_pE;
   res->SetDims(m.rows(),m.columns());
@@ -1197,7 +1203,7 @@ mat_zz_pE* convertFacCFMatrix2NTLmat_zz_pE(CFMatrix &m)
   }
   return res;
 }
-CFMatrix* convertNTLmat_zz_pE2FacCFMatrix(mat_zz_pE &m, Variable alpha)
+CFMatrix* convertNTLmat_zz_pE2FacCFMatrix(const mat_zz_pE &m, const Variable & alpha)
 {
   CFMatrix *res=new CFMatrix(m.NumRows(),m.NumCols());
   int i,j;

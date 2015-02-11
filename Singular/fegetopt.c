@@ -24,16 +24,16 @@
    along with this program; if not, write to the Free Software
    Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* 
-   obachman 9/99: adapted to Singular by 
+/*
+   obachman 9/99: adapted to Singular by
     * adding prefix fe_ to global variables
-    * extended fe_option structure    
+    * extended fe_option structure
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "singularconfig.h"
-#endif /* HAVE_CONFIG_H */
+
+
+
 #include <kernel/mod2.h>
 
 #ifndef __STDC__

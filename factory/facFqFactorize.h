@@ -33,7 +33,7 @@ TIMING_DEFINE_PRINT (fac_fq_factor_squarefree)
 /// @return @a multiFactorize returns a factorization of F
 /// @sa biFactorize(), extFactorize()
 CFList
-multiFactorize (const CanonicalForm& F,    ///< [in] poly to be factored
+multiFactorize (const CanonicalForm& F,    ///< [in] sqrfree poly
                 const ExtensionInfo& info  ///< [in] info about extension
                );
 
@@ -564,7 +564,7 @@ evaluationWRTDifferentSecondVars (
                                  );
 
 /// refine a bivariate factorization of A with l factors to one with
-/// minFactorsLength
+/// minFactorsLength if possible
 void
 refineBiFactors (const CanonicalForm& A,  ///< [in] some poly
                  CFList& biFactors,       ///< [in,out] list of bivariate to be
@@ -588,11 +588,13 @@ buildUniFactors (const CFList& biFactors,       ///< [in] a list of polys
 
 
 /// sort bivariate factors in Aeval such that their corresponding univariate
-/// factors coincide with uniFactors
+/// factors coincide with uniFactors, uniFactors and biFactors may get
+/// recombined if necessary
 void sortByUniFactors (CFList*& Aeval,          ///< [in,out] array of bivariate
                                                 ///< factors
                        int AevalLength,         ///< [in] length of Aeval
-                       const CFList& uniFactors,///< [in] univariate factors
+                       CFList& uniFactors,      ///< [in,out] univariate factors
+                       CFList& biFactors,       ///< [in,out] bivariate factors
                        const CFList& evaluation ///< [in] evaluation point
                       );
 

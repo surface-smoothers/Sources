@@ -19,7 +19,7 @@ bug_5
 bug_6
 bug_7
 bug_8
-bug_9 
+bug_9
 bug_barei
 bug_c_dp
 bug_factorize
@@ -69,7 +69,6 @@ mora_6.tst
 mora_7.tst
 mora_8.tst
 mora_9.tst
-mpsr_s
 normal
 pAdd_s
 pAddManyVars_s
@@ -93,7 +92,7 @@ solve_s
 spcurve
 sres_s
 std_s
-string 
+string
 test_c_dp
 triang_s
 tst_s
