@@ -6,7 +6,7 @@
  * This file implements functions to lift factors via Hensel lifting.
  *
  * ABSTRACT: Hensel lifting is described in "Efficient Multivariate
- * Factorization over Finite Fields" by L. Bernardin & M. Monagon and 
+ * Factorization over Finite Fields" by L. Bernardin & M. Monagon and
  * "Algorithms for Computer Algebra" by Geddes, Czapor, Labahn
  *
  * @author Martin Lee
@@ -22,14 +22,15 @@
 #include "debug.h"
 #include "timing.h"
 
-#include "algext.h"
+#include "cfGcdAlgExt.h"
 #include "facHensel.h"
 #include "facMul.h"
 #include "fac_util.h"
 #include "cf_algorithm.h"
 #include "cf_primes.h"
 #include "facBivar.h"
-#include "facNTLzzpEXGCD.h"
+#include "cfNTLzzpEXGCD.h"
+#include "cfUnivarGcd.h"
 
 #ifdef HAVE_NTL
 #include <NTL/lzz_pEX.h>
@@ -45,7 +46,7 @@ TIMING_DEFINE_PRINT (product2)
 TIMING_DEFINE_PRINT (hensel23)
 TIMING_DEFINE_PRINT (hensel)
 
-#if (!(HAVE_FLINT && __FLINT_VERSION_MINOR >= 4))
+#if (!(HAVE_FLINT && __FLINT_RELEASE >= 20400))
 static
 CFList productsNTL (const CFList& factors, const CanonicalForm& M)
 {
@@ -85,7 +86,7 @@ CFList productsNTL (const CFList& factors, const CanonicalForm& M)
 }
 #endif
 
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
 static
 CFList productsFLINT (const CFList& factors, const CanonicalForm& M)
 {
@@ -166,7 +167,7 @@ void tryDiophantine (CFList& result, const CanonicalForm& F,
       return;
     i.getItem()= reduce (i.getItem()*inv, M);
   }
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
   bufFactors= productsFLINT (bufFactors, M);
 #else
   bufFactors= productsNTL (bufFactors, M);
@@ -407,7 +408,7 @@ modularDiophant (const CanonicalForm& f, const CFList& factors,
           for (CFListIterator i= result; i.hasItem(); i++, j++)
             i.getItem() *= Lc (j.getItem())*denf;
         }
-        if (factors.getFirst().level() != 1 && 
+        if (factors.getFirst().level() != 1 &&
             !bCommonDen (factors.getFirst()).isOne())
         {
           CanonicalForm denFirst= bCommonDen (factors.getFirst());
@@ -558,7 +559,7 @@ diophantineHensel (const CanonicalForm & F, const CFList& factors,
 }
 
 /// solve \f$ 1=\sum_{i=1}^n{\delta_{i} \prod_{j\neq i}{f_j}} \f$ mod \f$p^k\f$
-/// over Q(alpha) by p-adic lifting
+/// over \f$ Q(\alpha) \f$ by p-adic lifting
 CFList
 diophantineHenselQa (const CanonicalForm & F, const CanonicalForm& G,
                      const CFList& factors, modpk& b, const Variable& alpha)
@@ -769,8 +770,8 @@ diophantineHenselQa (const CanonicalForm & F, const CanonicalForm& G,
 
 
 /// solve \f$ 1=\sum_{i=1}^n{\delta_{i} \prod_{j\neq i}{f_j}} \f$ mod \f$p^k\f$
-/// over Q(alpha) by first computing mod \f$p\f$ and if no zero divisor occured
-/// compute it mod \f$p^k\f$
+/// over \f$ Q(\alpha) \f$ by first computing mod \f$p\f$ and if no zero divisor
+/// occured compute it mod \f$p^k\f$
 CFList
 diophantineQa (const CanonicalForm& F, const CanonicalForm& G,
                const CFList& factors, modpk& b, const Variable& alpha)
@@ -2091,7 +2092,7 @@ nonMonicHenselLift12 (const CanonicalForm& F, CFList& factors, int l,
 }
 
 
-/// solve \f$ E=\sum_{i= 1}^r{\sigma_{i}\prod_{j=1, j\neq i}^{r}{f_{i}}}\f$
+/// solve \f$ E=\sum_{i= 1}^r{\sigma_{i}\prod_{j=1, j\neq i}^{r}{f_{j}}} \f$
 /// mod M, @a products contains \f$ \prod_{j=1, j\neq i}^{r}{f_{j}} \f$
 CFList
 diophantine (const CFList& recResult, const CFList& factors,
@@ -2561,7 +2562,7 @@ nonMonicHenselLift2 (const CFList& eval, const CFList& factors, int* l, int
     sortList (buf, Variable (1));
   CFArray bufPi= Pi;
   CFMatrix M= CFMatrix (l[1], factors.length());
-  CFList result= 
+  CFList result=
     nonMonicHenselLift232(eval, buf, l, bufDiophant, bufPi, M, LCs1, LCs2, bad);
   if (bad)
     return CFList();

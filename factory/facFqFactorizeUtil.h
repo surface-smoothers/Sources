@@ -120,7 +120,7 @@ CanonicalForm reverseShift (const CanonicalForm& F,  ///< [in] a compressed poly
                                                      ///< the evaluation starts
                            );
 
-/// check if @F consists of more than just the leading coeff wrt. Variable (1)
+/// check if @a F consists of more than just the leading coeff wrt. Variable (1)
 ///
 /// @return as described above
 bool isOnlyLeadingCoeff (const CanonicalForm& F ///< [in] some poly
@@ -130,13 +130,13 @@ bool isOnlyLeadingCoeff (const CanonicalForm& F ///< [in] some poly
 CFFList sortCFFListByNumOfVars (CFFList & F ///< [in,out] a list of factors
                                );
 
-/// like getVars but each variable x occuring in @F is raised to x^degree (F,x)
+/// like getVars but each variable x occuring in @a F is raised to x^degree (F,x)
 CanonicalForm myGetVars (const CanonicalForm& F ///< [in] a polynomial
                         );
 
 /// evaluate @a F at @a evaluation
 ///
-/// @return @a evaluateAtEval returns a list containing the successive 
+/// @return @a evaluateAtEval returns a list containing the successive
 /// evaluations of @a F, last entry is @a F again
 CFList
 evaluateAtEval (const CanonicalForm& F,   ///<[in] some poly
@@ -168,7 +168,7 @@ CFList recoverFactors (const CanonicalForm& F, ///< [in] some poly F
                                                ///< factor candidates
                       );
 
-/// divides factors shifted by evaluation by their content wrt. Variable(1) and 
+/// divides factors shifted by evaluation by their content wrt. Variable(1) and
 /// checks if these polys divide F
 ///
 /// @return returns factors of F

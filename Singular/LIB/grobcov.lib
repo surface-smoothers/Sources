@@ -205,21 +205,21 @@ EXAMPLE:  setglobalrings; shows an example"
   Rx[1]=0;
   def D=ring(Rx);
   def @RP=D+@P;
-  exportto(Top,@R);      // global ring K[a][x]
-  exportto(Top,@P);      // global ring K[a]
-  exportto(Top,@RP);     // global ring K[x,a] with product order
+  export(@R);      // global ring K[a][x]
+  export(@P);      // global ring K[a]
+  export(@RP);     // global ring K[x,a] with product order
   setring(RR);
 }
 example
 { "EXAMPLE:"; echo = 2;
   ring R=(0,a,b),(x,y,z),dp;
   setglobalrings();
-  @R;
-  @P;
-  @RP;
-ringlist(@R);
-ringlist(@P);
-ringlist(@RP);
+  Grobcov::@R;
+  Grobcov::@P;
+  Grobcov::@RP;
+ringlist(Grobcov::@R);
+ringlist(Grobcov::@P);
+ringlist(Grobcov::@RP);
 }
 
 //*************Auxiliary routines**************
@@ -424,9 +424,9 @@ proc elimintfromideal(ideal J)
 // output: the two coeficients reduced without common factors
 proc simpqcoeffs(poly n,poly m)
 {
-  def nc=content(n);
-  def mc=content(m);
-  def gc=gcd(nc,mc);
+  number nc=content(n);
+  number mc=content(m);
+  number gc=gcd(nc,mc);
   ideal s=n/gc,m/gc;
   return (s);
 }
@@ -1044,7 +1044,7 @@ proc incquotient(ideal N, poly f)
 }
 
 // eliminates the ith element from a list or an intvec
-proc elimfromlist(l, int i)
+proc elimfromlist(def l, int i)
 {
   if(typeof(l)=="list"){list L;}
   if (typeof(l)=="intvec"){intvec L;}
@@ -1486,7 +1486,10 @@ EXAMPLE:  cgsdr; shows an example"
         if(GS[i][2]==1)
         {
           GS[i][3]=postredgb(mingb(GS[i][3]));
-          GS[i][7]=postredgb(mingb(GS[i][7]));
+          if (typeof(GS[i][7])=="ideal")
+          {
+            GS[i][7]=postredgb(mingb(GS[i][7]));
+          }
         }
       }
     }

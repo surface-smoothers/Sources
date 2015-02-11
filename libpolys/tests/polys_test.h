@@ -2,15 +2,6 @@
 using namespace std;
 
 // the following headers are private...
-#include <coeffs/longrat.h>
-#include <coeffs/gnumpfl.h>
-#include <coeffs/gnumpc.h>
-#include <coeffs/shortfl.h>
-#include <coeffs/ffields.h>
-#include <coeffs/modulop.h>
-#include <coeffs/rmodulon.h>
-#include <coeffs/rmodulo2m.h>
-#include <coeffs/rintegers.h>
 
 
 #include <polys/monomials/ring.h>
@@ -79,11 +70,11 @@ namespace
     StringSetS("");
     p_Write(a, r);
 
-    std::stringstream ss; 
+    std::stringstream ss;
     {
-      char* s = StringEndS();  ss << s; omFree(s); 
+      char* s = StringEndS();  ss << s; omFree(s);
     }
-     
+
     return ss.str();
   }
 
@@ -1677,14 +1668,14 @@ private:
     number two = n_Init(2, r);
 
     number t = n_Init(1, r);
-    ndInpAdd(t, t, r);
+    n_InpAdd(t, t, r);
     TS_ASSERT( n_Equal(two, t, r) );
     n_Delete(&t, r);
 
     if( getCoeffType(r) == n_Q )
     {
       number t = n_Init(1, r);
-      nlInpAdd(t, t, r);
+      n_InpAdd(t, t, r);
       TS_ASSERT( n_Equal(two, t, r) );
       n_Delete(&t, r);
     }
@@ -1771,7 +1762,7 @@ private:
 
     s = n_Init(N  , r);
     i = n_Init(N+1, r);
-    ndInpMult(s, i, r);
+    n_InpMult(s, i, r);
     n_Delete(&i, r);
 
     clog<< "N*(N+1): ("<< N*(N+1) << ")"; PrintSized(s, r);
@@ -1813,16 +1804,16 @@ private:
     for( int k = N; k >= 0; k-- )
     {
       i = n_Init(k, r);
-      ndInpAdd(s, i, r); // s += i
+      n_InpAdd(s, i, r); // s += i
 
-      i = n_Neg(i, r);
-      ndInpAdd(ss, i, r); // ss -= i
+      i = n_InpNeg(i, r);
+      n_InpAdd(ss, i, r); // ss -= i
 
       n_Delete(&i, r);
     }
     clog<< "ss: "; PrintSized(ss, r);
 
-    ss = n_Neg(ss, r); // ss = -ss
+    ss = n_InpNeg(ss, r); // ss = -ss
 
     clog<< "real sum    : "; PrintSized(s, r);
     clog<< "real sum(--): "; PrintSized(ss, r);
@@ -2297,7 +2288,7 @@ public:
     TS_ASSERT_EQUALS(rVar(s), 3);
 
     Test(s);
-    
+
     rDelete(s); // kills 'cf' and 'r' as well
   }
   void test_Q_Ext_s_t()
@@ -2370,7 +2361,7 @@ public:
     TS_ASSERT_EQUALS(rVar(s), 3);
 
     Test(s);
-    
+
     /* some special tests: */
     poly v1 = NULL;
     plusTerm(v1, 1, 1, 1, cf->extRing);       // s
@@ -2404,11 +2395,11 @@ public:
       nn = tmp;
       clog << i << ". "; PrintSized(nn, cf);
     }
-    
+
     n_Delete(&prod, cf); n_Delete(&nn, cf);
     n_Delete(&v_n, cf); n_Delete(&w_n, cf);
     n_Delete(&vOverW_n, cf); n_Delete(&wOverV_n, cf);
-    
+
     rDelete(s); // kills 'cf' and 'r' as well
   }
   void test_Q_Ext_Performance()
@@ -2483,7 +2474,7 @@ public:
     TS_ASSERT_EQUALS(rVar(s), 1);
 
     Test(s);
-    
+
     /* a special performance test: */
     poly entry = NULL;
     for (int ti = 0; ti <= 20; ti++)
@@ -2511,7 +2502,7 @@ public:
     p_Write(theProduct, s);
     clog << "...ending multiplication" << endl;
     n_Delete(&qfactorAsN, cf); p_Delete(&theProduct, s);
-    
+
     /* a very special performance test: */
     specialPoly(entry, s);
     p_Write(entry, s);
@@ -2529,7 +2520,7 @@ public:
     p_Write(theProduct, s);
     clog << "...ending very special multiplication" << endl;
     n_Delete(&qfactorAsN, cf); p_Delete(&theProduct, s);
-        
+
     rDelete(s); // kills 'cf' and 'r' as well
   }
   void test_Q_Ext_s_t_NestedFractions()
@@ -2592,7 +2583,7 @@ public:
     TS_ASSERT( (s->cf->extRing!=NULL) );
     TS_ASSERT( !rField_is_GF(s, 25) );
     TS_ASSERT_EQUALS(rVar(s), 3);
-    
+
     /* test 1 for nested fractions, i.e. fractional coefficients: */
     poly v1 = NULL;
     plusTermOverQ(v1, 21, 2, 1, 1, cf->extRing);       // 21/2*s
@@ -2607,7 +2598,7 @@ public:
     number v3_n = n_Div(v1_n, v2_n, cf);   // (45*s + 20) / (6s - 35*t)
     PrintSized(v3_n, cf);
     n_Delete(&v1_n, cf); n_Delete(&v2_n, cf); n_Delete(&v3_n, cf);
-    
+
     /* test 2 for nested fractions, i.e. fractional coefficients: */
     v1 = NULL;
     plusTermOverQ(v1, 1, 2, 1, 1, cf->extRing);       // 1/2*s
@@ -2629,7 +2620,7 @@ public:
     number z_n = n_Div(v_n, w_n, cf);          // -5/7*s - 10/21*t
     PrintSized(z_n, cf);
     n_Delete(&v_n, cf); n_Delete(&w_n, cf); n_Delete(&z_n, cf);
-    
+
     rDelete(s); // kills 'cf' and 'r' as well
   }
 };

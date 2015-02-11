@@ -62,11 +62,11 @@
 
 // HEADERS:
 #include <kernel/combinatorics/hutil.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/syz.h>
 #include <kernel/maps/fast_maps.h>
-#include <kernel/febase.h>
+#include <Singular/fevoices.h>
 #include <kernel/groebner_walk/walkProc.h>
 #include <kernel/groebner_walk/walkMain.h>
 #include <kernel/groebner_walk/walkSupport.h>
@@ -101,7 +101,7 @@
 #include <kernel/linear_algebra/eigenval.h>
 #include <kernel/maps/fast_maps.h>
 #include <kernel/fast_mult.h>
-#include <kernel/febase.h>
+#include <kernel/oswrapper/feread.h>
 
 #include <kernel/fglm/fglmgauss.h>
 #include <kernel/fglm/fglm.h>
@@ -117,7 +117,6 @@
 
 #include <kernel/spectrum/GMPrat.h>
 
-// #include "htmlhelp.h" // For Windows //
 #include <kernel/combinatorics/hutil.h>
 // #include <kernel/Ideal.h> // Too old?
 
@@ -151,7 +150,6 @@
 
 #include <kernel/spectrum/spectrum.h>
 #include <kernel/spectrum/splist.h>
-#include <kernel/GBEngine/stairc.h>
 #include <kernel/structs.h>
 #include <kernel/GBEngine/syz.h>
 // #include <kernel/testpoly.h> // Too old?
@@ -159,7 +157,7 @@
 #include <kernel/GBEngine/tgbgauss.h>
 #include <kernel/GBEngine/tgb.h>
 
-#include <kernel/timer.h>
+#include <kernel/oswrapper/timer.h>
 
 #include <kernel/GBEngine/units.h>
 #include <kernel/groebner_walk/walkMain.h>
@@ -202,7 +200,6 @@
 #include <Singular/sdb.h>
 #include <Singular/links/silink.h>
 #include <Singular/links/sing_dbm.h>
-#include <Singular/sing_win.h>
 #include <Singular/links/slInit.h>
 #include <Singular/links/ssiLink.h>
 #include <Singular/stype.h>

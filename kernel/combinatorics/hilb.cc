@@ -5,28 +5,35 @@
 *  ABSTRACT -  Hilbert series
 */
 
-
-
-
 #include <kernel/mod2.h>
-#include <kernel/structs.h>
-#include <kernel/febase.h>
+
 #include <omalloc/omalloc.h>
-#include <kernel/polys.h>
+#include <misc/auxiliary.h>
+#include <misc/mylimits.h>
 #include <misc/intvec.h>
+
+#include <kernel/combinatorics/hilb.h>
+#include <kernel/combinatorics/stairc.h>
 #include <kernel/combinatorics/hutil.h>
-#include <kernel/GBEngine/stairc.h>
+
+#include <polys/monomials/ring.h>
+#include <polys/monomials/p_polys.h>
+#include <polys/simpleideals.h>
+
+
+// #include <kernel/structs.h>
+// #include <kernel/polys.h>
 //ADICHANGES:
 #include <kernel/ideals.h>
-#include <kernel/GBEngine/kstd1.h>
-#include<gmp.h>
-#include<vector>
+// #include <kernel/GBEngine/kstd1.h>
+// #include<gmp.h>
+// #include<vector>
 
 
 static int  **Qpol;
 static int  *Q0, *Ql;
 static int  hLength;
-   
+
 
 static int hMinModulweight(intvec *modulweight)
 {
@@ -468,7 +475,7 @@ static poly ChoosePVar (ideal I)
                 flag=FALSE;
             }
         }
-        
+
         if(flag == TRUE)
         {
             res = p_ISet(1, currRing);
@@ -565,7 +572,7 @@ static poly ChoosePOL(ideal I)
             {
                 p_SetExp(m,j,dummy-1,currRing);
                 p_Setm(m,currRing);
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -595,7 +602,7 @@ static poly ChoosePOF(ideal I)
             {
                 p_SetExp(m,j,dummy-1,currRing);
                 p_Setm(m,currRing);
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -627,7 +634,7 @@ static poly ChoosePVL(ideal I)
                 p_SetExp(m,j,1,currRing);
                 p_Setm(m,currRing);
                 flag = FALSE;
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -655,7 +662,7 @@ static poly ChoosePVF(ideal I)
                 p_SetExp(m,j,1,currRing);
                 p_Setm(m,currRing);
                 flag = FALSE;
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -683,7 +690,7 @@ static poly ChoosePJL(ideal I)
                 p_SetExp(m,j,dummy-1,currRing);
                 p_Setm(m,currRing);
                 flag = FALSE;
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -711,7 +718,7 @@ static poly ChoosePJF(ideal I)
                 p_SetExp(m,j,dummy-1,currRing);
                 p_Setm(m,currRing);
                 flag = FALSE;
-            }       
+            }
         }
         if(!p_IsOne(m, currRing))
         {
@@ -738,7 +745,7 @@ static poly ChooseP(ideal I)
     return(m);
 }
 
-//searches for a monomial of degree d>=2 and divides it by a variable (result monomial of deg d-1)
+///searches for a monomial of degree d>=2 and divides it by a variable (result monomial of deg d-1)
 static poly SearchP(ideal I)
 {
     int i,j,exp;
@@ -757,9 +764,11 @@ static poly SearchP(ideal I)
         {
             p_SetExp(res, j, exp - 1, currRing);
             p_Setm(res,currRing);
-            return(res);
+            break;
         }
     }
+    assume( j <= currRing->N );
+    return(res);
 }
 
 //test if the ideal is of the form (x1, ..., xr)
@@ -781,7 +790,7 @@ static bool JustVar(ideal I)
                 }
                 foundone = TRUE;
             }
-        }        
+        }
     }
     return(TRUE);
     #else
@@ -811,7 +820,7 @@ static void eulerchar (ideal I, int variables, mpz_ptr ec)
             mpz_add(ec, ec, dummy);
         }
         //mpz_clear(dummy);
-        return;        
+        return;
     }
     ideal p = idInit(1,1);
     p->m[0] = SearchP(I);
@@ -828,7 +837,7 @@ static void eulerchar (ideal I, int variables, mpz_ptr ec)
         {
             howmanyvarinp++;
         }
-    }    
+    }
     eulerchar(Ip, variables-howmanyvarinp, ec);
     id_Delete(&Ip, currRing);
     I = idAddMon(I,p);
@@ -960,7 +969,7 @@ void rouneslice(ideal I, ideal S, poly q, poly x, int &prune, int &moreprune, in
             if(dummy > 0)
             {
                 p_SetExp(m,j,dummy-1,currRing);
-            }       
+            }
         }
         p_Setm(m, currRing);
         if(IsIn(m,S))
@@ -971,12 +980,12 @@ void rouneslice(ideal I, ideal S, poly q, poly x, int &prune, int &moreprune, in
     }
     idSkipZeroes(I);
     //----------- MORE PRUNING OF S ------------
-    m = LCMmon(I); 
+    m = LCMmon(I);
     if(m != NULL)
     {
         for(i=0;i<IDELEMS(S);i++)
-        {      
-            if(!(p_DivisibleBy(S->m[i], m, currRing)))  
+        {
+            if(!(p_DivisibleBy(S->m[i], m, currRing)))
             {
                 S->m[i] = NULL;
                 j++;
@@ -998,7 +1007,7 @@ void rouneslice(ideal I, ideal S, poly q, poly x, int &prune, int &moreprune, in
     printf("\n      S\n");idPrint(S);
     printf("\n      q\n");pWrite(q);
     getchar();*/
-    
+
     if(idIs0(I))
     {
         id_Delete(&I, currRing);
@@ -1077,7 +1086,7 @@ void rouneslice(ideal I, ideal S, poly q, poly x, int &prune, int &moreprune, in
     //id_Delete(&Ip, currRing);
     //id_Delete(&Sp, currRing);
     S = idAddMon(S,p);
-    p->m[0]=NULL; 
+    p->m[0]=NULL;
     id_Delete(&p, currRing); // p->m[0] was also in S
     p_Delete(&pq,currRing);
   }
@@ -1097,7 +1106,7 @@ void slicehilb(ideal I)
     X->m[0]=p_One(currRing);
     for(i=1;i<=currRing->N;i++)
     {
-            p_SetExp(X->m[0],i,1,currRing);   
+            p_SetExp(X->m[0],i,1,currRing);
     }
     p_Setm(X->m[0],currRing);
     I = id_Mult(I,X,currRing);
@@ -1128,6 +1137,8 @@ void slicehilb(ideal I)
 static intvec * hSeries(ideal S, intvec *modulweight,
                 int /*notstc*/, intvec *wdegree, ideal Q, ring tailRing)
 {
+//  id_TestTail(S, currRing, tailRing);
+
   intvec *work, *hseries1=NULL;
   int  mc;
   int  p0;
@@ -1281,11 +1292,15 @@ static intvec * hSeries(ideal S, intvec *modulweight,
 
 intvec * hHstdSeries(ideal S, intvec *modulweight, intvec *wdegree, ideal Q, ring tailRing)
 {
+  id_TestTail(S, currRing, tailRing);
+  id_TestTail(Q, currRing, tailRing);
   return hSeries(S, modulweight, 0, wdegree, Q, tailRing);
 }
 
 intvec * hFirstSeries(ideal S, intvec *modulweight, ideal Q, intvec *wdegree, ring tailRing)
 {
+  id_TestTail(S, currRing, tailRing);
+  id_TestTail(Q, currRing, tailRing);
   return hSeries(S, modulweight, 1, wdegree, Q, tailRing);
 }
 
@@ -1360,22 +1375,25 @@ static void hPrintHilb(intvec *hseries)
 /*
 *caller
 */
-void hLookSeries(ideal S, intvec *modulweight, ideal Q)
+void hLookSeries(ideal S, intvec *modulweight, ideal Q, intvec *wdegree, ring tailRing)
 {
-  int co, mu, l;
-  intvec *hseries2;
-  intvec *hseries1 = hFirstSeries(S, modulweight, Q);
+  id_TestTail(S, currRing, tailRing);
+
+  intvec *hseries1 = hFirstSeries(S, modulweight, Q, wdegree, tailRing);
+
   hPrintHilb(hseries1);
-  l = hseries1->length()-1;
-  if (l > 1)
-    hseries2 = hSecondSeries(hseries1);
-  else
-    hseries2 = hseries1;
+
+  const int l = hseries1->length()-1;
+
+  intvec *hseries2 = (l > 1) ? hSecondSeries(hseries1) : hseries1;
+
+  int co, mu;
   hDegreeSeries(hseries1, hseries2, &co, &mu);
+
   PrintLn();
   hPrintHilb(hseries2);
   if ((l == 1) &&(mu == 0))
-    scPrintDegree((currRing->N)+1, 0);
+    scPrintDegree(rVar(currRing)+1, 0);
   else
     scPrintDegree(co, mu);
   if (l>1)

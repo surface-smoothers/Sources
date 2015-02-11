@@ -18,7 +18,6 @@
 
 #include "canonicalform.h"
 
-#include "cf_gcd_smallp.h"
 #include "cf_iter.h"
 #include "cf_map.h"
 #include "cf_util.h"
@@ -35,7 +34,7 @@
 
 static inline
 CanonicalForm
-pthRoot (const CanonicalForm & F, const int & q)
+pthRoot (const CanonicalForm & F, int q)
 {
   CanonicalForm A= F;
   int p= getCharacteristic ();
@@ -80,7 +79,7 @@ pthRoot (const CanonicalForm & F, const ZZ& q, const Variable& alpha)
 }
 #endif
 
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
 CanonicalForm
 pthRoot (const CanonicalForm & F, const fmpz_t& q, const Variable& alpha)
 {
@@ -125,7 +124,7 @@ pthRoot (const CanonicalForm & F, const fmpz_t& q, const Variable& alpha)
 #endif
 
 CanonicalForm
-maxpthRoot (const CanonicalForm & F, const int & q, int& l)
+maxpthRoot (const CanonicalForm & F, int q, int& l)
 {
   CanonicalForm result= F;
   bool derivZero= true;
@@ -238,11 +237,11 @@ squarefreeFactorization (const CanonicalForm & F, const Variable & alpha)
     return CFFList (CFFactor (F/Lc(F), 1));
 
   CanonicalForm buffer;
-#if defined(HAVE_NTL) || (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if defined(HAVE_NTL) || (HAVE_FLINT && __FLINT_RELEASE >= 20400)
   if (alpha.level() == 1)
 #endif
     buffer= pthRoot (A, ipower (p, k));
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
   else
   {
     fmpz_t qq;

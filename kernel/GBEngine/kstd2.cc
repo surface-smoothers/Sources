@@ -77,7 +77,6 @@ long sba_interreduction_operations;
 #include <omalloc/omalloc.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/khstd.h>
 #include <polys/kbuckets.h>
@@ -216,19 +215,19 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
 
   poly p = input_p;
   poly zeroPoly = NULL;
-  NATNUMBER a = (NATNUMBER) pGetCoeff(p);
+  unsigned long a = (unsigned long) pGetCoeff(p);
 
   int k_ind2 = 0;
   int a_ind2 = ind2(a);
 
-  // NATNUMBER k = 1;
+  // unsigned long k = 1;
   // of interest is only k_ind2, special routine for improvement ... TODO OLIVER
   for (int i = 1; i <= leadRing->N; i++)
   {
     k_ind2 = k_ind2 + ind_fact_2(p_GetExp(p, i, leadRing));
   }
 
-  a = (NATNUMBER) pGetCoeff(p);
+  a = (unsigned long) pGetCoeff(p);
 
   number tmp1;
   poly tmp2, tmp3;
@@ -251,7 +250,7 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
         s_exp = s_exp - 2;
       }
       p_SetExp(lead_mult, i, p_GetExp(p, i,leadRing) - s_exp, tailRing);
-      for (NATNUMBER j = 1; j <= s_exp; j++)
+      for (unsigned long j = 1; j <= s_exp; j++)
       {
         tmp1 = nInit(j);
         tmp2 = p_ISet(1, tailRing);
@@ -280,13 +279,13 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
     pNext(tmp2) = zeroPoly;
     return tmp2;
   }
-/*  NATNUMBER alpha_k = twoPow(leadRing->ch - k_ind2);
+/*  unsigned long alpha_k = twoPow(leadRing->ch - k_ind2);
   if (1 == 0 && alpha_k <= a)
   {  // Temporarly disabled, reducing coefficients not compatible with std TODO Oliver
     zeroPoly = p_ISet((a / alpha_k)*alpha_k, tailRing);
     for (int i = 1; i <= leadRing->N; i++)
     {
-      for (NATNUMBER j = 1; j <= p_GetExp(p, i, leadRing); j++)
+      for (unsigned long j = 1; j <= p_GetExp(p, i, leadRing); j++)
       {
         tmp1 = nInit(j);
         tmp2 = p_ISet(1, tailRing);
@@ -298,12 +297,12 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
         }
         else
         {
-          tmp3 = p_ISet((NATNUMBER) tmp1, tailRing);
+          tmp3 = p_ISet((unsigned long) tmp1, tailRing);
           zeroPoly = p_Mult_q(zeroPoly, p_Add_q(tmp2, tmp3, tailRing), tailRing);
         }
       }
     }
-    tmp2 = p_ISet((NATNUMBER) pGetCoeff(zeroPoly), leadRing);
+    tmp2 = p_ISet((unsigned long) pGetCoeff(zeroPoly), leadRing);
     for (int i = 1; i <= leadRing->N; i++)
     {
       pSetExp(tmp2, i, p_GetExp(zeroPoly, i, tailRing));
@@ -834,7 +833,7 @@ poly redtailSba (LObject* L, int pos, kStrategy strat, BOOLEAN withT, BOOLEAN no
 
   //if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
   //L->Normalize(); // HANNES: should have a test
-  assume(kTest_L(L));
+  kTest_L(L);
   return L->GetLmCurrRing();
 }
 
@@ -1362,13 +1361,12 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   if (!TEST_OPT_NOT_BUCKETS)
     strat->use_buckets = 1;
 #endif
-
   // redtailBBa against T for inhomogenous input
   if (!TEST_OPT_OLDSTD)
     withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef KDEBUG
 #if MYTEST
@@ -1595,7 +1593,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
 #if MYTEST
@@ -1760,7 +1758,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   //   withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef KDEBUG
 #if MYTEST
@@ -1803,7 +1801,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         && ((strat->honey && (strat->L[strat->Ll].ecart+currRing->pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
             || ((!strat->honey) && (currRing->pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))))
     {
-      
+
        //stops computation if
        // 24 IN test and the degree +ecart of L[strat->Ll] is bigger then
        //a predefined number Kstd1_deg
@@ -2247,7 +2245,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
 #if MYTEST
@@ -2429,7 +2427,7 @@ poly kNF2 (ideal F,ideal Q,poly q,kStrategy strat, int lazyReduce)
   //  for (i=strat->sl;i>=0;i--)
   //    pNorm(strat->S[i]);
   //}
-  assume(kTest(strat));
+  kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   if (BVERBOSE(23)) kDebugPrint(strat);
   int max_ind;
@@ -2900,7 +2898,7 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
   //    withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef HAVE_TAIL_RING
   kStratInitChangeTailRing(strat);
@@ -3138,7 +3136,7 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
   if (TEST_OPT_DEBUG) messageSets(strat);

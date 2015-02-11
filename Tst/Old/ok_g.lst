@@ -1,5 +1,4 @@
 aa
-agnes
 alex1
 alex2
 algmap
@@ -90,7 +89,7 @@ m110si
 m111si
 m112si
 m113si
-m114si 
+m114si
 m115si
 m116si
 m117si
@@ -155,7 +154,6 @@ m21si
 m22si
 m23si
 m24si
-; m25si: trouble with rings
 m27si
 m28si
 m29si
@@ -314,8 +312,7 @@ string
 subexpr
 subexpr1
 substit
-; DIFF syzygies
-syzygies_new
+syzygies
 syzygy
 teste
 time

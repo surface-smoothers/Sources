@@ -7,7 +7,6 @@
 #include <kernel/IIntvec.h>
 #include <coeffs/numbers.h>
 #include <kernel/Number.h>
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <polys/monomials/ring.h>
 
@@ -614,7 +613,7 @@ inline PolyBase<variant, create_type, error_traits>&
 PolyBase<variant, create_type, error_traits>::operator*=(const Poly & p2){
     copy_on_write();
     *ptr *= *p2.ptr;
- 
+
     return *this;
   }
 #endif

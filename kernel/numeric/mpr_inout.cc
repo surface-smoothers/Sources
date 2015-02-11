@@ -26,7 +26,6 @@
 #include <polys/matpol.h>
 
 
-#include <kernel/febase.h>
 #include <kernel/structs.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
@@ -53,16 +52,6 @@ TIMING_DEFINE_PRINT(mpr_solver)
 
 #define TIMING_EPR(t,msg) TIMING_END_AND_PRINT(t,msg);TIMING_RESET(t);
 
-//<-
-
-//-> nPrint(number n)
-void nPrint(number n)
-{
-  poly o=pOne();
-  pSetCoeff(o, nCopy(n) );
-  pWrite0( o );
-  pDelete( &o );
-}
 //<-
 
 //------------------------------------------------------------------------------

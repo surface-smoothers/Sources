@@ -1,7 +1,4 @@
-
 #include <kernel/mod2.h>
-
-#include "mod2.h"
 
 #include <omalloc/omalloc.h>
 #include <misc/auxiliary.h>
@@ -67,11 +64,10 @@ char *iiArithGetCmd(int nPos){return NULL; }
 
 // HEADERS:
 #include <kernel/combinatorics/hutil.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/syz.h>
 #include <kernel/maps/fast_maps.h>
-#include <kernel/febase.h>
 #include <kernel/groebner_walk/walkProc.h>
 #include <kernel/groebner_walk/walkMain.h>
 #include <kernel/groebner_walk/walkSupport.h>
@@ -105,7 +101,6 @@ char *iiArithGetCmd(int nPos){return NULL; }
 #include <kernel/linear_algebra/eigenval.h>
 #include <kernel/maps/fast_maps.h>
 #include <kernel/fast_mult.h>
-#include <kernel/febase.h>
 
 #include <kernel/fglm/fglmgauss.h>
 #include <kernel/fglm/fglm.h>
@@ -150,7 +145,6 @@ char *iiArithGetCmd(int nPos){return NULL; }
 #include <kernel/GBEngine/shiftgb.h>
 #include <kernel/spectrum/spectrum.h>
 #include <kernel/spectrum/splist.h>
-#include <kernel/GBEngine/stairc.h>
 #include <kernel/structs.h>
 #include <kernel/GBEngine/syz.h>
 // #include <kernel/testpoly.h> // Too old?
@@ -158,7 +152,6 @@ char *iiArithGetCmd(int nPos){return NULL; }
 #include <kernel/GBEngine/tgbgauss.h>
 #include <kernel/GBEngine/tgb.h>
 
-#include <kernel/timer.h>
 
 #include <kernel/GBEngine/units.h>
 #include <kernel/groebner_walk/walkMain.h>
@@ -383,7 +376,7 @@ void TestGBEngine()
   rChangeCurrRing(R);
 
   {
-    ideal G = kStd(I, currQuotient, testHomog, NULL);
+    ideal G = kStd(I, currRing->qideal, testHomog, NULL);
 
 #ifdef PDEBUG
     PrintS("GB: ");
@@ -557,9 +550,9 @@ void TestSimpleRingArithmetcs()
 
   poly pp = pp_Mult_qq( p, p, R);
 
-  Print("p: "); p_Write0(p, R); Print(", deg(p): %d", p_Totaldegree(p, R)); assume( 1 == p_Totaldegree(p, R) );
+  Print("p: "); p_Write0(p, R); Print(", deg(p): %ld", p_Totaldegree(p, R)); assume( 1 == p_Totaldegree(p, R) );
 
-  Print("; p*p : "); p_Write0(pp, R); Print("deg(pp): %d\n", p_Totaldegree(pp, R)); assume( 2 == p_Totaldegree(pp, R) );
+  Print("; p*p : "); p_Write0(pp, R); Print("deg(pp): %ld\n", p_Totaldegree(pp, R)); assume( 2 == p_Totaldegree(pp, R) );
 
 
   p_Delete(&p, R);
