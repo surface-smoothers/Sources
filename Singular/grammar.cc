@@ -3943,6 +3943,7 @@ yyreduce:
             else
             {
               rSetHdl(newRingHdl);
+              checkForVariableConflicts(myynest, &newRingHdl );
             }
           ;}
     break;

@@ -1362,6 +1362,7 @@ ringcmd:
             else
             {
               rSetHdl(newRingHdl);
+              checkForVariableConflicts(myynest, &newRingHdl );
             }
           }
         | ringcmd1 elemexpr

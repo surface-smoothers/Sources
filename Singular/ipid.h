@@ -89,7 +89,8 @@ void module_help_proc(const char *newlib,const char *p, const char *help);
 /* ================================================================== */
 
 /*extern ring     currRing;  in ring.h */
-
+void checkForVariableConflicts(int lev, idhdl* root);
+BOOLEAN varDefined(const char * s, int lev,  idhdl* root);
 idhdl enterid(const char * a, int lev, int t, idhdl* root, BOOLEAN init=TRUE, BOOLEAN serach=TRUE);
 idhdl ggetid(const char *n);
 idhdl ggetid(const char *n, BOOLEAN local, idhdl *packhdl);

@@ -212,6 +212,10 @@ void *idrecDataInit(int t)
   }
   return (void *)0L;
 }
+
+
+
+
 idhdl idrec::set(const char * s, int level, int t, BOOLEAN init)
 {
   //printf("define %s, %x, level: %d, typ: %d\n", s,s,level,t);
@@ -253,8 +257,96 @@ char * idrec::String(BOOLEAN typed)
   return tmp.String(NULL, typed);
 }
 
+
+
+BOOLEAN varDefined(const char * s, int lev, idhdl* root)
+{
+  idhdl h;
+  s=omStrDup(s);
+  //Print(" varDefined() \n");
+  
+  // is it already defined in root ?
+  if ((h=(*root)->get(s,lev))!=NULL)
+  {
+    //Print(" varDefined: %s already defined in root\n",s);
+    if (IDLEV(h)==lev)
+    {
+        return(1);
+    }
+  }
+ 
+  // is it already defined in currRing->idroot ?
+  else if ( (currRing!=NULL)&&((*root) != currRing->idroot))
+  {
+    //Print("varDefined: ( (currRing!=NULL)&&((*root) != currRing->idroot))\n");
+      
+    if ((h=currRing->idroot->get(s,lev))!=NULL)
+    {
+      if (IDLEV(h)==lev)
+      {
+         return(1);
+      }
+    }
+  }
+  // is it already defined in idroot ?
+  else if ( (*root != IDROOT) )
+  {
+    //Print("varDefined: (*root != IDROOT)\n");
+   
+   
+    if ((h=IDROOT->get(s,lev))!=NULL)
+    {
+      //Print(" %s already defined in idroot \n",s);
+      if (IDLEV(h)==lev)
+      {
+          return(1);
+      }
+    }
+  }
+  
+  return(0);
+  
+}
+
+void checkForVariableConflicts(int lev, idhdl* root)
+{
+ 
+  //Print("checkForVariableConflicts: ");
+  if ( root==NULL)
+  {
+     // Print("checkForVariableConflicts:root==NULL ");
+  }
+  
+  if ((currRing!=NULL))
+    {
+      //Print("checkForVariableConflicts: (currRing!=NULL) ");
+      
+      int i;
+      for(i=0;i<currRing->N;i++)
+      {
+          // Print("// var nr %d:  %s\n",i,currRing->names[i]);
+
+          if (varDefined(currRing->names[i], lev, root))
+          {
+             Warn("redefining %s **",currRing->names[i]);
+          }
+           
+      }
+      for(i=0;i<rPar(currRing);i++) // possibly empty loop
+      {
+         if (varDefined( rParameter(currRing)[i], lev, root))
+         {
+             Warn("redefining %s **", rParameter(currRing)[i]);
+         }
+      }
+   }
+
+}
+
 idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN search)
 {
+  //Print("// enteridlevel: %d \n",lev);
+  //Print("// search: %d \n",search);
   if (s==NULL) return NULL;
   if (root==NULL) return NULL;
   idhdl h;
@@ -267,9 +359,43 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
       root=&(basePack->idroot);
     }
   }
+
+  if (t!=RING_CMD)
+  {
+    if ((currRing!=NULL))
+    {
+      //Print("(search && (currRing!=NULL)");
+      int i;
+      for(i=0;i<currRing->N;i++)
+        {
+          // Print("// var nr %d:  %s\n",i,currRing->names[i]);
+          {
+           if ( strcmp(currRing->names[i],s)==0)
+             Warn("redefining %s **",s);
+          }
+           
+        }
+        for(i=0;i<rPar(currRing);i++) // possibly empty loop
+        {
+          // Print("// par nr %d: %s\n",  i,rParameter(currRing)[i]);
+          if ( strcmp( rParameter(currRing)[i] , s )==0)
+          {
+             Warn("redefining %s **",s);
+          }
+        }
+    }
+  }
+
+  /*     idhdl h=(idhdl)u->data;
+    int i=(int)(long)v->Data();
+    if ((0<i) && (i<=IDRING(h)->N))
+    res->data=omStrDup(IDRING(h)->names[i-1]);
+    */
+  
   // is it already defined in root ?
   if ((h=(*root)->get(s,lev))!=NULL)
   {
+    //Print(" %s already defined in root",s);
     if (IDLEV(h)==lev)
     {
       if ((IDTYP(h) == t)||(t==DEF_CMD))
@@ -288,9 +414,12 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
         goto errlabel;
     }
   }
+ 
   // is it already defined in currRing->idroot ?
   else if (search && (currRing!=NULL)&&((*root) != currRing->idroot))
   {
+    //Print(" (search && (currRing!=NULL)&&((*root) != currRing->idroot))");
+      
     if ((h=currRing->idroot->get(s,lev))!=NULL)
     {
       if (IDLEV(h)==lev)
@@ -310,8 +439,12 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
   // is it already defined in idroot ?
   else if (search && (*root != IDROOT))
   {
+   // Print(" (search && (*root != IDROOT))");
+   
+   
     if ((h=IDROOT->get(s,lev))!=NULL)
     {
+      //Print(" %s already defined in idroot ",s);
       if (IDLEV(h)==lev)
       {
         if ((IDTYP(h) == t)||(t==DEF_CMD))
