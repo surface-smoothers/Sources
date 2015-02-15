@@ -266,7 +266,7 @@ BOOLEAN varDefined(const char * s, int lev, idhdl* root)
   //Print(" varDefined() \n");
   
   int currlevel=lev;
-  for (currlevel=lev;currlevel>=0;currlevel--)
+  //for (currlevel=lev;currlevel>=0;currlevel--)
         {
 
           // is it already defined in root ?
@@ -331,7 +331,7 @@ void checkForVariableConflicts(int lev, idhdl* root)
 
           if (varDefined(currRing->names[i], lev, root))
           {
-             Warn("redefining %s **",currRing->names[i]);
+             Warn("redefining %s ** in %s:%d:%s",currRing->names[i], currentVoice->filename,yylineno,my_yylinebuf);
           }
            
       }
@@ -339,7 +339,7 @@ void checkForVariableConflicts(int lev, idhdl* root)
       {
          if (varDefined( rParameter(currRing)[i], lev, root))
          {
-             Warn("redefining %s **", rParameter(currRing)[i]);
+             Warn("redefining %s **in %s:%d:%s", rParameter(currRing)[i], currentVoice->filename,yylineno,my_yylinebuf);
          }
       }
    }
@@ -375,7 +375,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
           // Print("// var nr %d:  %s\n",i,currRing->names[i]);
           {
            if ( strcmp(currRing->names[i],s)==0)
-             Warn("redefining %s **",s);
+             Warn("redefining %s **in %s:%d:%s",s, currentVoice->filename,yylineno,my_yylinebuf);
           }
            
         }
@@ -384,7 +384,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
           // Print("// par nr %d: %s\n",  i,rParameter(currRing)[i]);
           if ( strcmp( rParameter(currRing)[i] , s )==0)
           {
-             Warn("redefining %s **",s);
+             Warn("redefining %s **in %s:%d:%s",s, currentVoice->filename,yylineno,my_yylinebuf);
           }
         }
     }
@@ -411,7 +411,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
           goto errlabel;
         }
         if (BVERBOSE(V_REDEFINE))
-          Warn("redefining %s **",s);
+          Warn("redefining %s **in %s:%d:%s",s, currentVoice->filename,yylineno,my_yylinebuf);
         if (s==IDID(h)) IDID(h)=NULL;
         killhdl2(h,root,currRing);
       }
@@ -432,7 +432,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
         if ((IDTYP(h) == t)||(t==DEF_CMD))
         {
           if (BVERBOSE(V_REDEFINE))
-            Warn("redefining %s **",s);
+            Warn("redefining %s **in %s:%d:%s",s, currentVoice->filename,yylineno,my_yylinebuf);
           if (s==IDID(h)) IDID(h)=NULL;
           killhdl2(h,&currRing->idroot,currRing);
         }
@@ -455,7 +455,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
         if ((IDTYP(h) == t)||(t==DEF_CMD))
         {
           if (BVERBOSE(V_REDEFINE))
-            Warn("redefining `%s` **",s);
+            Warn("redefining `%s` **in %s:%d:%s",s, currentVoice->filename,yylineno,my_yylinebuf);
           if (s==IDID(h)) IDID(h)=NULL;
           killhdl2(h,&IDROOT,NULL);
         }
