@@ -265,52 +265,55 @@ BOOLEAN varDefined(const char * s, int lev, idhdl* root)
   s=omStrDup(s);
   //Print(" varDefined() \n");
   
-  // is it already defined in root ?
-  if ((h=(*root)->get(s,lev))!=NULL)
-  {
-    //Print(" varDefined: %s already defined in root\n",s);
-    if (IDLEV(h)==lev)
-    {
-        return(1);
-    }
+  int currlevel=lev;
+  for (currlevel=lev;currlevel>=0;currlevel--)
+        {
+
+          // is it already defined in root ?
+          if ((h=(*root)->get(s,currlevel))!=NULL)
+          {
+            //Print(" varDefined: %s already defined in root\n",s);
+            if (IDLEV(h)==currlevel)
+            {
+                return(1);
+            }
+          }
+         
+          // is it already defined in currRing->idroot ?
+          else if ( (currRing!=NULL)&&((*root) != currRing->idroot))
+          {
+            //Print("varDefined: ( (currRing!=NULL)&&((*root) != currRing->idroot))\n");
+              
+            if ((h=currRing->idroot->get(s,currlevel))!=NULL)
+            {
+              if (IDLEV(h)==currlevel)
+              {
+                 return(1);
+              }
+            }
+          }
+          // is it already defined in idroot ?
+          else if ( (*root != IDROOT) )
+          {
+            //Print("varDefined: (*root != IDROOT)\n");
+           
+           
+            if ((h=IDROOT->get(s,currlevel))!=NULL)
+            {
+              //Print(" %s already defined in idroot \n",s);
+              if (IDLEV(h)==currlevel)
+              {
+                  return(1);
+              }
+            }
+          }
   }
- 
-  // is it already defined in currRing->idroot ?
-  else if ( (currRing!=NULL)&&((*root) != currRing->idroot))
-  {
-    //Print("varDefined: ( (currRing!=NULL)&&((*root) != currRing->idroot))\n");
-      
-    if ((h=currRing->idroot->get(s,lev))!=NULL)
-    {
-      if (IDLEV(h)==lev)
-      {
-         return(1);
-      }
-    }
-  }
-  // is it already defined in idroot ?
-  else if ( (*root != IDROOT) )
-  {
-    //Print("varDefined: (*root != IDROOT)\n");
-   
-   
-    if ((h=IDROOT->get(s,lev))!=NULL)
-    {
-      //Print(" %s already defined in idroot \n",s);
-      if (IDLEV(h)==lev)
-      {
-          return(1);
-      }
-    }
-  }
-  
   return(0);
   
 }
 
 void checkForVariableConflicts(int lev, idhdl* root)
 {
- 
   //Print("checkForVariableConflicts: ");
   if ( root==NULL)
   {
@@ -360,6 +363,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
     }
   }
 
+  
   if (t!=RING_CMD)
   {
     if ((currRing!=NULL))
@@ -385,6 +389,7 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN
         }
     }
   }
+  
 
   /*     idhdl h=(idhdl)u->data;
     int i=(int)(long)v->Data();
