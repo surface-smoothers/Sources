@@ -613,17 +613,17 @@ EXAMPLE: example ord_test; shows an example
    def BAS = basering;
    setring r;
    poly f;
-   int n,o,u = nvars(r),1,1;
+   int n,o,@u@ = nvars(r),1,1;
    int ii;
    for ( ii=1; ii<=n; ii++ )
    {
       f = 1+var(ii);
       o = o*(lead(f) == var(ii));
-      u = u*(lead(f) == 1);
+      @u@ = @u@*(lead(f) == 1);
    }
    setring BAS;
    if ( o==1 ) { return(1); }
-   if ( u==1 ) { return(-1); }
+   if ( @u@==1 ) { return(-1); }
    else { return(0); }
 }
 example

@@ -23,7 +23,7 @@ REFERENCES:
         J. Symb. Comp. 38,4 (2004), 1207-1225.
 
 PROCEDURES:
- gmsring(t,s);              Gauss-Manin system of t with variable s
+ gmsring(t,@s@);              Gauss-Manin system of t with variable @s@
  gmsnf(p,K);                Gauss-Manin normal form of p
  gmscoeffs(p,K);            Gauss-Manin basis representation of p
  bernstein(t);              Bernstein-Sato polynomial of t
@@ -118,13 +118,13 @@ static proc stdtrans(ideal I)
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc gmsring(poly t,string s)
-"USAGE:    gmsring(t,s); poly t, string s
+proc gmsring(poly t,string @s@)
+"USAGE:    gmsring(t,@s@); poly t, string @s@
 ASSUME:   characteristic 0; local degree ordering;
           isolated critical point 0 of t
 RETURN:
 @format
-ring G;  Gauss-Manin system of t with variable s
+ring G;  Gauss-Manin system of t with variable @s@
   poly gmspoly=t;
   ideal gmsjacob;  Jacobian ideal of t
   ideal gmsstd;  standard basis of Jacobian ideal
@@ -132,7 +132,7 @@ ring G;  Gauss-Manin system of t with variable s
   ideal gmsbasis;  monomial vector space basis of Jacobian algebra
   int Gmssing::gmsmaxdeg;  maximal weight of variables
 @end format
-NOTE:     gmsbasis is a C[[s]]-basis of H'' and [t,s]=s^2
+NOTE:     gmsbasis is a C[[@s@]]-basis of H'' and [t,@s@]=@s@^2
 KEYWORDS: singularities; Gauss-Manin system; Brieskorn lattice
 EXAMPLE:  example gmsring; shows examples
 "
@@ -195,7 +195,7 @@ EXAMPLE:  example gmsring; shows examples
     os[j..j+1]="  ";
   }
 
-  execute("ring G="+string(charstr(@R))+",("+s+","+varstr(@R)+"),(ws("+
+  execute("ring G="+string(charstr(@R))+",("+@s@+","+varstr(@R)+"),(ws("+
     string(deg(highcorner(g))+2*gmsmaxdeg)+"),"+os+",c);");
 
   poly gmspoly=imap(@R,t);
@@ -967,7 +967,7 @@ static proc fsplit(ideal e0,intvec m0,matrix A,module H,module H0)
 
 static proc glift(ideal e,matrix A,module H,module H0,int K)
 {
-  poly s=var(1);
+  poly @@s=var(1);
   int mu=ncols(gmsbasis);
 
   dbprint(printlevel-voice+2,"// compute standard basis of H''");
@@ -989,7 +989,7 @@ static proc glift(ideal e,matrix A,module H,module H0,int K)
   matrix a0[mu][1];
   matrix A0[mu][mu];
   module M=H0;
-  module N=jet(s*A*matrix(H0)+s^2*diff(matrix(H0),s),K+1);
+  module N=jet(@@s*A*matrix(H0)+@@s^2*diff(matrix(H0),@@s),K+1);
   while(size(N)>0)
   {
     j=mu;
@@ -1010,21 +1010,21 @@ static proc glift(ideal e,matrix A,module H,module H0,int K)
     {
       dbprint(printlevel-voice+3,"// compute A0["+string(i)+","+string(j)+"]");
       c=leadcoef(N[j])/leadcoef(M[i]);
-      A0[i,j]=A0[i,j]+c*s^k;
-      N[j]=jet(N[j]-c*s^k*M[i],K+1);
+      A0[i,j]=A0[i,j]+c*@@s^k;
+      N[j]=jet(N[j]-c*@@s^k*M[i],K+1);
     }
     else
     {
       dbprint(printlevel-voice+3,
         "// reduce H0["+string(j)+"] with H0["+string(i)+"]");
       c=leadcoef(N[j])/leadcoef(M[i])/(1-k-leadcoef(v[i])+leadcoef(v[j]));
-      H0[j]=H0[j]+c*s^(k-1)*H0[i];
-      M[j]=M[j]+c*s^(k-1)*M[i];
-      h0=c*s^(k-1)*H0[i];
-      N[j]=N[j]+jet(s*A*h0+s^2*diff(h0,s),K+1)[1];
+      H0[j]=H0[j]+c*@@s^(k-1)*H0[i];
+      M[j]=M[j]+c*@@s^(k-1)*M[i];
+      h0=c*@@s^(k-1)*H0[i];
+      N[j]=N[j]+jet(@@s*A*h0+@@s^2*diff(h0,@@s),K+1)[1];
       m=M[i];
       a0=transpose(A0)[j];
-      N=N-jet(c*s^(k-1)*m*transpose(a0),K+1);
+      N=N-jet(c*@@s^(k-1)*m*transpose(a0),K+1);
     }
   }
 
@@ -1406,7 +1406,7 @@ RETURN:  list sp;  sum of spectra sp1 and sp2
 EXAMPLE: example spadd; shows examples
 "
 {
-  ideal s;
+  ideal @s@;
   intvec m;
   int i,i1,i2=1,1,1;
   while(i1<=size(sp1[2])||i2<=size(sp2[2]))
@@ -1417,7 +1417,7 @@ EXAMPLE: example spadd; shows examples
       {
         if(number(sp1[1][i1])<number(sp2[1][i2]))
         {
-          s[i]=sp1[1][i1];
+          @s@[i]=sp1[1][i1];
           m[i]=sp1[2][i1];
           i++;
           i1++;
@@ -1426,7 +1426,7 @@ EXAMPLE: example spadd; shows examples
         {
           if(number(sp1[1][i1])>number(sp2[1][i2]))
           {
-            s[i]=sp2[1][i2];
+            @s@[i]=sp2[1][i2];
             m[i]=sp2[2][i2];
             i++;
             i2++;
@@ -1435,7 +1435,7 @@ EXAMPLE: example spadd; shows examples
           {
             if(sp1[2][i1]+sp2[2][i2]!=0)
             {
-              s[i]=sp1[1][i1];
+              @s@[i]=sp1[1][i1];
               m[i]=sp1[2][i1]+sp2[2][i2];
               i++;
             }
@@ -1446,7 +1446,7 @@ EXAMPLE: example spadd; shows examples
       }
       else
       {
-        s[i]=sp1[1][i1];
+        @s@[i]=sp1[1][i1];
         m[i]=sp1[2][i1];
         i++;
         i1++;
@@ -1454,13 +1454,13 @@ EXAMPLE: example spadd; shows examples
     }
     else
     {
-      s[i]=sp2[1][i2];
+      @s@[i]=sp2[1][i2];
       m[i]=sp2[2][i2];
       i++;
       i2++;
     }
   }
-  return(list(s,m));
+  return(list(@s@,m));
 }
 example
 { "EXAMPLE:"; echo=2;

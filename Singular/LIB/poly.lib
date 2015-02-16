@@ -430,30 +430,30 @@ EXAMPLE: example maxdeg; shows examples
    //-------- subprocedure to find maximal degree of given component ----------
    proc findmaxdeg
    {
-      poly c = #[1];
-      if (c==0) { return(-1); }
+      poly @c@ = #[1];
+      if (@c@==0) { return(-1); }
    //--- guess upper 'o' and lower 'u' bound, in case of negative weights -----
-      int d = (deg(c)>=0)*deg(c)-(deg(c)<0)*deg(c);
-      int i = d;
-      while ( c-jet(c,i) != 0 ) { i = 2*(i+1); }
-      int o = i-1;
-      int u = (d != i)*((i div  2)-1);
+      int @d@ = (deg(@c@)>=0)*deg(@c@)-(deg(@c@)<0)*deg(@c@);
+      int @i@ = @d@;
+      while ( @c@-jet(@c@,@i@) != 0 ) { @i@ = 2*(@i@+1); }
+      int o = @i@-1;
+      int u = (@d@ != @i@)*((@i@ div  2)-1);
    //----------------------- "quick search" for maxdeg ------------------------
-      while ( (c-jet(c,i)==0)*(c-jet(c,i-1)!=0) == 0)
+      while ( (@c@-jet(@c@,@i@)==0)*(@c@-jet(@c@,@i@-1)!=0) == 0)
       {
-         i = (o+1+u) div  2;
-         if (c-jet(c,i)!=0) { u = i+1; }
-         else { o = i-1; }
+         @i@ = (o+1+u) div  2;
+         if (@c@-jet(@c@,@i@)!=0) { u = @i@+1; }
+         else { o = @i@-1; }
       }
-      return(i);
+      return(@i@);
    }
 //------------------------------ main program ---------------------------------
    matrix M = matrix(id);
-   int r,c = nrows(M), ncols(M); int i,j;
-   intmat m[r][c];
-   for (i=r; i>0; i--)
+   int r,@c@ = nrows(M), ncols(M); int @i@,j;
+   intmat m[r][@c@];
+   for (@i@=r; @i@>0; @i@--)
    {
-      for (j=c; j>0; j--) { m[i,j] = findmaxdeg(M[i,j]); }
+      for (j=@c@; j>0; j--) { m[@i@,j] = findmaxdeg(M[@i@,j]); }
    }
    if (typeof(id)=="poly") { return(m[1,1]); }
    return(m);
@@ -483,44 +483,44 @@ EXAMPLE: example maxdeg1; shows examples
    //-------- subprocedure to find maximal degree of given component ----------
    proc findmaxdeg
    {
-      poly c = #[1];
-      if (c==0) { return(-1); }
+      poly @c@ = #[1];
+      if (@c@==0) { return(-1); }
       intvec v = #[2];
    //--- guess upper 'o' and lower 'u' bound, in case of negative weights -----
-      int d = (deg(c)>=0)*deg(c)-(deg(c)<0)*deg(c);
-      int i = d;
-      if ( c == jet(c,-1,v))      //case: maxdeg is negative
+      int @d@ = (deg(@c@)>=0)*deg(@c@)-(deg(@c@)<0)*deg(@c@);
+      int i = @d@;
+      if ( @c@ == jet(@c@,-1,v))      //case: maxdeg is negative
       {
-         i = -d;
-         while ( c == jet(c,i,v) ) { i = 2*(i-1); }
-         int o = (d != -i)*((i div  2)+2) - 1;
+         i = -@d@;
+         while ( @c@ == jet(@c@,i,v) ) { i = 2*(i-1); }
+         int o = (@d@ != -i)*((i div  2)+2) - 1;
          int u = i+1;
          int e = -1;
       }
       else                        //case: maxdeg is nonnegative
       {
-         while ( c != jet(c,i,v) ) { i = 2*(i+1); }
+         while ( @c@ != jet(@c@,i,v) ) { i = 2*(i+1); }
          int o = i-1;
-         int u = (d != i)*((i div  2)-1);
+         int u = (@d@ != i)*((i div  2)-1);
          int e = 1;
       }
    //----------------------- "quick search" for maxdeg ------------------------
-      while ( ( c==jet(c,i,v) )*( c!=jet(c,i-1,v) ) == 0 )
+      while ( ( @c@==jet(@c@,i,v) )*( @c@!=jet(@c@,i-1,v) ) == 0 )
       {
          i = (o+e+u) div  2;
-         if ( c!=jet(c,i,v) ) { u = i+1; }
+         if ( @c@!=jet(@c@,i,v) ) { u = i+1; }
          else { o = i-1; }
       }
       return(i);
    }
 //------------------------------ main program ---------------------------------
    ideal M = simplify(ideal(matrix(id)),8);   //delete scalar multiples from id
-   int c = ncols(M);
+   int @c@ = ncols(M);
    int i,n;
    if( size(#)==0 )
    {
-      int m = maxdeg(M[c]);
-      for (i=c-1; i>0; i--)
+      int m = maxdeg(M[@c@]);
+      for (i=@c@-1; i>0; i--)
       {
           n = maxdeg(M[i]);
           m = (m>=n)*m + (m<n)*n;             //let m be the maximum of m and n
@@ -529,8 +529,8 @@ EXAMPLE: example maxdeg1; shows examples
    else
    {
       intvec v=#[1];                          //weight vector for the variables
-      int m = findmaxdeg(M[c],v);
-      for (i=c-1; i>0; i--)
+      int m = findmaxdeg(M[@c@],v);
+      for (i=@c@-1; i>0; i--)
       {
          n = findmaxdeg(M[i],v);
          if( n>m ) { m=n; }
@@ -564,31 +564,31 @@ EXAMPLE: example mindeg; shows examples
    //--------- subprocedure to find minimal degree of given component ---------
    proc findmindeg
    {
-      poly c = #[1];
-      if (c==0) { return(-1); }
+      poly @c@ = #[1];
+      if (@c@==0) { return(-1); }
    //--- guess upper 'o' and lower 'u' bound, in case of negative weights -----
-      int d = (ord(c)>=0)*ord(c)-(ord(c)<0)*ord(c);
-      int i = d;
-      while ( jet(c,i) == 0 ) { i = 2*(i+1); }
-      int o = i-1;
-      int u = (d != i)*((i div  2)-1);
+      int @d@ = (ord(@c@)>=0)*ord(@c@)-(ord(@c@)<0)*ord(@c@);
+      int @i@ = @d@;
+      while ( jet(@c@,@i@) == 0 ) { @i@ = 2*(@i@+1); }
+      int o = @i@-1;
+      int u = (@d@ != @i@)*((@i@ div  2)-1);
    //----------------------- "quick search" for mindeg ------------------------
-      while ( (jet(c,u)==0)*(jet(c,o)!=0) )
+      while ( (jet(@c@,u)==0)*(jet(@c@,o)!=0) )
       {
-         i = (o+u) div 2;
-         if (jet(c,i)==0) { u = i+1; }
-         else { o = i-1; }
+         @i@ = (o+u) div 2;
+         if (jet(@c@,@i@)==0) { u = @i@+1; }
+         else { o = @i@-1; }
       }
-      if (jet(c,u)!=0) { return(u); }
+      if (jet(@c@,u)!=0) { return(u); }
       else { return(o+1); }
    }
 //------------------------------ main program ---------------------------------
    matrix M = matrix(id);
-   int r,c = nrows(M), ncols(M); int i,j;
-   intmat m[r][c];
-   for (i=r; i>0; i--)
+   int r,@c@ = nrows(M), ncols(M); int @i@,j;
+   intmat m[r][@c@];
+   for (@i@=r; @i@>0; @i@--)
    {
-      for (j=c; j>0; j--) { m[i,j] = findmindeg(M[i,j]); }
+      for (j=@c@; j>0; j--) { m[@i@,j] = findmindeg(M[@i@,j]); }
    }
    if (typeof(id)=="poly") { return(m[1,1]); }
    return(m);
@@ -618,44 +618,44 @@ EXAMPLE: example mindeg1; shows examples
    //--------- subprocedure to find minimal degree of given component ---------
    proc findmindeg
    {
-      poly c = #[1];
+      poly @c@ = #[1];
       intvec v = #[2];
-      if (c==0) { return(-1); }
+      if (@c@==0) { return(-1); }
    //--- guess upper 'o' and lower 'u' bound, in case of negative weights -----
-      int d = (ord(c)>=0)*ord(c)-(ord(c)<0)*ord(c);
-      int i = d;
-      if ( jet(c,-1,v) !=0 )      //case: mindeg is negative
+      int @d@ = (ord(@c@)>=0)*ord(@c@)-(ord(@c@)<0)*ord(@c@);
+      int i = @d@;
+      if ( jet(@c@,-1,v) !=0 )      //case: mindeg is negative
       {
-         i = -d;
-         while ( jet(c,i,v) != 0 ) { i = 2*(i-1); }
-         int o = (d != -i)*((i div  2)+2) - 1;
+         i = -@d@;
+         while ( jet(@c@,i,v) != 0 ) { i = 2*(i-1); }
+         int o = (@d@ != -i)*((i div  2)+2) - 1;
          int u = i+1;
          int e = -1; i=u;
       }
       else                        //case: inded is nonnegative
       {
-         while ( jet(c,i,v) == 0 ) { i = 2*(i+1); }
+         while ( jet(@c@,i,v) == 0 ) { i = 2*(i+1); }
          int o = i-1;
-         int u = (d != i)*((i div  2)-1);
+         int u = (@d@ != i)*((i div  2)-1);
          int e = 1; i=u;
       }
    //----------------------- "quick search" for mindeg ------------------------
-      while ( (jet(c,i-1,v)==0)*(jet(c,i,v)!=0) == 0 )
+      while ( (jet(@c@,i-1,v)==0)*(jet(@c@,i,v)!=0) == 0 )
       {
          i = (o+e+u) div  2;
-         if (jet(c,i,v)==0) { u = i+1; }
+         if (jet(@c@,i,v)==0) { u = i+1; }
          else { o = i-1; }
       }
       return(i);
    }
 //------------------------------ main program ---------------------------------
    ideal M = simplify(ideal(matrix(id)),8);   //delete scalar multiples from id
-   int c = ncols(M);
+   int @c@ = ncols(M);
    int i,n;
    if( size(#)==0 )
    {
-      int m = mindeg(M[c]);
-      for (i=c-1; i>0; i--)
+      int m = mindeg(M[@c@]);
+      for (i=@c@-1; i>0; i--)
       {
           n = mindeg(M[i]);
           m = (m<=n)*m + (m>n)*n;             //let m be the maximum of m and n
@@ -664,8 +664,8 @@ EXAMPLE: example mindeg1; shows examples
    else
    {
       intvec v=#[1];                          //weight vector for the variables
-      int m = findmindeg(M[c],v);
-      for (i=c-1; i>0; i--)
+      int m = findmindeg(M[@c@],v);
+      for (i=@c@-1; i>0; i--)
       {
          n = findmindeg(M[i],v);
          m = (m<=n)*m + (m>n)*n;              //let m be the maximum of m and n
@@ -822,7 +822,7 @@ EXAMPLE: example lcm; shows an example
 //----------------------------- polynomial case ------------------------------
   if( typeof(id) == "poly" or typeof(id) == "ideal" )
   {
-     ideal i = id;
+     ideal @i@ = id;
      if (size(#)!=0)
      {
         for (j = 1; j<=size(#); j++)
@@ -831,20 +831,20 @@ EXAMPLE: example lcm; shows an example
               and typeof(#[j]) !="int" and typeof(#[j]) !="intvec")
            { ERROR("// ** list element must be a polynomial");}
            else
-           { i = i,#[j]; }
+           { @i@ = @i@,#[j]; }
         }
      }
      poly p,q;
-     i=simplify(i,10);
-     if(size(i) == 0)
+     @i@=simplify(@i@,10);
+     if(size(@i@) == 0)
      {
         return(0);
      }
-     for(j=1;j<=size(i);j++)
+     for(j=1;j<=size(@i@);j++)
      {
-       if(maxdeg(i[j])!= 0)
+       if(maxdeg(@i@[j])!= 0)
        {
-         p=i[j];
+         p=@i@[j];
          break;
        }
      }
@@ -852,19 +852,19 @@ EXAMPLE: example lcm; shows an example
      {
        return(1);
      }
-     for (k=j+1;k<=size(i);k++)
+     for (k=j+1;k<=size(@i@);k++)
      {
-        if(maxdeg(i[k])!=0)
+        if(maxdeg(@i@[k])!=0)
         {
-           q=gcd(p,i[k]);
+           q=gcd(p,@i@[k]);
            if(maxdeg(q)==0)
            {
-             p=p*i[k];
+             p=p*@i@[k];
            }
            else
            {
              p=p/q;
-             p=p*i[k];
+             p=p*@i@[k];
            }
         }
      }

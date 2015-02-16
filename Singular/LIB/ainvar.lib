@@ -165,7 +165,7 @@ EXAMPLE: example reduction; shows an example
 "
 {
   int i,choose;
-  int z=ncols(dom);
+  int @z@@=ncols(dom);
   def bsr=basering;
   if( size(#) >0 )
   { if( typeof(#[1]) == "int")
@@ -190,7 +190,7 @@ EXAMPLE: example reduction; shows an example
      list L = algebra_containment(lead(p),lead(dom),1);
      if( L[1]==1 )
      {
-  // the ring L[2] = char(bsr),(x(1..nvars(bsr)),y(1..z)),(dp(n),dp(m)),
+  // the ring L[2] = char(bsr),(x(1..nvars(bsr)),y(1..@z@@)),(dp(n),dp(m)),
   // contains polynomial check s.t. LT(p) is of the form check(LT(f1),...,LT(fr))
        def s1 = L[2];
        map psi = s1,maxideal(1),dom;
@@ -211,30 +211,30 @@ EXAMPLE: example reduction; shows an example
   //----------------- arranges the monomial v for elimination -------------
      poly v=product(maxideal(1));
 
-  //------------- changes the basering bsr to bsr[@(0),...,@(z)] ----------
-  execute("ring s="+charstr(basering)+",("+varstr(basering)+",@(0..z)),dp;");
+  //------------- changes the basering bsr to bsr[@(0),...,@(@z@@)] ----------
+  execute("ring s="+charstr(basering)+",("+varstr(basering)+",@(0..@z@@)),dp;");
 // Ev hier die Reihenfolge der Vars aendern. Dazu muss unten aber entsprechend
 // geaendert werden:
-//  execute("ring s="+charstr(basering)+",(@(0..z),"+varstr(basering)+"),dp;");
+//  execute("ring s="+charstr(basering)+",(@(0..@z@@),"+varstr(basering)+"),dp;");
 
-  //constructs the leading ideal of dom=(p-@(0),dom[1]-@(1),...,dom[z]-@(z))
+  //constructs the leading ideal of dom=(p-@(0),dom[1]-@(1),...,dom[@z@@]-@(@z@@))
      ideal dom=imap(bsr,dom);
-     for (i=1;i<=z;i++)
+     for (i=1;i<=@z@@;i++)
      {
         dom[i]=lead(dom[i])-var(nvars(bsr)+i+1);
      }
      dom=lead(imap(bsr,p))-@(0),dom;
 
   //---------- eliminates the variables of the basering bsr --------------
-  //i.e. computes dom intersected with K[@(0),...,@(z)] (this is hard)
+  //i.e. computes dom intersected with K[@(0),...,@(@z@@)] (this is hard)
   //### hier Variante analog zu algebra_containment einbauen!
      ideal kern=eliminate(dom,imap(bsr,v));
 
-  //---------  test wether @(0)-h(@(1),...,@(z)) is in ker ---------------
+  //---------  test wether @(0)-h(@(1),...,@(@z@@)) is in ker ---------------
   // for some polynomial h and divide by maximal power of q=#[1]
      poly h;
-     z=size(kern);
-     for (i=1;i<=z;i++)
+     @z@@=size(kern);
+     for (i=1;i<=@z@@;i++)
      {
         h=kern[i]/@(0);
         if (deg(h)==0)
@@ -414,16 +414,16 @@ EXAMPLE: example furtherInvar; shows an example
   }
   int i;
   ideal null,eins;
-  int z=ncols(id);
-  intvec v;
+  int @z@@=ncols(id);
+  intvec @v@@;
   def br=basering;
   ideal su;
-  for (i=1; i<=z; i++)
+  for (i=1; i<=@z@@; i++)
   {
     su[i]=subst(id[i],q,0);
   }
   // -- define the map phi : r1 ---> br defined by y(i) ---> id[i](q=0) --
-  execute ("ring r1="+charstr(basering)+",(y(1..z)),dp;");
+  execute ("ring r1="+charstr(basering)+",(y(1..@z@@)),dp;");
   setring br;
   map phi=r1,su;
   setring r1;
@@ -456,7 +456,7 @@ EXAMPLE: example furtherInvar; shows an example
   int j;
   for (i=1;i<=size(ker);i=i+1)
   {
-     for (j=1;j<=z;j++)
+     for (j=1;j<=@z@@;j++)
      {
         if (deg(ker[i]/y(j))==0)
         {
@@ -544,7 +544,7 @@ EXAMPLE: example invariantRing; shows an example
       }
     }
   }
-  int z;
+  int @z@@;
   ideal karl;
   ideal k1=1;
   list k2;
@@ -584,8 +584,8 @@ EXAMPLE: example invariantRing; shows an example
     if(k1[1]!=1)
     {
        k1=sortier(k1);
-       z=size(k1);
-       for (i=1;i<=z;i++)
+       @z@@=size(k1);
+       for (i=1;i<=@z@@;i++)
        {
           k1[i]= completeReduction(k1[i],karl,ll);
           if (k1[i]!=0)

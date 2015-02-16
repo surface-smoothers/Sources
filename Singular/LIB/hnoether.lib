@@ -2480,9 +2480,9 @@ EXAMPLE: example extdevelop;  shows an example
  //----- map kann sehr zeitaufwendig sein, daher Vermeidung, wo moeglich: -----
   if (nvars(altring)==2) { poly f=fetch(altring,f); }
   else                   { poly f=hole(f);          }
-  ideal a=hole(lastrow);
+  ideal @@a=hole(lastrow);
  }
- else { ideal a=lastrow; }
+ else { ideal @@a=lastrow; }
  list Newton=newtonpoly(f,1);
  int M1=Newton[size(Newton)-1][1];     // konstant
  number delt;
@@ -2495,14 +2495,14 @@ EXAMPLE: example extdevelop;  shows an example
     Q=M-M1;
  //------ quasihomogene Leitform ist c*x^M1*y+d*x^(M1+Q) => delta=-d/c: -------
     delt=-koeff(f,M,0)/koeff(f,M1,1);
-    a[Q]=delt;
-    dbprint(printlevel-voice+2,"a("+string(zeile-1)+","+string(Q)+") = "+string(delt));
+    @@a[Q]=delt;
+    dbprint(printlevel-voice+2,"@@a("+string(zeile-1)+","+string(Q)+") = "+string(delt));
     if (Q<Exaktheit) {
      f=T1_Transform(f,delt,Q);
      if (defined(HNDebugOn)) { "transformed polynomial:",f; }
      if (subst(f,y,0)==0) {
        dbprint(printlevel-voice+2,"The HNE is finite!");
-       a[Q+1]=x; Exaktheit=Q;
+       @@a[Q+1]=x; Exaktheit=Q;
        f=0;                        // Speicherersparnis: f nicht mehr gebraucht
      }
     }
@@ -2514,9 +2514,9 @@ EXAMPLE: example extdevelop;  shows an example
   map zurueck=extdguenstig,var(1),var(2);
   if (nvars(altring)==2) { f=fetch(extdguenstig,f); }
   else                   { f=zurueck(f);            }
-  lastrow=zurueck(a);
+  lastrow=zurueck(@@a);
  }
- else { lastrow=a; }
+ else { lastrow=@@a; }
  if (ncols(lastrow)>ncols(m)) { spalten=ncols(lastrow); }
  else { spalten=ncols(m); }
  matrix mneu[zeile][spalten];

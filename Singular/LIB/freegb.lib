@@ -977,8 +977,8 @@ EXAMPLE: example makeLetterplaceRing; shows examples
   {
     if (( typeof(#[1]) == "int" ) || ( typeof(#[1]) == "poly" ) )
     {
-      poly x = poly(#[1]);
-      if (x!=0)
+      poly @x@@ = poly(#[1]);
+      if (@x@@!=0)
       {
         use_old_mlr = 1;
       }

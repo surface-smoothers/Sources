@@ -88,8 +88,8 @@ EXAMPLE: example divideUnits; shows examples
 
 
   // divide units out
-  matrix M = L[2];
-  int ncM = ncols(M);   int nrM = nrows(M);
+  matrix @M@ = L[2];
+  int ncM = ncols(@M@);   int nrM = nrows(@M@);
   //  matrix TM[nrM][nrM]; // m times m matrix
   matrix TM = matrix(freemodule(nrM));
   int i; int nsize = Min(intvec(nrM,ncM));
@@ -97,7 +97,7 @@ EXAMPLE: example divideUnits; shows examples
 
   for(i=1; i<=nsize; i++)
   {
-    p = M[i,i];
+    p = @M@[i,i];
     lexp = leadexp(p);
     //    TM[i,i] = 1;
     // check: is p a unit?
@@ -189,15 +189,15 @@ SEE ALSO: divideUnits, jacobson
   int COL=nrows(MA);
 
   //generate a module consisting of the columns of MA
-  module m=MA[1];
+  module @m=MA[1];
   int i;
   for(i=2;i<=ROW;i++)
   {
-    m=m,MA[i];
+    @m=@m,MA[i];
   }
 
   //if MA eqauls the zero matrix give back MA
-  if ( (size(module(m))==0) and (size(transpose(module(m)))==0) )
+  if ( (size(module(@m))==0) and (size(transpose(module(@m)))==0) )
   {
     module L=freemodule(COL);
     matrix LM=L;
@@ -245,11 +245,11 @@ int ppl = printlevel-voice+2;
   int BASIS=B;
   int ROW=ncols(MA);
   int COL=nrows(MA);
-  module m=MA[1];
+  module @m=MA[1];
   int i,j,k;
   for(i=2;i<=ROW;i++)
   {
-    m=m,MA[i];
+    @m=@m,MA[i];
   }
 
 
@@ -266,9 +266,9 @@ int ppl = printlevel-voice+2;
   if(k==0){adrow++;}
   }
 
-    m=transpose(m);
-    for(i=1;i<=adrow;i++){m=m,0;}
-    m=transpose(m);
+    @m=transpose(@m);
+    for(i=1;i<=adrow;i++){@m=@m,0;}
+    @m=transpose(@m);
 
   list RINGLIST=ringlist(R);
   list o="C",0;
@@ -279,13 +279,13 @@ int ppl = printlevel-voice+2;
   setring r;
   //fix the required ordering
   map MAP=R,var(1);
-  module m=MAP(m);
+  module @m=MAP(@m);
 
   int flag=1;  ///////////////counts if the underlying ring is r (flag mod 2 == 1) or ro (flag mod 2 == 0)
 
     module TrafoL=freemodule(COL);
     module TrafoR=freemodule(ROW);
-    module EXL=freemodule(COL); //because we start with transpose(m)
+    module EXL=freemodule(COL); //because we start with transpose(@m)
     module EXR=freemodule(ROW);
 
     option(redSB);
@@ -296,7 +296,7 @@ int ppl = printlevel-voice+2;
     int s,st,p,ff;
 
     module LT,TSTD;
-    module STD=transpose(m);
+    module STD=transpose(@m);
     int finish=0;
     int fehlpos;
     list pos;
@@ -452,7 +452,7 @@ int ppl = printlevel-voice+2;
     matrix STDM=STD;
 
     //Test
-    if(TrafoLM*m*TrafoRM!=STDM){ return(0); }
+    if(TrafoLM*@m*TrafoRM!=STDM){ return(0); }
 
     list RUECK=TrafoRM;
     RUECK=insert(RUECK,STDM);
@@ -461,12 +461,12 @@ int ppl = printlevel-voice+2;
 }
 
 
-static proc divisibility(matrix M)
+static proc divisibility(matrix @M@)
    {
-    matrix STDM=M;
+    matrix STDM=@M@;
     int i,j;
-    int ROW=nrows(M);
-    int COL=ncols(M);
+    int ROW=nrows(@M@);
+    int COL=ncols(@M@);
     module TrafoR=freemodule(COL);
     module TrafoL=freemodule(ROW);
     module SORT;
@@ -536,10 +536,10 @@ static proc diagonal_without_trafo( R, matrix MA, int B)
   int BASIS=B;
   int ROW=ncols(MA);
   int COL=nrows(MA);
-  module m=MA[1];
+  module @m=MA[1];
   int i;
   for(i=2;i<=ROW;i++)
-  {m=m,MA[i];}
+  {@m=@m,MA[i];}
 
 
   list RINGLIST=ringlist(R);
@@ -551,7 +551,7 @@ static proc diagonal_without_trafo( R, matrix MA, int B)
   setring r;
   //RICHTIGE ORDNUNG MACHEN
   map MAP=R,var(1);
-  module m=MAP(m);
+  module @m=MAP(@m);
 
   int flag=1; ///////////////counts if the underlying ring is r (flag mod 2 == 1) or ro (flag mod 2 == 0)
 
@@ -561,7 +561,7 @@ static proc diagonal_without_trafo( R, matrix MA, int B)
     option(redTail);
 
 
-    module STD=transpose(m);
+    module STD=transpose(@m);
     module TSTD;
     int finish=0;
     matrix STDFIN;
@@ -754,12 +754,12 @@ SEE ALSO: divideUnits, smith
   TRIANGLE=triangle(M,B);
   TrafoL=TRIANGLE[1];
   TrafoR=TRIANGLE[3];
-  module m=TRIANGLE[2];
+  module @m=TRIANGLE[2];
 
   //back to the ring
   setring R;
   map MAPR=r,var(1),var(2);
-  module ma=MAPR(m);
+  module ma=MAPR(@m);
   matrix MAA=ma;
   module TL=MAPR(TrafoL);
   module TR=MAPR(TrafoR);
@@ -798,7 +798,7 @@ proc triangle(matrix MA, int B)
 
   //generate a module consisting of the columns of MA
   module m=MA[1];
-  int i,j,s,st,p,k,ff,ex, nz, ii,nextp;
+  int i,j,@s@,st,p,k,ff,ex, nz, ii,nextp;
   for(i=2;i<=ROW;i++)
   {
     m=m,MA[i];
@@ -853,7 +853,7 @@ proc triangle(matrix MA, int B)
       STD=engine(STD,BASIS);
       dbprint(ppl,"Computing Groebner basis: finished");
       dbprint(ppl-1,STD);
-      if(flag mod 2==1){s=ROW; st=COL;}else{s=COL; st=ROW;}
+      if(flag mod 2==1){@s@=ROW; st=COL;}else{@s@=COL; st=ROW;}
 
       STD_EX=transpose(STD_EX);
       dbprint(ppl,"Computing Groebner basis for transformation matrix: start");
@@ -937,7 +937,7 @@ proc triangle(matrix MA, int B)
        LT=L[1];
 
 
-       for(i=2; i<=s+st; i++)
+       for(i=2; i<=@s@+st; i++)
         {
          if (i<=st)
           {
@@ -998,18 +998,18 @@ if (flag mod 2 ==0){ STD = involution(STD,inv);} else { STD = transpose(STD);  }
     return(REVERSE);
 }
 
-static proc divideByContent(matrix M)
+static proc divideByContent(matrix @M@)
 {
 //find first entrie not equal to zero
 int i,k;
 k=1;
 vector CON;
-   for(i=1;i<=ncols(M);i++)
+   for(i=1;i<=ncols(@M@);i++)
    {
-    if(leadcoef(M[i])!=0){CON=CON+leadcoef(M[i])*gen(k); k++;}
+    if(leadcoef(@M@[i])!=0){CON=CON+leadcoef(@M@[i])*gen(k); k++;}
    }
 poly con=content(CON);
-matrix TL=1/con*freemodule(nrows(M));
+matrix TL=1/con*freemodule(nrows(@M@));
 return(TL);
 }
 

@@ -1674,7 +1674,7 @@ example
 ///////////////////////////////////////////////////////////////////////////////
 
 
-proc invariant_basis_reynolds (matrix REY,int d,list #)
+proc invariant_basis_reynolds (matrix REY,int @d@,list #)
 "USAGE:   invariant_basis_reynolds(REY,d[,flags]);
          REY: a <matrix> representing the Reynolds operator, d: an <int>
          indicating of which degree (>0) the homogeneous basis shoud be, flags:
@@ -1695,7 +1695,7 @@ EXAMPLE: example invariant_basis_reynolds; shows an example
 "
 {
  //---------------------- checking that the input is ok -----------------------
-  if (d<=0)
+  if (@d@<=0)
   { "  ERROR:   the second parameter should be > 0";
      return();
   }
@@ -1735,9 +1735,9 @@ EXAMPLE: example invariant_basis_reynolds; shows an example
     return();
   }
  //----------------------------------------------------------------------------
-  ideal mon=sort(maxideal(d))[1];
+  ideal mon=sort(maxideal(@d@))[1];
   int DEGB = degBound;
-  degBound=d;
+  degBound=@d@;
   int j=ncols(mon);
   mon=sort(mon,intvec(j..1))[1];
   ideal B;                             // will contain the basis
@@ -1796,10 +1796,10 @@ example
 // by applying the Reynolds operator to the monomials returned by kbase(sP,d).
 // The result is used when computing secondary invariants.
 ///////////////////////////////////////////////////////////////////////////////
-proc sort_of_invariant_basis (ideal sP,matrix REY,int d,int step_fac)
-{ ideal mon=kbase(sP,d);
+proc sort_of_invariant_basis (ideal sP,matrix REY,int @d@,int step_fac)
+{ ideal mon=kbase(sP,@d@);
   int DEGB=degBound;
-  degBound=d;
+  degBound=@d@;
   int j=ncols(mon);
   int i;
   mon=sort(mon,intvec(j..1))[1];
@@ -1942,7 +1942,7 @@ proc int_number_map (int i)
 // primary invariants found so far. The coefficients lie in a field of
 // characteristic 0.
 ///////////////////////////////////////////////////////////////////////////////
-proc search (int n,int d,ideal B,int cd,ideal P,ideal sP,int i,int dif,int dB,ideal CI)
+proc search (int n,int @d@,ideal B,int cd,ideal P,ideal sP,int i,int dif,int dB,ideal CI)
 { intmat vec[1][cd];                   // the coefficients for the next
                                        // combination -
   degBound=0;
@@ -1953,11 +1953,11 @@ proc search (int n,int d,ideal B,int cd,ideal P,ideal sP,int i,int dif,int dB,id
   matrix tB=transpose(B);
   ideal TEST;
   while(j<=i+dif)
-  { CI=CI+ideal(var(j)^d);             // homogeneous polynomial of the same
+  { CI=CI+ideal(var(j)^@d@);             // homogeneous polynomial of the same
                                        // degree as the one we're looking for is
                                        // added
     // h=hilb(std(CI),1);
-    dB=dB+d-1;                         // used as degBound
+    dB=dB+@d@-1;                         // used as degBound
     while(1)
     { vec=next_vector(vec);            // next vector
       test_poly=(vec*tB)[1,1];
@@ -2145,8 +2145,8 @@ EXAMPLE: example primary_char0; shows an example
   poly v1=var(1);                      // we need v1 to split off coefficients
                                        // in the partial expansion of M (which
                                        // is in terms of the first variable) -
-  int j,d,cd,newdim,dif;               // d: current degree, cd: dimension of
-                                       // space of invariants of degree d,
+  int j,@d@,cd,newdim,dif;               // @d@: current degree, cd: dimension of
+                                       // space of invariants of degree @d@,
                                        // newdim: dimension the ideal generated
                                        // the primary invariants plus basis
                                        // elements, dif=n-i-newdim, i.e. the
@@ -2163,14 +2163,14 @@ EXAMPLE: example primary_char0; shows an example
   while(1)                             // repeat until n primary invariants are
   {                                    // found -
     p(1..2)=partial_molien(M,1,p(2));  // next term of the partial expansion -
-    d=deg(p(1));                       // degree where we'll search -
+    @d@=deg(p(1));                       // degree where we'll search -
     cd=int(coef(p(1),v1)[2,1]);        // dimension of the homogeneous space of
-                                       // inviarants of degree d
+                                       // inviarants of degree @d@
     if (v)
-    { "  Computing primary invariants in degree ",d,":";
+    { "  Computing primary invariants in degree ",@d@,":";
     }
-    B=invariant_basis_reynolds(REY,d,intvec(cd,6)); // basis of invariants of
-                                       // degree d
+    B=invariant_basis_reynolds(REY,@d@,intvec(cd,6)); // basis of invariants of
+                                       // degree @d@
     if (B[1]<>0)
     { Pplus=P+B;
       sPplus=groebner(Pplus);
@@ -2183,13 +2183,13 @@ EXAMPLE: example primary_char0; shows an example
     if (dif<>0)                        // we have to find dif new primary
     {                                  // invariants
       if (cd<>dif)
-      { P,sP,CI,dB=search(n,d,B,cd,P,sP,i,dif,dB,CI); // searching for dif invariants
+      { P,sP,CI,dB=search(n,@d@,B,cd,P,sP,i,dif,dB,CI); // searching for dif invariants
       }
       else                             // i.e. we can take all of B
       { for(j=i+1;j<=i+dif;j++)
-        { CI=CI+ideal(var(j)^d);
+        { CI=CI+ideal(var(j)^@d@);
         }
-        dB=dB+dif*(d-1);
+        dB=dB+dif*(@d@-1);
         P=Pplus;
         sP=sPplus;
       }
@@ -2207,7 +2207,7 @@ EXAMPLE: example primary_char0; shows an example
         }
         return(matrix(P));
       }
-    }                                  // done with degree d
+    }                                  // done with degree @d@
   }
 }
 example
@@ -8262,16 +8262,16 @@ EXAMPLE:  example invariant_algebra_perm; shows an example
   ideal mon;
 
   ideal sG = std(G);
-  int d=1;
-  while ((fin==0) or (d<=MaxD))
+  int @d@=1;
+  while ((fin==0) or (@d@<=MaxD))
   { if (v)
-    { "Searching generators in degree",d;
+    { "Searching generators in degree",@d@;
     }
-    counter = 0; // counts generators in degree d
-    OrbSums = orbit_sums(kbase(sG,d),M);
+    counter = 0; // counts generators in degree @d@
+    OrbSums = orbit_sums(kbase(sG,@d@),M);
     OrbSize = ncols(OrbSums);
     if (v)
-    { "  We have ",OrbSize," orbit sums of degree ",d;
+    { "  We have ",OrbSize," orbit sums of degree ",@d@;
     }
     RedSums = reduce(OrbSums,sG);
     sGoffset=ncols(sG);
@@ -8283,7 +8283,7 @@ EXAMPLE:  example invariant_algebra_perm; shows an example
         totalcount++;
         if (v)
         { "    We found generator number ",totalcount,
-          " in degree ",d;
+          " in degree ",@d@;
         }
         G[totalcount] = OrbSums[i];
         sG[sGoffset+counter] = helpP;
@@ -8291,26 +8291,26 @@ EXAMPLE:  example invariant_algebra_perm; shows an example
         NewReductor[1]=helpP;
         attrib(NewReductor,"isSB",1);
         RedSums = reduce(RedSums,NewReductor);
-        LastGDeg=d;
+        LastGDeg=@d@;
       } // found new generator
     } // loop through orbit sums
-    if ((MaxD>0) and (d==MaxD))
+    if ((MaxD>0) and (@d@==MaxD))
     { if (v)
       { "We went beyond the degree bound, so we are done!";
       }
       break;
     }
-    d++;
+    @d@++;
 // Prepare computations of the next degree
-    if (LastGDeg==d-2)
+    if (LastGDeg==@d@-2)
     { degBound=0;
       if (v) {"Presumably all generators have been found";}
       sG = groebner(sG);
       fin = 0;
     }
-    if (LastGDeg==d-1)
-    { degBound=d;
-      if (v) { "Computing Groebner basis up to the new degree",d; }
+    if (LastGDeg==@d@-1)
+    { degBound=@d@;
+      if (v) { "Computing Groebner basis up to the new degree",@d@; }
       sG = groebner(sG);
       attrib(sG,"isSB",1);
       fin = 0;
@@ -8318,10 +8318,10 @@ EXAMPLE:  example invariant_algebra_perm; shows an example
     if ((fin==0) and (dim(sG)==0))
     { MaxD = maxdeg1(kbase(sG));
       if (v)
-      { if (MaxD>=d) {"We found the degree bound",MaxD; }
-        else {"We found the degree bound",d-1;}
+      { if (MaxD>=@d@) {"We found the degree bound",MaxD; }
+        else {"We found the degree bound",@d@-1;}
       }
-      if (MaxD<d)
+      if (MaxD<@d@)
       { if (v) {"We went beyond the degree bound, so, we are done!";}
         break;
       }
@@ -8382,17 +8382,17 @@ EXAMPLE:  example invariant_algebra_reynolds; shows an example
   intvec dimvec;
 
   ideal sG = std(G);
-  int d=1;
-  dimvec[d] = dim(sG);
-  while ((fin==0) or (d<=MaxD))
+  int @d@=1;
+  dimvec[@d@] = dim(sG);
+  while ((fin==0) or (@d@<=MaxD))
   { NewG = ideal();
     NewGcounter=0;
-    mon = kbase(sG,d);
+    mon = kbase(sG,@d@);
     sGoffset=ncols(sG);
     monsize = ncols(mon);
     if (mon[1]<>0)
     { if (v) { "  We have ",monsize,
-     " relevant monomials in degree ",d;}
+     " relevant monomials in degree ",@d@;}
       block=0; // Loops through the monomials
       while (block<monsize)
       { if ((block mod MonStep) == 0)
@@ -8415,7 +8415,7 @@ EXAMPLE:  example invariant_algebra_reynolds; shows an example
         helpP = RedInv[block];
         if (helpP<>0)
         { counter++; // found new inv. algebra generator!
-          if (v) { "    We found generator number ",counter," in degree ",d; }
+          if (v) { "    We found generator number ",counter," in degree ",@d@; }
           G[counter] = Inv[block];
           sG[sGoffset+counter] = helpP;
           attrib(sG,"isSB",1);
@@ -8427,27 +8427,27 @@ EXAMPLE:  example invariant_algebra_reynolds; shows an example
           NewReductor[1]=helpP;
           attrib(NewReductor,"isSB",1);
           RedInv = reduce(RedInv,NewReductor);
-          LastGDeg=d;
+          LastGDeg=@d@;
         }
       } // loop through monomials
     } // if mon[1]<>0
-    if ((MaxD>0) and (d==MaxD))
+    if ((MaxD>0) and (@d@==MaxD))
     { if (v)
       { "We went beyond the degree bound, so we are done!";
       }
       break;
     }
-    d++;
+    @d@++;
 // Prepare computations of the next degree
-    if (LastGDeg==d-2)
+    if (LastGDeg==@d@-2)
     { degBound=0;
       if (v) {"Presumably all generators have been found";}
       sG = groebner(sG);
       fin = 0;
     }
-    if (LastGDeg==d-1)
-    { degBound=d;
-      if (v) { "Computing Groebner basis up to the new degree",d; }
+    if (LastGDeg==@d@-1)
+    { degBound=@d@;
+      if (v) { "Computing Groebner basis up to the new degree",@d@; }
       sG = groebner(sG);
       attrib(sG,"isSB",1);
       fin = 0;
@@ -8455,10 +8455,10 @@ EXAMPLE:  example invariant_algebra_reynolds; shows an example
     if ((fin==0) and (dim(sG)==0))
     { MaxD = maxdeg1(kbase(sG));
       if (v)
-      { if (MaxD>=d) {"We found the degree bound",MaxD; }
-        else {"We found the degree bound",d-1;}
+      { if (MaxD>=@d@) {"We found the degree bound",MaxD; }
+        else {"We found the degree bound",@d@-1;}
       }
-      if (MaxD<d)
+      if (MaxD<@d@)
       { if (v) {"We went beyond the degree bound, so, we are done!";}
         break;
       }

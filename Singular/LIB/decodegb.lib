@@ -76,12 +76,12 @@ static proc combinations (int m, int n)
 
 ///////////////////////////////////////////////////////////////////////////////
 // the polynomial for Sala's restrictions
-static proc p_poly(int n, int a, int b)
+static proc p_poly(int n, int @aa@@, int b)
 {
   poly f;
   for (int i=0; i<=n-1; i++)
   {
-    f=f+Z(a)^i*Z(b)^(n-1-i);
+    f=f+Z(@aa@@)^i*Z(b)^(n-1-i);
   }
   return(f);
 }
@@ -583,15 +583,15 @@ example
 
 ///////////////////////////////////////////////////////////////////////////////
 
-proc encode (matrix x, matrix g)
+proc encode (matrix @xx@@, matrix g)
 "USAGE:  encode (x, g);  x a row vector (message), and g a generator matrix
 RETURN:  corresponding codeword
 EXAMPLE: example encode; shows an example
 "
 {
- if (nrows(x)>1) {print("ERRORencode1!");}
- if (ncols(x)!=nrows(g)) {print("ERRORencode2!");}
- return(x*g);
+ if (nrows(@xx@@)>1) {print("ERRORencode1!");}
+ if (ncols(@xx@@)!=nrows(g)) {print("ERRORencode2!");}
+ return(@xx@@*g);
 }
 example
 {
@@ -713,7 +713,7 @@ EXAMPLE:  example sysQE; shows an example
  ideal result;
 
  list c;
- list a;
+ list @a@;
  list tmp,tmp2;
  int i,j,l,k;
  number sum,prod,sig;
@@ -728,8 +728,8 @@ EXAMPLE:  example sysQE; shows an example
  //------ expression matrix of check vectors w.r.t. the MDS basis -----------
  for (i=1; i<=red ; i++)
  {
-  a[i]=transpose(submat(check,i..i,1..n));
-  a[i]=transf*a[i];
+  @a@[i]=transpose(submat(check,i..i,1..n));
+  @a@[i]=transf*@a@[i];
  }
 
  //----------- compute the structure constants ------------------------
@@ -764,7 +764,7 @@ EXAMPLE:  example sysQE; shows an example
    sum1=0;
    for (l=1; l<=n; l++)
    {
-    sum1=sum1+a[j][l,1]*U(l);
+    sum1=sum1+@a@[j][l,1]*U(l);
    }
    result=result,sum1-s[j,1];
   }
@@ -775,7 +775,7 @@ EXAMPLE:  example sysQE; shows an example
    sum1=0;
    for (l=1; l<=n; l++)
    {
-    sum1=sum1+a[j][l,1]*U(l);
+    sum1=sum1+@a@[j][l,1]*U(l);
    }
    result=result,sum1-s(j);
   }
@@ -1004,7 +1004,7 @@ example
 
 ///////////////////////////////////////////////////////////////////////////////
 
-proc genMDSMat(int n, number a)
+proc genMDSMat(int n, number @a@)
 "USAGE:   genMDSMat(n, a); n is int, a is number
 @format
         - n x n are dimensions of the MDS matrix,
@@ -1025,7 +1025,7 @@ EXAMPLE:  example genMDSMat; shows an example
  {
   for (j=0; j<=n-1; j++)
   {
-   result[j+1,i+1]=(a^i)^j;
+   result[j+1,i+1]=(@a@^i)^j;
   }
  }
  return(result);

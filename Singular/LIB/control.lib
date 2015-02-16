@@ -66,7 +66,7 @@ NOTE:  the procedure is used in the procedure 'view' to have a better formatted 
   return(s);
 }
 //-----------------------------------------------------------------------------
-proc view(def M)
+proc view(def @M@@)
 "USAGE:  view(M);   M is of any type
 RETURN:  no return value
 PURPOSE:  procedure for (well-) formatted output of modules, matrices, lists of modules, matrices; shows everything even if entries are long
@@ -75,10 +75,10 @@ EXAMPLE:  example view; shows an example
 "
 {
   // to be replaced with something more feasible
-  if ( (typeof(M)=="module")||(typeof(M)=="matrix") )
+  if ( (typeof(@M@@)=="module")||(typeof(@M@@)=="matrix") )
   {
-    int @R=nrows(M);
-    int @C=ncols(M);
+    int @R=nrows(@M@@);
+    int @C=ncols(@M@@);
     int i;
     int j;
     list MaxLength=list();
@@ -91,7 +91,7 @@ EXAMPLE:  example view; shows an example
       max=0;
       for(j=1;j<=@R;j++)
       {
-        Size=size( string( M[j,i] ) );
+        Size=size( string( @M@@[j,i] ) );
         if( Size>max )
         {
           max=Size;
@@ -104,9 +104,9 @@ EXAMPLE:  example view; shows an example
       s="";
       for(j=1;j<@C;j++)
       {
-        s=s+string(M[i,j])+space( MaxLength[j]-size( string( M[i,j] ) ) ) +",";
+        s=s+string(@M@@[i,j])+space( MaxLength[j]-size( string( @M@@[i,j] ) ) ) +",";
       }
-      s=s+string(M[i,j])+space( MaxLength[j]-size( string( M[i,j] ) ) );
+      s=s+string(@M@@[i,j])+space( MaxLength[j]-size( string( @M@@[i,j] ) ) );
       if (i!=@R)
       {
         s=s+",";
@@ -115,18 +115,18 @@ EXAMPLE:  example view; shows an example
     }
     return();
   }
-  if(typeof(M)=="list")
+  if(typeof(@M@@)=="list")
   {
-    int sz=size(M);
+    int sz=size(@M@@);
     int i;
     for(i=1;i<=sz;i++)
     {
-      view(M[i]);
+      view(@M@@[i]);
       print("");
     }
     return();
   }
-  print(M);
+  print(@M@@);
   return();
 }
 example
@@ -141,13 +141,13 @@ example
   view(L);
 }
 //--------------------------------------------------------------------------
-proc rightKernel(matrix M)
+proc rightKernel(matrix @M@@)
 "USAGE:  rightKernel(M);   M a matrix
 RETURN:  module
 PURPOSE: computes the right kernel of matrix M (a module of all elements v such that Mv=0)
 EXAMPLE: example rightKernel; shows an example
 "{
-  return(modulo(M,std(0)));
+  return(modulo(@M@@,std(0)));
 }
 example
 {"EXAMPLE:";echo = 2;
@@ -160,14 +160,14 @@ example
   print(M*R);
 }
 //-------------------------------------------------------------------------
-proc leftKernel(matrix M)
+proc leftKernel(matrix @M@@)
 "USAGE:  leftKernel(M);   M a matrix
 RETURN:  module
 PURPOSE: computes left kernel of matrix M (a module of all elements v such that vM=0)
 EXAMPLE:  example leftKernel; shows an example
 "
 {
-  return( transpose( modulo( transpose(M),std(0) ) ) );
+  return( transpose( modulo( transpose(@M@@),std(0) ) ) );
 }
 example
 {"EXAMPLE:";echo = 2;
@@ -180,7 +180,7 @@ example
   print(L*M);
 }
 //------------------------------------------------------------------------
-proc leftInverse(module M)
+proc leftInverse(module @M@@)
 "USAGE:  leftInverse(M);  M a module
 RETURN:  module
 PURPOSE: computes such a matrix L, that LM = Id;
@@ -189,14 +189,14 @@ NOTE: exists only in the case when M is free submodule
 "
 {
   // it works also for the NC case;
-  int NCols = ncols(M);
+  int NCols = ncols(@M@@);
   module Id = freemodule(NCols);
-  module N  = transpose(M);
+  module N  = transpose(@M@@);
   intvec old_opt=Opt_Our();
   Id = std(Id);
   matrix T;
-  // check the correctness (Id \subseteq M)
-  // via dimension: dim (M) = -1!
+  // check the correctness (Id \subseteq @M@@)
+  // via dimension: dim (@M@@) = -1!
   int d = dim_Our(N);
   if (d != -1)
   {
@@ -307,9 +307,9 @@ static proc is_zero_Our
 {
   //just a copy of 'is_zero' from "poly.lib" patched with GKdim
   int d = dim_Our(std(#[1]));
-  int a = ( d==-1 );
-  if( size(#) >1 ) { list L=a,d; return(L); }
-  return(a);
+  int @a@ = ( d==-1 );
+  if( size(#) >1 ) { list L=@a@,d; return(L); }
+  return(@a@);
   //  return( is_zero(R) ) ;
 }
 //------------------------------------------------------------------------
@@ -478,7 +478,7 @@ example
   view(controlDim(R));
 }
 //------------------------------------------------------------------------
-proc colrank(module M)
+proc colrank(module @M@@)
 "USAGE: colrank(M); M a matrix/module
 RETURN: int
 PURPOSE: compute the column rank of M as of matrix
@@ -486,7 +486,7 @@ NOTE: this procedure uses Bareiss algorithm
 "{
   // NOte continued:
   // which might not terminate in some cases
-  module M_red  = bareiss(M)[1];
+  module M_red  = bareiss(@M@@)[1];
   int NCols_red = ncols(M_red);
   return (NCols_red);
 }
@@ -659,7 +659,7 @@ example
 
 
 //----------------------------------------------------------
-proc genericity(matrix M)
+proc genericity(matrix @M@@)
 "USAGE:  genericity(M); M is a matrix/module
 RETURN:  list (of strings)
 PURPOSE: determine parametric expressions which have been assumed to be non-zero in the process of computing the Groebner basis
@@ -675,7 +675,7 @@ EXAMPLE:  example genericity; shows an example
   {
     return("-");
   }
-  list RT = evas_genericity(M); // list of strings
+  list RT = evas_genericity(@M@@); // list of strings
   if ((size(RT)==1) && (RT[1] == ""))
   {
     return("-");
@@ -703,7 +703,7 @@ example
   genericity(T2);
 }
 //---------------------------------------------------------------
-static proc victors_genericity(matrix M)
+static proc victors_genericity(matrix @M@@)
 {
   // returns "-", if there are no parameters!
   if (npars(basering)==0)
@@ -712,7 +712,7 @@ static proc victors_genericity(matrix M)
   }
   int plevel = printlevel-voice+2;
   // M is a matrix over a ring with params and vars;
-  ideal I = ideal(M); // a list of entries
+  ideal I = ideal(@M@@); // a list of entries
   I = simplify(I,2); // delete 0's
   // decompose every coeff in every poly
   int i;
@@ -816,16 +816,16 @@ static proc victors_genericity(matrix M)
   return(SL);
 }
 //---------------------------------------------------------------
-static proc evas_genericity(matrix M)
+static proc evas_genericity(matrix @M@@)
 {
   // called from the main genericity proc
-  ideal I = ideal(M);
+  ideal I = ideal(@M@@);
   I = simplify(I,2+4);
-  int s = ncols(I);
+  int @s@@ = ncols(I);
   ideal Den;
   poly p;
   int i;
-  for (i=1; i<=s; i++)
+  for (i=1; i<=@s@@; i++)
   {
     p = I[i];
     while (p !=0)
@@ -884,7 +884,7 @@ static proc evas_genericity(matrix M)
 }
 
 //---------------------------------------------------------------
-proc canonize(list L)
+proc canonize(list @L@@)
 "USAGE:  canonize(L); L a list
 RETURN:  list
 PURPOSE: modules in the list are canonized by computing their reduced minimal (= unique up to constant factor w.r.t. the given ordering) Groebner bases
@@ -892,21 +892,21 @@ ASSUME:  L is the output of control/autonomy procedures
 EXAMPLE:  example canonize; shows an example
 "
 {
-  list M = L;
+  list @M@@ = @L@@;
   intvec v=Opt_Our();
-  int s = size(L);
+  int @s@@ = size(@L@@);
   int i;
-  for (i=2; i<=s; i=i+2)
+  for (i=2; i<=@s@@; i=i+2)
   {
-    if (typeof(M[i])=="module")
+    if (typeof(@M@@[i])=="module")
     {
-      M[i] = std(M[i]);
-      //      M[i] = prune(M[i]); // mimimal embedding: no need yet
-      //      M[i] = std(M[i]);
+      @M@@[i] = std(@M@@[i]);
+      //      @M@@[i] = prune(@M@@[i]); // mimimal embedding: no need yet
+      //      @M@@[i] = std(@M@@[i]);
     }
   }
   option(set, v); //set old values back
-  return(M);
+  return(@M@@);
 }
 example
 {  // TwoPendula with L1=L2=L

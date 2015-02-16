@@ -144,7 +144,7 @@ NOTE:     This procedure is a modification of isirreducibleMon to give
 {
   // Variables
   int sizI,i,nvar,j,sum;
-  intvec w,exp;
+  intvec @@w@,exp;
   sizI = ncols(I);
   nvar = nvars(basering);
   for (i = 1 ; i <= sizI ; i++)
@@ -158,14 +158,14 @@ NOTE:     This procedure is a modification of isirreducibleMon to give
       if (exp[j] <> 0)
       {
         sum++;
-        w[sum] = j;
+        @@w@[sum] = j;
       }
     }
     // Si hay mas de una variable la suma sera mayor que 1; y ya
     // sabemos que I no es irreducible.
     if (sum <> 1)
     {
-      return(i,w);
+      return(i,@@w@);
     }
   }
   return(1);
@@ -284,14 +284,14 @@ NOTE:     This procedure detects if the ideal is primary, when the
 {
   // Variables
   int control,nvar,i,sub_in,l,j;
-  intvec v,w,exp_gen;
+  intvec v,@@w@,exp_gen;
   // El ideal ya entra generado por el sistema minimal
   nvar = nvars(basering);
   int sizI = ncols(I);
   v[nvar] = 0;
   int cont = 1;
   // v = 1 en la posicion en el ideal de variables sueltas, que son
-  // las que no hay que tocar, 0 en las demas. w = posiciones de los
+  // las que no hay que tocar, 0 en las demas. @@w@ = posiciones de los
   // generadores de I que hay que comprobar.
   for (i = 1 ; i <= sizI ; i++ )
   {
@@ -302,20 +302,20 @@ NOTE:     This procedure detects if the ideal is primary, when the
     }
     else
     {
-      w[cont] = i;
+      @@w@[cont] = i;
       cont ++;
     }
   }
-  l = size(w);
+  l = size(@@w@);
   // No hay ningun generador que tenga productos de variables, luego
   //  este ideal ya es primario.
-  if (l == 1 && w[1] == 0)
+  if (l == 1 && @@w@[1] == 0)
   {
     return (1);
   }
   for (i = 1 ; i <= l ; i++)
   {
-    exp_gen = leadexp(I[w[i]]);
+    exp_gen = leadexp(I[@@w@[i]]);
     // Ahora hay que ver que valor tiene el exponente de los
     // generadores oportunos en la posicion que es cero dentro del
     // vector v.
@@ -325,7 +325,7 @@ NOTE:     This procedure detects if the ideal is primary, when the
       {
         if (exp_gen[j] <> 0)
         {
-          return (0,j,w);
+          return (0,j,@@w@);
         }
       }
     }
@@ -1233,7 +1233,7 @@ EXAMPLE:  example isprimaryMon; shows some examples
 {
   // Variables
   int nvar,control,m,l,sub_in,i,j,k;
-  intvec v,w,exp_gen;
+  intvec v,@@w@,exp_gen;
   // COMPROBACIONES
   control = checkIdeal(I);
   // Si el sistema de generadores no esta formado por monomios, hay
@@ -1269,7 +1269,7 @@ EXAMPLE:  example isprimaryMon; shows some examples
   v[nvar] = 0;
   k = 1;
   // v = 1 en variables solas y 0 en el resto.
-  // w = lugar de los generadores de I que son producto de mas de una variable.
+  // @@w@ = lugar de los generadores de I que son producto de mas de una variable.
   for (i = 1 ; i <= m ; i++)
   {
     sub_in = soporte(I[i]);
@@ -1281,24 +1281,24 @@ EXAMPLE:  example isprimaryMon; shows some examples
     }
     else
     {
-      w[k] = i;
+      @@w@[k] = i;
       k++;
     }
   }
   // Ahora solo hay que ver que no aparecen variables distintas de
   // las que tenemos marcadas con 1 en v.
-  l = size(w);
-  // Si w es cero, quiere decir que todos los generadores del ideal
+  l = size(@@w@);
+  // Si @@w@ es cero, quiere decir que todos los generadores del ideal
   // son producto de una sola variable, luego es primario.
-  if (l == 1 && w[1] == 0)
+  if (l == 1 && @@w@[1] == 0)
   {
     return(1);
   }
   // Estudiamos el exponente de los generadores de I oportunos (los
-  // que nos indica w).
+  // que nos indica @@w@).
   for (i = 1 ; i <= l ; i++)
   {
-    exp_gen = leadexp(I[w[i]]);
+    exp_gen = leadexp(I[@@w@[i]]);
     for (j = 1 ; j <= nvar ; j++)
     {
       if (v[j] == 0)
@@ -2348,7 +2348,7 @@ static proc adyacency (list l1, ideal I)
   int nvar = nvars(basering);
   // Declaracion de variables.
   int i,j,cambio,sizI,k,min,m,generador,max;
-  list l2,newl1,w,expI;
+  list l2,newl1,@w@,expI;
   poly LCM,newLCM;
   intvec v,newv,expgen;
   sizI = ncols(I);
@@ -2408,13 +2408,13 @@ static proc adyacency (list l1, ideal I)
       // para ver cual da el exponente en "newv"
       for (j = 1 ; j <= nvar - 1 ; j++)
       {
-        w[j] = leadexp(newl1[j]);
+        @w@[j] = leadexp(newl1[j]);
       }
       for (j = 1 ; j <= nvar ; j++)
       {
         for (k = 1 ; k <= nvar - 1 ; k++)
         {
-          if (newv[cambio] == w[k][cambio])
+          if (newv[cambio] == @w@[k][cambio])
           {
             cambio = k;
             break;
@@ -2431,7 +2431,7 @@ static proc adyacency (list l1, ideal I)
       // Donde contribuye antes, e.d., en "v"
       for (j = 1 ; j <= nvar ; j++)
       {
-        if (w[cambio][j] == v[j])
+        if (@w@[cambio][j] == v[j])
         {
           cambio = j;
           break;
@@ -2517,7 +2517,7 @@ static proc ScarfMethod (ideal I)
   int sizI;
   list auxl,expl1,l1,l,l2,newLCM,expI,expgenI,Faces;
   poly LCM,mon;
-  intvec v,w,betas;
+  intvec v,@w@,betas;
   ideal J,genI,artgenI;
   // Comprobamos si el ideal es generico y artiniano, y, en caso de
   // no serlo, obtenemos una modificacion de este ideal que si
@@ -2606,8 +2606,8 @@ static proc ScarfMethod (ideal I)
       for (j = 1 ; j <= sizfaces ; j++)
       {
         v = expl1[i];
-        w = Faces[j];
-        if (v == w)
+        @w@ = Faces[j];
+        if (v == @w@)
         {
           // Si ya esta el LCM en la lista, no queremos
           // seguir buscando

@@ -760,11 +760,11 @@ EXAMPLE: example superCommutative; shows examples
   def saveRing = basering;
 
   int N = nvars(saveRing);
-  int b = 1;
-  int e = N;
+  int @b@@ = 1;
+  int @e@ = N;
   int flag = 0;
 
-  ideal Q = 0;
+  ideal @Q@ = 0;
 
   if(size(#)>0)
   {
@@ -773,9 +773,9 @@ EXAMPLE: example superCommutative; shows examples
       ERROR("The argument 'b' must be an integer!");
       return();
     }
-    b = #[1];
+    @b@@ = #[1];
 
-    if((b < 1)||(b > N))
+    if((@b@@ < 1)||(@b@@ > N))
     {
       ERROR("The argument 'b' must within [1..nvars(basering)]!");
       return();
@@ -790,15 +790,15 @@ EXAMPLE: example superCommutative; shows examples
       ERROR("The argument 'e' must be an integer!");
       return();
     }
-    e = #[2];
+    @e@ = #[2];
 
-    if((e < 1)||(e > N))
+    if((@e@ < 1)||(@e@ > N))
     {
       ERROR("The argument 'e' must within [1..nvars(basering)]!");
       return();
     }
 
-    if(e < b)
+    if(@e@ < @b@@)
     {
       ERROR("The argument 'e' must be bigger or equal to 'b'!");
       return();
@@ -812,7 +812,7 @@ EXAMPLE: example superCommutative; shows examples
       ERROR("The argument 'Q' must be an ideal!");
       return();
     }
-    Q = #[3];
+    @Q@ = #[3];
   }
 
 /*  if(size(#)>3)
@@ -828,7 +828,7 @@ EXAMPLE: example superCommutative; shows examples
 
   int iSavedDegBoung = degBound;
 
-  if( (b == e) && (flag == 0) ) // commutative ring!!!
+  if( (@b@@ == @e@) && (flag == 0) ) // commutative ring!!!
   {
     if( fprot == 1)
     {
@@ -836,10 +836,10 @@ EXAMPLE: example superCommutative; shows examples
     }
 
     degBound=0;
-    Q = std(Q + (var(b)^2));
+    @Q@ = std(@Q@ + (var(@b@@)^2));
     degBound = iSavedDegBoung;
 
-    qring @EA = Q; // and it will be internally commutative as well!!!
+    qring @EA = @Q@; // and it will be internally commutative as well!!!
 
     return(@EA);
   }
@@ -862,22 +862,22 @@ EXAMPLE: example superCommutative; shows examples
 
     ideal I;
 
-    for (i = e - b + 1; i > 0; i--)
+    for (i = @e@ - @b@@ + 1; i > 0; i--)
     {
-      I[i] = var(i + b - 1)^2;
+      I[i] = var(i + @b@@ - 1)^2;
     }
 
     degBound=0;
-    Q = std(I + Q);
+    @Q@ = std(I + @Q@);
     degBound = iSavedDegBoung;
 
-    qring @EA = Q; // and it will be internally commutative as well!!!
+    qring @EA = @Q@; // and it will be internally commutative as well!!!
     return(@EA);
   }
 
 
 
-  if( (b == 1) && (e == N) ) // just an exterior algebra?
+  if( (@b@@ == 1) && (@e@ == N) ) // just an exterior algebra?
   {
     def S = nc_algebra(-1, 0); // define ground G-algebra!
     setring S;
@@ -885,9 +885,9 @@ EXAMPLE: example superCommutative; shows examples
   {
     matrix @E = UpOneMatrix(N);
 
-    for ( i = b; i < e; i++ )
+    for ( i = @b@@; i < @e@; i++ )
     {
-      for ( j = i+1; j <= e; j++ )
+      for ( j = i+1; j <= @e@; j++ )
       {
         @E[i, j] = -1;
       }
@@ -898,9 +898,9 @@ EXAMPLE: example superCommutative; shows examples
 
   ideal @I;
 
-  for (i = e - b + 1; i > 0; i--)
+  for (i = @e@ - @b@@ + 1; i > 0; i--)
   {
-    @I[i] = var(i + b - 1)^2;
+    @I[i] = var(i + @b@@ - 1)^2;
   }
 
 
@@ -910,7 +910,7 @@ EXAMPLE: example superCommutative; shows examples
 
   qring @EA = @I;
 
-  ideal @Q = twostd(fetch(saveRing, Q));
+  ideal @Q = twostd(fetch(saveRing, @Q@));
 
   if( size(@Q) > 0 )
   {
@@ -918,8 +918,8 @@ EXAMPLE: example superCommutative; shows examples
   }
 
   attrib(basering, "isSCA", 1==1);
-  attrib(basering, "iAltVarStart", b);
-  attrib(basering, "iAltVarEnd", e);
+  attrib(basering, "iAltVarStart", @b@@);
+  attrib(basering, "iAltVarEnd", @e@);
 
 //   "Alternating variables: [", AltVarStart(), ",", AltVarEnd(), "].";
   return(basering);
@@ -1815,15 +1815,15 @@ EXAMPLE: example makeModElimRing; shows an example
   /* END input/basering business */
   list L = ringlist(save);
   list Ord = L[3];
-  int s = size(Ord); int done;
+  int @s@@ = size(Ord); int done;
   // detect where module ordering is located: either 1st or last entry
   int i,j;
-  for(i=1; i<=s; i++)
+  for(i=1; i<=@s@@; i++)
   {
     if ( (Ord[i][1] == "C") || (Ord[i][1] == "c") )
     {
       Ord[i][1] = "c";
-      j = i; i=s;
+      j = i; i=@s@@;
     }
   }
   if (j==0) { ERROR("no component entry found in the ringlist"); }
@@ -1833,7 +1833,7 @@ EXAMPLE: example makeModElimRing; shows an example
   {
     N[i] = Ord[i-1];
   }
-  for(i=j+1; i<=s; i++)
+  for(i=j+1; i<=@s@@; i++)
   {
     N[i] = Ord[i];
   }

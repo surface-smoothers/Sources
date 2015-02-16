@@ -69,14 +69,14 @@ EXAMPLE: example zeroRadical; shows an example
    }
 
    /* compute the squarefree parts */
-   poly f;
+   poly @f@;
    int k;
    int i;
    for(i = nvars(basering); i > 0; i--)
    {
-      f = gcd(F[i], diff(F[i], var(i)));
-      k = k + deg(f);
-      F[i] = F[i]/f;
+      @f@ = gcd(F[i], diff(F[i], var(i)));
+      k = k + deg(@f@);
+      F[i] = F[i]/@f@;
    }
 
    /* return the result */
@@ -189,20 +189,20 @@ EXAMPLE: example assPrimes; shows an example
    }
    string alg = #[1];
    int exactness = #[2];
-   int a;
+   int @a@@;
    if(alg == "GTZ")
    {
-      a = 1;
+      @a@@ = 1;
    }
    if(alg == "EHV")
    {
-      a = 2;
+      @a@@ = 2;
    }
    if(alg == "Monico")
    {
-      a = 3;
+      @a@@ = 3;
    }
-   if(a == 0)   // alg != "GTZ" && alg != "EHV" && alg != "Monico"
+   if(@a@@ == 0)   // alg != "GTZ" && alg != "EHV" && alg != "Monico"
    {
       ERROR("unknown method");
    }
@@ -213,21 +213,21 @@ EXAMPLE: example assPrimes; shows an example
        I = modStd(I, exactness);
    }
    if(printlevel >= 10) { "=========== End modStd ==========="; }
-   int d = vdim(I);
-   if(d == -1) { ERROR("Ideal is not zero-dimensional."); }
+   int @d@ = vdim(I);
+   if(@d@ == -1) { ERROR("Ideal is not zero-dimensional."); }
    if(homog(I) == 1) { return(list(maxideal(1))); }
 
    /* compute the radical if necessary */
    ideal J = I;
    int isRad;
-   poly f;
-   isRad, f = pTestRad(I, d);
+   poly @f@;
+   isRad, @f@ = pTestRad(I, @d@);
    while(!isRad)
    {
       J = zeroRadical(I, exactness);
       J = modStd(J, exactness);
-      d = vdim(J);
-      isRad, f = pTestRad(J, d);
+      @d@ = vdim(J);
+      isRad, @f@ = pTestRad(J, @d@);
    }
    I = J;
    kill J;
@@ -236,14 +236,14 @@ EXAMPLE: example assPrimes; shows an example
    if(exactness)
    {
       ideal F = modular("Assprimeszerodim::modpSpecialAlgDep",
-         list(I, f, d, a),
+         list(I, @f@, @d@, @a@@),
          Modstd::primeTest_std, Modular::deleteUnluckyPrimes_default,
          pTest_assPrimes, finalTest_assPrimes);
    }
    else
    {
       ideal F = modular("Assprimeszerodim::modpSpecialAlgDep",
-         list(I, f, d, a),
+         list(I, @f@, @d@, @a@@),
          Modstd::primeTest_std, Modular::deleteUnluckyPrimes_default,
          pTest_assPrimes);
    }
@@ -253,7 +253,7 @@ EXAMPLE: example assPrimes; shows an example
    list H = factorize(F[1]);
    for(i = size(H[1])-1; i > 0; i--)
    {
-      result[i] = I + ideal(quickSubst(H[1][i+1], f, I));
+      result[i] = I + ideal(quickSubst(H[1][i+1], @f@, I));
    }
 
    /* return the result */
@@ -278,12 +278,12 @@ example
  * <F> = kernel(Q[T] --> basering, T |-> f),
  * T := last variable in the basering.
  */
-static proc specialAlgDepEHV(ideal I, poly f)
+static proc specialAlgDepEHV(ideal I, poly @f@)
 {
    def R = basering;
    execute("ring QT = ("+charstr(R)+"), "+varstr(R, nvars(R))+", dp;");
    setring(R);
-   map phi = QT, f;
+   map phi = QT, @f@;
    setring QT;
    ideal F = preimage(R, phi, I); // corresponds to std(I, f-T) in dp(n),dp(1)
    setring(R);
@@ -298,18 +298,18 @@ static proc specialAlgDepEHV(ideal I, poly f)
  * <F> = kernel(Q[T] --> basering, T |-> f),
  * T := last variable in the basering.
  */
-static proc specialAlgDepGTZ(ideal I, poly f)
+static proc specialAlgDepGTZ(ideal I, poly @f@)
 {
    def R = basering;
    if(nvars(R) > 1)
    {
       def Rlp = changeord(list(list("dp", 1:(nvars(R)-1)), list("dp", 1:1)));
       setring(Rlp);
-      poly f = imap(R, f);
+      poly @f@ = imap(R, @f@);
       ideal I;
    }
    ideal K = maxideal(1);
-   K[nvars(R)] = 2*var(nvars(R))-f;
+   K[nvars(R)] = 2*var(nvars(R))-@f@;
    map phi = R, K;
    I = phi(I);
    I = std(I);
@@ -326,15 +326,15 @@ static proc specialAlgDepGTZ(ideal I, poly f)
 
 /* Assume I is zero-dimensional.
  * Computes a poly F in Q[T], the characteristic polynomial of the map
- * basering/I ---> basering/I  defined by the multiplication with f,
+ * basering/I ---> basering/I  defined by the multiplication with @f@,
  * T := last variable in the basering.
  * In case I is radical, it is the same polynomial as in specialAlgDepEHV.
  */
-static proc specialAlgDepMonico(ideal I, poly f, int d)
+static proc specialAlgDepMonico(ideal I, poly @f@, int @d@)
 {
    def R = basering;
    int j;
-   matrix M[d][d];
+   matrix M[@d@][@d@];
    ideal J = std(I);
    ideal basis = kbase(J);
    poly vars = var(nvars(R));
@@ -342,13 +342,13 @@ static proc specialAlgDepMonico(ideal I, poly f, int d)
    {
      vars = var(j)*vars;
    }
-   for(j = 1; j <= d; j++)
+   for(j = 1; j <= @d@; j++)
    {
-     M[1..d, j] = coeffs(reduce(f*basis[j], J), basis, vars);
+     M[1..@d@, j] = coeffs(reduce(@f@*basis[j], J), basis, vars);
    }
    execute("ring QT = ("+charstr(R)+"), "+varstr(R, nvars(R))+", dp;");
    matrix M = imap(R, M);
-   ideal F = det(M-var(1)*freemodule(d));
+   ideal F = det(M-var(1)*freemodule(@d@));
    setring(R);
    ideal F = imap(QT, F);
    return(F);
@@ -356,7 +356,7 @@ static proc specialAlgDepMonico(ideal I, poly f, int d)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static proc specialTest(int d, poly p, ideal I)
+static proc specialTest(int @d@, poly p, ideal I)
 {
 //=== computes a poly F in Q[T] such that <F>=kernel(Q[T]--->basering)
 //=== mapping T to p and test if d=deg(F)
@@ -368,7 +368,7 @@ static proc specialTest(int d, poly p, ideal I)
    ideal F = preimage(R,phi,I);
    int e=deg(F[1]);
    setring R;
-   return((e==d), fetch(Rhelp, F)[1]);
+   return((e==@d@), fetch(Rhelp, F)[1]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -378,7 +378,7 @@ static proc specialTest(int d, poly p, ideal I)
  * F is a poly in Q[T] such that <F> = kernel(Q[T]-->basering) mapping T to r.
  * If found, returns (1, r, F). If not found, returns (0, 0, 0).
  */
-static proc findGen(ideal J, int d)
+static proc findGen(ideal J, int @d@)
 {
    def R = basering;
    int n = nvars(R);
@@ -387,7 +387,7 @@ static proc findGen(ideal J, int d)
 
    /* try trivial transformation */
    poly r = var(n);
-   okay, F = specialTest(d, r, J);
+   okay, F = specialTest(@d@, r, J);
    if(okay)
    {
       return(1, r, F);
@@ -397,7 +397,7 @@ static proc findGen(ideal J, int d)
    int i;
    for(i = 1; i < n; i++)
    {
-      okay, F = specialTest(d, r+var(i), J);
+      okay, F = specialTest(@d@, r+var(i), J);
       if(okay)
       {
          return(1, r+var(i), F);
@@ -410,7 +410,7 @@ static proc findGen(ideal J, int d)
       for(i = 1; i < n; i++)
       {
          r = r + var(i);
-         okay, F = specialTest(d, r, J);
+         okay, F = specialTest(@d@, r, J);
          if(okay)
          {
             return(1, r, F);
@@ -423,7 +423,7 @@ static proc findGen(ideal J, int d)
    for(i = N; i > 0; i--)
    {
       r = randomLast(100)[n];
-      okay, F = specialTest(d, r, J);
+      okay, F = specialTest(@d@, r, J);
       if(okay)
       {
          return(1, r, F);
@@ -443,7 +443,7 @@ static proc findGen(ideal J, int d)
  * mapping T to r.
  * Returns (1, r), if I is radical over F_p, and (0, 0) otherwise.
  */
-static proc pTestRad(ideal I, int d)
+static proc pTestRad(ideal I, int @d@)
 {
    int N = 2;   // Try N random primes. Value of N can be chosen arbitrarily.
    def R = basering;
@@ -471,11 +471,11 @@ static proc pTestRad(ideal I, int d)
       // find and test transformation
       poly r;
       poly F;
-      okay, r, F = findGen(I, d);
+      okay, r, F = findGen(I, @d@);
       if(okay)
       {
-         poly f = gcd(F, diff(F, var(1)));
-         if(d == deg(F/f))   // F squarefree?
+         poly @f@ = gcd(F, diff(F, var(1)));
+         if(@d@ == deg(F/@f@))   // F squarefree?
          {
             setring(R);
             return(1, imap(Rp(i), r));
@@ -510,18 +510,18 @@ static proc quickSubst(poly h, poly r, ideal I)
    attrib(I,"isSB",1);
    int n = nvars(basering);
    poly q = 1;
-   int i,j,d;
+   int i,j,@d@;
    intvec v;
    list L;
    for(i = 1; i <= size(h); i++)
    {
       L[i] = list(leadcoef(h[i]),leadexp(h[i])[n]);
    }
-   d = L[1][2];
+   @d@ = L[1][2];
    i = 0;
    h = 0;
 
-   while(i <= d)
+   while(i <= @d@)
    {
       if(L[size(L)-j][2] == i)
       {
@@ -539,12 +539,12 @@ static proc quickSubst(poly h, poly r, ideal I)
 /* Simple switch for specialAlgDepEHV, specialAlgDepGTZ, and
  * specialAlgDepMonico.
  */
-static proc modpSpecialAlgDep(ideal I, poly f, int d, int alg)
+static proc modpSpecialAlgDep(ideal I, poly @f@, int @d@, int alg)
 {
    ideal F;
-   if(alg == 1) { F = specialAlgDepEHV(I, f); }
-   if(alg == 2) { F = specialAlgDepGTZ(I, f); }
-   if(alg == 3) { F = specialAlgDepMonico(I, f, d); }
+   if(alg == 1) { F = specialAlgDepEHV(I, @f@); }
+   if(alg == 2) { F = specialAlgDepGTZ(I, @f@); }
+   if(alg == 3) { F = specialAlgDepMonico(I, @f@, @d@); }
    F = simplify(F, 1);
    return(F);
 }

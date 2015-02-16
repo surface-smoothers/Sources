@@ -19,8 +19,8 @@ dimGradedPart(M2,2);
 // this should coincide with:
 dimGradedPart(M,2);
 // shift grading by 1:
-intvec v=1;
-attrib(M,"isHomog",v);
+intvec @v@=1;
+attrib(M,"isHomog",@v@);
 t=timer;
 M2t=truncate(M,2);
 t = timer - t;

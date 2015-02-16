@@ -61,12 +61,12 @@ EXAMPLE: example weierstrDiv; shows an example
   int a,b,ii,D;
   poly r,h;
   list result;
-  int y = printlevel - voice + 2;
+  int @y@ = printlevel - voice + 2;
   int n = nvars(basering);
   intvec v;
   v[n]=1;
   b = generalOrder(f);
-  if (y>0)
+  if (@y@>0)
   {
      "//",f;"// is "+string(var(n))+"-general of order", b;
      pause("press <return> to continue");
@@ -83,7 +83,7 @@ EXAMPLE: example weierstrDiv; shows an example
   poly fhat = jet(f,b-1,v);
   poly ftilde = (f-fhat)/var(n)^b;
   poly u = invunit(ftilde,D);
-  if (y>0)
+  if (@y@>0)
   {
      "// fhat (up to order", d,"):";
      "//", fhat;
@@ -102,7 +102,7 @@ EXAMPLE: example weierstrDiv; shows an example
   ii=0;
   while (size(k) > 0)
   {
-  if (y>0)
+  if (@y@>0)
     {
      "// loop",ii+1;
      "// khat:";

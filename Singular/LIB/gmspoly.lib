@@ -288,14 +288,14 @@ static proc spec(ideal e0,intvec s0,module V,matrix B)
   G=simplify(G,1);
 
   ideal e;
-  intvec s;
+  intvec @s@;
   e[mu]=0;
   for(j,k=1,1;j<=ncols(e0);j++)
   {
     for(i=s0[j];i>=1;i,k=i-1,k+1)
     {
       e[k]=e0[j];
-      s[k]=j;
+      @s@[k]=j;
     }
   }
 
@@ -306,11 +306,11 @@ static proc spec(ideal e0,intvec s0,module V,matrix B)
     a[i]=leadcoef(e[leadexp(G[i])[nvars(basering)+1]])+leadexp(G[i])[1];
   }
 
-  return(a,e0,e,s,V,B,G);
+  return(a,e0,e,@s@,V,B,G);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-static proc fsplit(ideal e0,ideal e,intvec s,module V,matrix B,module G)
+static proc fsplit(ideal e0,ideal e,intvec @s@,module V,matrix B,module G)
 {
   int mu=ncols(e);
 
@@ -342,7 +342,7 @@ static proc fsplit(ideal e0,ideal e,intvec s,module V,matrix B,module G)
         v=0;
       }
     }
-    j=s[leadexp(v0)[nvars(basering)+1]];
+    j=@s@[leadexp(v0)[nvars(basering)+1]];
     F[j]=F[j]+v0;
   }
 
@@ -506,7 +506,7 @@ EXAMPLE:  example goodBasis; shows examples
   ideal a;
   int d;
   ideal e,e0;
-  intvec s,s0;
+  intvec @s@,s0;
   matrix A,B;
   module V,G;
 
@@ -557,7 +557,7 @@ EXAMPLE:  example goodBasis; shows examples
     setring(@S);
 
     e0,s0,V,B=vfiltmat(imap(@XS,A),d);
-    a,e0,e,s,V,B,G=spec(e0,s0,V,B);
+    a,e0,e,@s@,V,B,G=spec(e0,s0,V,B);
 
     a0=leadcoef(a[1]);
     for(i=2;i<=mu;i++)
@@ -566,7 +566,7 @@ EXAMPLE:  example goodBasis; shows examples
     }
   }
 
-  G,A=glift(fsplit(e0,e,s,V,B,G));
+  G,A=glift(fsplit(e0,e,@s@,V,B,G));
 
   setring(@XS);
   b=matrix(b)*imap(@S,G);

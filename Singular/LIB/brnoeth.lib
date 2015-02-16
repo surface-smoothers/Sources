@@ -4466,7 +4466,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc decodeSV (matrix y,list K)
+proc decodeSV (matrix @y@@,list K)
 "USAGE:     decodeSV( y, K ); y a row-matrix and K a list
 RETURN:     a codeword (row-matrix) if possible, resp. the 0-matrix (of size
             1) if decoding is impossible.
@@ -4487,17 +4487,17 @@ EXAMPLE:    example decodeSV; shows an example
   // requires the preprocessing done by the procedure "prepSV"
   // the procedure must be called from ring R or R(d)
   // returns either a codeword (matrix) of none (in case of too many errors)
-  matrix syndr=K[1]*transpose(y);
+  matrix syndr=K[1]*transpose(@y@@);
   if (Hamming_wt(syndr)==0)
   {
-    return(y);
+    return(@y@@);
   }
-  matrix Ey=y[1,1]*K[2];
-  int n=ncols(y);
+  matrix Ey=@y@@[1,1]*K[2];
+  int n=ncols(@y@@);
   int i;
   for (i=2;i<=n;i=i+1)
   {
-    Ey=Ey+y[1,i]*K[i+1];
+    Ey=Ey+@y@@[1,i]*K[i+1];
   }
   matrix Ky=get_NZsol(Ey);
   if (Hamming_wt(Ky)==0)
@@ -4566,7 +4566,7 @@ EXAMPLE:    example decodeSV; shows an example
       if ( Hamming_wt(sol) <= (K[n+3][2]-1) div 2 )
       {
         option(set,opgt);
-        return(y-sol);
+        return(@y@@-sol);
       }
       else
       {

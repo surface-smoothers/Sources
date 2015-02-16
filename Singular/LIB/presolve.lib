@@ -341,9 +341,9 @@ EXAMPLE: example elimpart; shows an example
 "
 {
    def BAS = basering;
-   int n,e = nvars(BAS),1;
+   int n,@e@ = nvars(BAS),1;
    if ( size(#)==1 ) {  n=#[1]; }
-   if ( size(#)==2 ) {  n=#[1]; e=#[2];}
+   if ( size(#)==2 ) {  n=#[1]; @e@=#[2];}
 //----------- interreduce linear part with proc elimlinearpart ----------------
 // lin = ideal i after interreduction with linear part
 // eva = eliminated (substituted) variables
@@ -353,12 +353,12 @@ EXAMPLE: example elimpart; shows an example
 
    list L = elimlinearpart(i,n);
    ideal lin, eva, sub, neva, phi = L[1], L[2], L[3], L[4], L[5];
-   if ( e == 0 )
+   if ( @e@ == 0 )
    {
        return(L);
    }
 
-//-------- direct substitution of variables if possible and if e!=0 -----------
+//-------- direct substitution of variables if possible and if @e@!=0 -----------
 // first find terms lin1 in lin of pure degree 1 in each polynomial of lin
 // k1 = pure degree 1 part, i.e. nonzero elts of lin1, renumbered
 // k2 = lin2 (=matrix(lin) - matrix(lin2)), renumbered
@@ -548,21 +548,21 @@ EXAMPLE: example elimpartanyr; shows an example
 "
 {
    def P = basering;
-   int j,n,e = 0,0,1;
+   int j,n,@e@ = 0,0,1;
    poly p = product(maxideal(1));
    if ( size(#)==1 ) { p=#[1]; }
-   if ( size(#)==2 ) { p=#[1]; e=#[2]; }
-   string a,b;
+   if ( size(#)==2 ) { p=#[1]; @e@=#[2]; }
+   string @a@,@b@;
    for ( j=1; j<=nvars(P); j++ )
    {
-      if (deg(p/var(j))>=0) { a = a+varstr(j)+","; n = n+1; }
-      else { b = b+varstr(j)+","; }
+      if (deg(p/var(j))>=0) { @a@ = @a@+varstr(j)+","; n = n+1; }
+      else { @b@ = @b@+varstr(j)+","; }
    }
-   if ( size(b) != 0 ) { b = b[1,size(b)-1]; }
-   else { a = a[1,size(a)-1]; }
-   execute("ring gnir ="+charstr(P)+",("+a+b+"),dp;");
+   if ( size(@b@) != 0 ) { @b@ = @b@[1,size(@b@)-1]; }
+   else { @a@ = @a@[1,size(@a@)-1]; }
+   execute("ring gnir ="+charstr(P)+",("+@a@+@b@+"),dp;");
    ideal i = imap(P,i);
-   list L = elimpart(i,n,e)+list(n);
+   list L = elimpart(i,n,@e@)+list(n);
    setring P;
    list L = imap(gnir,L);
    return(L);
@@ -593,14 +593,14 @@ EXAMPLE: example fastelim; shows an example.
 "
 {
    def P = basering;
-   int h,o,a,b,e,m = 0,1,0,0,0,0;
+   int h,o,@a@,@b@,@e@,m = 0,1,0,0,0,0;
    if ( size(#) == 1 ) { h=#[1]; }
    if ( size(#) == 2 ) { h=#[1]; o=#[2]; }
-   if ( size(#) == 3 ) { h=#[1]; o=#[2]; a=#[3]; }
-   if ( size(#) == 4 ) { h=#[1]; o=#[2]; a=#[3]; b=#[4];}
-   if ( size(#) == 5 ) { h=#[1]; o=#[2]; a=#[3]; b=#[4]; e=#[5]; }
-   if ( size(#) == 6 ) { h=#[1]; o=#[2]; a=#[3]; b=#[4]; e=#[5]; m=#[6]; }
-   list L = elimpartanyr(i,p,e);
+   if ( size(#) == 3 ) { h=#[1]; o=#[2]; @a@=#[3]; }
+   if ( size(#) == 4 ) { h=#[1]; o=#[2]; @a@=#[3]; @b@=#[4];}
+   if ( size(#) == 5 ) { h=#[1]; o=#[2]; @a@=#[3]; @b@=#[4]; @e@=#[5]; }
+   if ( size(#) == 6 ) { h=#[1]; o=#[2]; @a@=#[3]; @b@=#[4]; @e@=#[5]; m=#[6]; }
+   list L = elimpartanyr(i,p,@e@);
    poly q = product(L[2]);     //product of vars which are already eliminated
    if ( q==0 ) { q=1; }
    p = p/q;                    //product of vars which must still be eliminated
@@ -619,9 +619,9 @@ EXAMPLE: example fastelim; shows an example.
    newvar = string(maxideal(1));
    if ( o != 0 )
    {
-      list ordevar = valvars(L[1],a,L[2],b);
-      intvec v = ordevar[1];
-      newvar=string(sort(maxideal(1),v)[1]);
+      list ordevar = valvars(L[1],@a@,L[2],@b@);
+      intvec @v@ = ordevar[1];
+      newvar=string(sort(maxideal(1),@v@)[1]);
 //------------ create new ring with "best" ordering of variables --------------
       def r0=changevar(newvar);
       setring r0;
@@ -850,19 +850,19 @@ EXAMPLE: example findvars; shows an example
 {
    int ii,n;
    ideal found, notfound;
-   intvec f,nf;
+   intvec @f@,nf;
    n = nvars(basering);
    ideal i = simplify(ideal(matrix(id)),10);
    matrix M[ncols(i)][1] = i;
-   vector v = module(M)[1];
+   vector @v@ = module(M)[1];
    ideal max = maxideal(1);
 
    for (ii=1; ii<=n; ii++)
    {
-      if ( v != subst(v,var(ii),0) )
+      if ( @v@ != subst(@v@,var(ii),0) )
       {
          found = found+var(ii);
-         f = f,ii;
+         @f@ = @f@,ii;
       }
       else
       {
@@ -870,9 +870,9 @@ EXAMPLE: example findvars; shows an example
          nf = nf,ii;
       }
    }
-   if ( size(f)>1 ) { f = f[2..size(f)]; }      //intvec of found vars
+   if ( size(@f@)>1 ) { @f@ = @f@[2..size(@f@)]; }      //intvec of found vars
    if ( size(nf)>1 ) { nf = nf[2..size(nf)]; }  //intvec of vars not found
-   list L = found,f,notfound,nf; return(L);
+   list L = found,@f@,notfound,nf; return(L);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -1160,21 +1160,21 @@ EXAMPLE: example sortvars; shows an example
    int ii,jj,n,s;
    list L = valvars(id,#);
    list L2, L3 = L[2], L[3];
-   list K; intmat M; intvec v1,v2,w;
+   list K; intmat M; intvec v1,v2,@w@;
    ideal i = sort(maxideal(1),L[1])[1];
    for ( ii=1; ii<=size(L2); ii++ )
    {
       M = transpose(L3[2*ii]);
       M = M[L2[ii],1..nrows(L3[2*ii])];
-      w = 0; s = 0;
+      @w@ = 0; s = 0;
       for ( jj=1; jj<=nrows(M)-1; jj++ )
       {
          v1 = M[jj,1..ncols(M)];
          v2 = M[jj+1,1..ncols(M)];
-         if ( v1 != v2 ) { n=jj-s; s=s+n; w = w,n; }
+         if ( v1 != v2 ) { n=jj-s; s=s+n; @w@ = @w@,n; }
       }
-      w=w,nrows(M)-s; w=w[2..size(w)];
-      K = K+sort(L3[2*ii-1],L2[ii])+list(transpose(M))+list(w);
+      @w@=@w@,nrows(M)-s; @w@=@w@[2..size(@w@)];
+      K = K+sort(L3[2*ii-1],L2[ii])+list(transpose(M))+list(@w@);
    }
    L = i,K;
    return(L);
@@ -1230,14 +1230,14 @@ EXAMPLE: example valvars; shows an example
    intvec varvec;             // result intvector
    list Li;                   // result list of ideals
    list LM;                   // result list of intmat's
-   intvec v,w,s;              // w valuation vector for one variable
+   intvec @v@,@w@,s;              // w valuation vector for one variable
    matrix C;                  // coefficient matrix for different variables
    ideal i = simplify(ideal(matrix(id)),10);
 
-//---- for each pii in # create ideal a(ii) intvec v(ii) and list L(ii) -------
-// a(ii) = ideal of vars in product, v(ii)[j]=k <=> a(ii)[j]=var(k)
+//---- for each pii in # create ideal a(ii) intvec @v@(ii) and list L(ii) -------
+// a(ii) = ideal of vars in product, @v@(ii)[j]=k <=> a(ii)[j]=var(k)
 
-   v = 1..nvars(basering);
+   @v@ = 1..nvars(basering);
    int l = size(#);
    if ( l >= 2 )
    {
@@ -1246,24 +1246,24 @@ EXAMPLE: example valvars; shows an example
       {
          int n(ii) = #[ii-1];
          ideal a(ii);
-         intvec v(ii);
+         intvec @v@(ii);
          for ( jj=1; jj<=nvars(basering); jj++ )
          {
             if ( #[ii]/var(jj) != 0)
             {
                a(ii) = a(ii) + var(jj);
-               v(ii)=v(ii),jj;
+               @v@(ii)=@v@(ii),jj;
                m[jj]=0;
-               v[jj]=0;
+               @v@[jj]=0;
             }
          }
-         v(ii)=v(ii)[2..size(v(ii))];
+         @v@(ii)=@v@(ii)[2..size(@v@(ii))];
       }
       if ( size(m)!=0 )
       {
          l = 2*(l div 2)+2;
          ideal a(l) = simplify(m,2);
-         intvec v(l) = compress(v);
+         intvec @v@(l) = compress(@v@);
          int n(l);
          if ( size(#)==l-1 ) { n(l) = #[l-1]; }
       }
@@ -1272,7 +1272,7 @@ EXAMPLE: example valvars; shows an example
    {
       l = 2;
       ideal a(2) = maxideal(1);
-      intvec v(2) = v;
+      intvec @v@(2) = @v@;
       int n(2);
       if ( size(#)==1 ) { n(2) = #[1]; }
    }
@@ -1286,24 +1286,24 @@ EXAMPLE: example valvars; shows an example
       for ( ii=1; ii<=size(a(kk)); ii++ )
       {
          C = coeffs(i,a(kk)[ii]);
-         w = nrows(C); // =(maximal occuring power of a(kk)[ii])+1
-         for ( jj=w[1]; jj>1; jj-- )
+         @w@ = nrows(C); // =(maximal occuring power of a(kk)[ii])+1
+         for ( jj=@w@[1]; jj>1; jj-- )
          {
             s = size(C[jj,1..ncols(C)]);
-            w[w[1]-jj+2] = sum(s);
+            @w@[@w@[1]-jj+2] = sum(s);
          }
-         // w[1] should represent the maximal occuring power of a(kk)[ii] so it
+         // @w@[1] should represent the maximal occuring power of a(kk)[ii] so it
          // has to be decreased by 1 since otherwise the constant term is also
          // counted
-         w[1]=w[1]-1;
+         @w@[1]=@w@[1]-1;
 
-         L[ii]=w;
-         n = size(w)*(size(w) > n) + n*(size(w) <= n);
+         L[ii]=@w@;
+         n = size(@w@)*(size(@w@) > n) + n*(size(@w@) <= n);
       }
       intmat M(kk)[size(a(kk))][n];
       for ( ii=1; ii<=size(a(kk)); ii++ )
       {
-         if ( n==1 ) { w = L[ii]; M(kk)[ii,1] = w[1]; }
+         if ( n==1 ) { @w@ = L[ii]; M(kk)[ii,1] = @w@[1]; }
          else  { M(kk)[ii,1..n] = L[ii]; }
       }
       LM[kk-1] = a(kk);
@@ -1312,7 +1312,7 @@ EXAMPLE: example valvars; shows an example
       vec = sort(L)[2];
       if ( n(kk) != 0 ) { vec = vec[size(vec)..1]; }
       blockvec[kk div 2] = vec;
-      vec = sort(v(kk),vec)[1];
+      vec = sort(@v@(kk),vec)[1];
       varvec = varvec,vec;
    }
    varvec = varvec[2..size(varvec)];

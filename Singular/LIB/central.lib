@@ -435,12 +435,12 @@ SEE ALSO:   linearMapKernel; linearMapKernel
 {
   /*4DEBUG*/    if( defined( @@@DEBUG ) ){ BCall( "applyAdF", I, p ); } /*4DEBUG*/
 
-  poly t; ideal II = 0;
+  poly @t@@; ideal II = 0;
 
   for ( int k = ncols(I); k > 0; k --)
     {
-      t = I[k];
-      II[k] = p * t - t * p; // we have to reduce smooth images in Qrings...
+      @t@@ = I[k];
+      II[k] = p * @t@@ - @t@@ * p; // we have to reduce smooth images in Qrings...
     }
 
   II = NF( II, twostd(0) ); // ... now!
@@ -506,7 +506,7 @@ SEE ALSO:   applyAdF; linearMapKernel
   // Compute matrix MD
   module MD; // zero
 
-  int x, y;
+  int @x@, @y@;
 
   vector w;
 
@@ -521,32 +521,32 @@ SEE ALSO:   applyAdF; linearMapKernel
 
   // Maybe some 'free resolution' stuff??? But we need linear maps only!!!
 
-  for ( x = 1; x <= V; x++ ) // For every Image vector
+  for ( @x@ = 1; @x@ <= V; @x@++ ) // For every Image vector
     {
       w = 0;
 
-      p = Images[x];
+      p = Images[@x@];
 
-      y = 1; // from 1st monomial in Monomials...
+      @y@ = 1; // from 1st monomial in Monomials...
 
       while( size(p) > 0 )
         {
           m = leadmonom(p);
 
-          // y < N!
-          while( Monomials[y] != m )
+          // @y@ < N!
+          while( Monomials[@y@] != m )
             // There MUST be this monomial because of the construction of Monomials polynomial!
             {
-              y++; // to size()
+              @y@++; // to size()
             }
 
-          // found monomial m at position y.
+          // found monomial m at position @y@.
 
-          w = w + leadcoef(p) * gen(y); // leadcoef(p) MUST be nonzero!
+          w = w + leadcoef(p) * gen(@y@); // leadcoef(p) MUST be nonzero!
           p = p - lead(p); // kill lead term
         }
 
-      MD[x] = w;
+      MD[@x@] = w;
     }
 
   /*******************************************/
@@ -618,7 +618,7 @@ SEE ALSO:   linearMapKernel; applyAdF
 
   number c;
 
-  int x, y;
+  int @x@, @y@;
 
   vector w;
 
@@ -627,21 +627,21 @@ SEE ALSO:   linearMapKernel; applyAdF
   ideal result = 0;
 
   // Kernel' basis translation
-  for ( x = 1; x <= ncols(KER); x++ )
+  for ( @x@ = 1; @x@ <= ncols(KER); @x@++ )
     {
       p = 0;
-      w = KER[x];
+      w = KER[@x@];
 
-      for ( y = 1; y <= nrows(w); y++ )
+      for ( @y@ = 1; @y@ <= nrows(w); @y@++ )
         {
-          c = leadcoef( w[y] );
+          c = leadcoef( w[@y@] );
 
           if ( c != 0 )
             {
-              p = p + c * Basis[y]; // linear combination of base vectors { Basis[y] }
+              p = p + c * Basis[@y@]; // linear combination of base vectors { Basis[@y@] }
             }
         }
-      result[ x ]  = p;
+      result[ @x@ ]  = p;
     }
 
 
@@ -1786,16 +1786,16 @@ static proc inCentralizer_poly( poly p, ideal S )
     if p in centralizer(S) => return 1, otherwise return 0
 "
 {
-  poly f;
+  poly @f@;
 
   for( int k = 1; k <= size(S); k++ )
     {
-      f = S[k];
+      @f@ = S[k];
 
-      if( NF( f * p - p * f, twostd(0) ) != 0 )
+      if( NF( @f@ * p - p * @f@, twostd(0) ) != 0 )
         {
           DBPrint( 1, "POLY: " + string (p) +
-                   " is NOT in the centralizer of polynomial {" + string(f) + "}" );
+                   " is NOT in the centralizer of polynomial {" + string(@f@) + "}" );
           return (0);
         }
     }

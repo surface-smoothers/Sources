@@ -436,7 +436,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc Ext_R (intvec v, module M, list #)
+proc Ext_R (intvec v, module @M@, list #)
 "USAGE:   Ext_R(v,M[,p]);  v int resp. intvec , M module, p int
 COMPUTE: A presentation of Ext^k(M',R); for k=v[1],v[2],..., M'=coker(M).
          Let
@@ -480,20 +480,20 @@ EXAMPLE: example Ext_R; shows an example
   //------------ check for weight vector (graded case) -----------------------
   int withWeight;
   intvec weightM,weightR,ww;
-  if ( typeof(attrib(M,"isHomog"))!="string" )
+  if ( typeof(attrib(@M@,"isHomog"))!="string" )
   {
-    weightM=attrib(M,"isHomog");
+    weightM=attrib(@M@,"isHomog");
     withWeight=1;
   }
 
   //------------ initialisation ----------------------------------------------
-  module m1t,m1,m2,m2t,ret,ret0,ker;
+  module m1t,@m1@,@m2@,m2t,ret,ret0,ker;
   vector leadCol;
   matrix kb;
   module G;
-  list L1,L2,L3,L,K;
+  list L1,L2,L3,@L@,K;
   resolution resm2;
-  int j,k,max,ii,t1,t2,di,leadComp,shift;
+  int j,@k@,max,ii,t1,t2,di,leadComp,shift;
   intvec A1,A2,A3;
   int s = size(v);
   max = Max(v);                // the maximum integer occurring in intvec v
@@ -532,10 +532,10 @@ EXAMPLE: example Ext_R; shows an example
   }
   if( t1==1 )
   { // compute resolution via sres command
-    if( attrib(M,"isSB")==0 ) {
-      M=std(M);
+    if( attrib(@M@,"isSB")==0 ) {
+      @M@=std(@M@);
     }
-    list resl = sres(M,max+1);
+    list resl = sres(@M@,max+1);
     if (withWeight) {
       // ****
       // **** at this writing, sres does not return weights, we have to
@@ -550,12 +550,12 @@ EXAMPLE: example Ext_R; shows an example
       for (j=2; j<=size(resl); j++) {
         if (size(G)!=0) {
           ww=0;
-          for (k=1; k<=ncols(G); k++) {
-            if (size(G[k])==0) { ww[k]=0; }
+          for (@k@=1; @k@<=ncols(G); @k@++) {
+            if (size(G[@k@])==0) { ww[@k@]=0; }
             else {
-              leadCol = leadmonom(G[k]);
+              leadCol = leadmonom(G[@k@]);
               leadComp = nrows(leadCol);
-              ww[k] = deg(leadCol)+weightR[leadComp];
+              ww[@k@] = deg(leadCol)+weightR[leadComp];
             }
           }
           G=resl[j];
@@ -566,8 +566,8 @@ EXAMPLE: example Ext_R; shows an example
       }
     }
   }
-  else { list resl = mres(M,max+1);
-    if ((withWeight) and (size(M)==0)) {
+  else { list resl = mres(@M@,max+1);
+    if ((withWeight) and (size(@M@)==0)) {
       // ***** At this writing: special treatment for zero module needed
       G=resl[1];
       attrib(G,"isHomog",weightM);
@@ -576,10 +576,10 @@ EXAMPLE: example Ext_R; shows an example
   }
   for( ii=1; ii<=s; ii++ )
   {
-//-----------------  apply Hom(_,R) at k-th place -----------------------------
-    k=v[ii];
-    dbprint(p-1,"// Computing Ext^"+string(k)+":");
-    if( k<0 )                   // Ext^k=0 for negative k
+//-----------------  apply Hom(_,R) at @k@-th place -----------------------------
+    @k@=v[ii];
+    dbprint(p-1,"// Computing Ext^"+string(@k@)+":");
+    if( @k@<0 )                   // Ext^@k@=0 for negative @k@
     {
       dbprint(p-1,"// Ext^i=0 for i<0!");
       ret    = gen(1);
@@ -592,17 +592,17 @@ EXAMPLE: example Ext_R; shows an example
       L2[ii] = ret0;
       L3[ii] = matrix(kbase(ret0));
       di=dim(ret0);
-      dbprint(p,"// dimension of Ext^"+string(k)+":  "+string(di));
+      dbprint(p,"// dimension of Ext^"+string(@k@)+":  "+string(di));
       if (di==0)
       {
-        dbprint(p,"// vdim of Ext^"+string(k)+":       "+string(vdim(ret0)));
+        dbprint(p,"// vdim of Ext^"+string(@k@)+":       "+string(vdim(ret0)));
       }
       dbprint(p,"");
     }
     else
     {
-      m2t = resl[k+1];
-      m2 = transpose(m2t);
+      m2t = resl[@k@+1];
+      @m2@ = transpose(m2t);
       if ((typeof(attrib(m2t,"isHomog"))!="string" ) && (withWeight))
       {
         // ------------- compute weights for dual -----------------------------
@@ -611,14 +611,14 @@ EXAMPLE: example Ext_R; shows an example
         // *** set correct weights (at this writing, shift in resolution
         // *** is not considered when defining the weights for the
         // *** modules in the resolution):
-        A1=attrib(M,"isHomog");
+        A1=attrib(@M@,"isHomog");
         A2=attrib(resl[1],"isHomog");
         shift=A1[1]-A2[1];
         for (j=1; j<=size(weightR); j++) { weightR[j]=weightR[j]+shift; }
         attrib(m2t,"isHomog",weightR);
         // --------------------------------------------------------------------
         ww=0;
-        for (j=1; j<=nrows(m2); j++) {
+        for (j=1; j<=nrows(@m2@); j++) {
           if (size(m2t[j])==0) { ww[j]=0; }
           else {
             leadCol = leadmonom(m2t[j]);
@@ -626,13 +626,13 @@ EXAMPLE: example Ext_R; shows an example
             ww[j] = deg(leadCol)+weightR[leadComp];
           }
         }
-        attrib(m2,"isHomog",-ww);  // dualize --> negative weights
+        attrib(@m2@,"isHomog",-ww);  // dualize --> negative weights
         // --------------------------------------------------------------------
         // *** the following should be replaced by the syz command,
         // *** but syz forgets weights.....
-        resm2 = nres(m2,2);
+        resm2 = nres(@m2@,2);
         ker = resm2[2];
-        if ((size(ker)>0) and (size(m2)>0)) {
+        if ((size(ker)>0) and (size(@m2@)>0)) {
           // ------------------------------------------------------------------
           // *** set correct weights (at this writing, shift in resolution
           // *** is not considered when defining the weights for the
@@ -644,38 +644,38 @@ EXAMPLE: example Ext_R; shows an example
           for (j=1; j<=size(A3); j++) { A3[j]=A3[j]+shift; }
           // *** set correct weights where weights are undetermined due to
           // *** zero columns in m2  (read weights from m2t)
-          for (j=1; j<=ncols(m2); j++) {
-            if (size(m2[j])==0) { A3[j]=-weightR[j]; }
+          for (j=1; j<=ncols(@m2@); j++) {
+            if (size(@m2@[j])==0) { A3[j]=-weightR[j]; }
           }
           attrib(ker,"isHomog",A3);
           // ------------------------------------------------------------------
         }
       }
       else {
-        ker = syz(m2);
+        ker = syz(@m2@);
       }
 
-      if( k==0 ) { matrix MMM1[ncols(m2)][1];
-        m1=MMM1;
+      if( @k@==0 ) { matrix MMM1[ncols(@m2@)][1];
+        @m1@=MMM1;
       }
-      else { // k>0
-        m1t = resl[k];
-        m1 = transpose(resl[k]);
+      else { // @k@>0
+        m1t = resl[@k@];
+        @m1@ = transpose(resl[@k@]);
         if ((typeof(attrib(m1t,"isHomog"))!="string" ) && (withWeight)) {
         // ------------- compute weights for dual -----------------------------
-          weightR=attrib(resl[k],"isHomog");
+          weightR=attrib(resl[@k@],"isHomog");
           // ------------------------------------------------------------------
           // *** set correct weights (at this writing, shift in resolution
           // *** is not considered when defining the weights for the
           // *** modules in the resolution):
-          A1=attrib(M,"isHomog");
+          A1=attrib(@M@,"isHomog");
           A2=attrib(resl[1],"isHomog");
           shift=A1[1]-A2[1];
           for (j=1; j<=size(weightR); j++) { weightR[j]=weightR[j]+shift; }
           attrib(m1t,"isHomog",weightR);
           // ------------------------------------------------------------------
           ww=0;
-          for (j=1; j<=nrows(m1); j++) {
+          for (j=1; j<=nrows(@m1@); j++) {
             if (size(m1t[j])==0) { ww[j]=0; }
             else {
               leadCol = leadmonom(m1t[j]);
@@ -683,28 +683,28 @@ EXAMPLE: example Ext_R; shows an example
               ww[j] = deg(leadCol)+weightR[leadComp];
             }
           }
-          attrib(m1,"isHomog",-ww);  // dualize --> negative weights
+          attrib(@m1@,"isHomog",-ww);  // dualize --> negative weights
         }
       }
       //----------------- presentation of ker(m2)/im(m1) ---------------------
-      if ((k==0) and (size(M)==0)) {
-        ret = M;
+      if ((@k@==0) and (size(@M@)==0)) {
+        ret = @M@;
         if (withWeight) { attrib(ret,"isHomog",-weightM); }
       }
       else {
-        ret = modulo(ker,m1);
+        ret = modulo(ker,@m1@);
       }
       dbprint(p-1,
          "// Let 0<--coker(M)<--F0<--F1<--F2<--... be a resolution of M,",
-         "// then F"+string(k)+"*-->F"+string(k+1)+"* is given by:",m2,
-         "// and F"+string(k-1)+"*-->F"+string(k)+"* is given by:",m1,"");
+         "// then F"+string(@k@)+"*-->F"+string(@k@+1)+"* is given by:",@m2@,
+         "// and F"+string(@k@-1)+"*-->F"+string(@k@)+"* is given by:",@m1@,"");
       ret0 = std(ret);
 
       di=dim(ret0);
-      dbprint(p,"// dimension of Ext^"+string(k)+":  "+string(di));
+      dbprint(p,"// dimension of Ext^"+string(@k@)+":  "+string(di));
       if (di==0)
       {
-        dbprint(p,"// vdim of Ext^"+string(k)+":       "+string(vdim(ret0)));
+        dbprint(p,"// vdim of Ext^"+string(@k@)+":       "+string(vdim(ret0)));
       }
       dbprint(p,"");
       if( t2 )
@@ -714,8 +714,8 @@ EXAMPLE: example Ext_R; shows an example
             kb = kbase(ret0);
             if ( size(ker)!=0 ) { kb = matrix(ker)*kb; }
             dbprint(p-1,
-              "// columns of matrix are kbase of Ext^"+string(k)+" in F"
-              +string(k)+"*:",kb,"");
+              "// columns of matrix are kbase of Ext^"+string(@k@)+" in F"
+              +string(@k@)+"*:",kb,"");
             L3[ii] = kb;
          }
          L2[ii] = ret0;
@@ -725,8 +725,8 @@ EXAMPLE: example Ext_R; shows an example
   }
   if( t2 )
   {
-     if( s>1 ) { L = L1,L2,L3; return(L); }
-     else { L = ret,ret0,kb; return(L); }
+     if( s>1 ) { @L@ = L1,L2,L3; return(@L@); }
+     else { @L@ = ret,ret0,kb; return(@L@); }
   }
   else
   {
@@ -1689,35 +1689,35 @@ static proc basisElement(int n,int p,int N)
   return(w);
 }
 
-proc KoszulMap(ideal x,int p)
+proc KoszulMap(ideal @x@@,int p)
 {
-  int n=size(x);
+  int n=size(@x@@);
   int a=binom_int(n,p-1);
   int b=binom_int(n,p);
 
   matrix M[a][b];
 
-  if(p==1){M=x;return(M);}
+  if(p==1){M=@x@@;return(M);}
   int j,k;
   intvec v,w;
   for(j=1;j<=b;j++)
   {
     v=basisElement(n,p,j);
     w=v[2..p];
-    M[basisNumber(n,w),j]=x[v[1]];
+    M[basisNumber(n,w),j]=@x@@[v[1]];
     for(k=2;k<p;k++)
     {
       w=v[1..k-1],v[k+1..p];
-      M[basisNumber(n,w),j]=(-1)^(k-1)*x[v[k]];
+      M[basisNumber(n,w),j]=(-1)^(k-1)*@x@@[v[k]];
     }
     w=v[1..p-1];
-    M[basisNumber(n,w),j]=(-1)^(p-1)*x[v[p]];
+    M[basisNumber(n,w),j]=(-1)^(p-1)*@x@@[v[p]];
   }
   return(M);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc KoszulHomology(ideal x, module M, int p)
+proc KoszulHomology(ideal @x@@, module M, int p)
 "USAGE:   KoszulHomology(I,M,p);  I ideal, M module, p int
 COMPUTE: A presentation of the p-th Koszul homology module H_p(f_1,...,f_k;M'),
          where M'=coker(M) and f_1,...,f_k are the given (ordered list
@@ -1728,8 +1728,8 @@ RETURN:  module H, s.th. coker(H) = H_p(f_1,...,f_k;M').
 NOTE:    size of input ideal has to be <= 20.
 EXAMPLE: example KoszulHomology; shows an example.
 {
-  x=simplify(x,2);
-  int n     = size(x);
+  @x@@=simplify(@x@@,2);
+  int n     = size(@x@@);
   if (n==0)
   {
     ERROR("// KoszulHomology only for non-zero ideals");
@@ -1752,11 +1752,11 @@ EXAMPLE: example KoszulHomology; shows an example.
   if(p!=0)
   {
     module im= tensor(unitmat(a),N);
-    module f = tensor(KoszulMap(x,p),unitmat(nrows(N)));
+    module f = tensor(KoszulMap(@x@@,p),unitmat(nrows(N)));
     ker      = modulo(f,im);
   }
   module im1 = tensor(unitmat(b),N);
-  module im2 = tensor(KoszulMap(x,p+1),unitmat(nrows(N)));
+  module im2 = tensor(KoszulMap(@x@@,p+1),unitmat(nrows(N)));
   module hom = modulo(ker,im1+im2);
   hom        = prune(hom);
   return(hom);

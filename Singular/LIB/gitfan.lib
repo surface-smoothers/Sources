@@ -30,7 +30,7 @@ LIB "parallel.lib"; // for parallelWaitAll
 ////////////////////////////////////////////////////
 proc mod_init()
 {
-  LIB"gfanlib.so";
+  LIB("gfanlib.so");
 }
 
 static proc int2face(int n, int r)
@@ -66,15 +66,17 @@ EXAMPLE: example isaface; shows an example
 "
 {
   poly pz;
-
+  //dbprint(1, "ideal a",a);
   // special case: gam0 is the zero-cone:
   if (size(gam0) == 1 and gam0[1] == 0){
+    //dbprint(1, "special case: gam0 is the zero-cone:");
     ideal G;
 
     // is an a-face if and only if RL0(0,...,0) = const
     // set all entries to 0:
     int i;
     for (int k = 1; k <= size(a); k++) {
+      //dbprint(1, "a[k]" ,a[k]);
       pz = subst(a[k], var(1), 0);
       for (i = 2; i <= nvars(basering); i++) {
         pz = subst(pz, var(i), 0);

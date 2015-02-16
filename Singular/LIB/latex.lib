@@ -653,7 +653,7 @@ EXAMPLE: example texobj; shows an example
  int TW = defined(TeXwidth);
 
  if(defined(basering)){ poly g,h; matrix M;}
- string s,t,l,ineq,sg,Iname;
+ string @s@,t,l,ineq,sg,Iname;
  string sep= ",";
  string D,DA,DE = "$","$$"+newline,"$$";
  string OB,CB = "(",")";
@@ -678,7 +678,7 @@ EXAMPLE: example texobj; shows an example
    { DA = D; DE = D; }
 }
 
- s = DA;
+ @s@ = DA;
 
  for (k=1; k<=size(#); k++)
  { def obj = #[k];
@@ -689,38 +689,38 @@ EXAMPLE: example texobj; shows an example
          Iname = obj; def e = `obj`;     //convert to correct type ideal
          kill obj; def obj = e; kill e;
        }
-       else {s = s + obj + newline;}
+       else {@s@ = @s@ + obj + newline;}
      }
-    else {s = s + obj + newline;}
+    else {@s@ = @s@ + obj + newline;}
    }
    if (typeof(obj) == "int" or typeof(#[1])=="bigint")
-   { s = s + "  " + string(obj) + "  ";}
+   { @s@ = @s@ + "  " + string(obj) + "  ";}
 
    if (typeof(obj) == "intvec")
-   { s = s + " (";
-     for(j=1; j<size(obj);j++) { s = s + string(obj[j]) + sep;}
-     s = s +  string(obj[j]) + ") ";
+   { @s@ = @s@ + " (";
+     for(j=1; j<size(obj);j++) { @s@ = @s@ + string(obj[j]) + sep;}
+     @s@ = @s@ +  string(obj[j]) + ") ";
    }
 
    if (typeof(obj) == "number" )
-   { s = s + texpoly("",obj) + newline;
+   { @s@ = @s@ + texpoly("",obj) + newline;
    }
 
    if (typeof(obj) == "poly")
    { int TeXdisplay; export TeXdisplay;
-     s = s + "\\begin{array}{rl}" + newline;
-     s = s + texpoly("",obj) + "\\\\" + newline;
-     s = s + "\\end{array}" + newline;
+     @s@ = @s@ + "\\begin{array}{rl}" + newline;
+     @s@ = @s@ + texpoly("",obj) + "\\\\" + newline;
+     @s@ = @s@ + "\\end{array}" + newline;
     kill TeXdisplay;
    }
 
    if (typeof(obj) == "vector")
-   { if (obj==0) { s = s  + "0" ;}
+   { if (obj==0) { @s@ = @s@  + "0" ;}
      else
      { if (Tw==0) { TeXwidth = -1;}
-      s = s + "\\left" + OB;
-      for(j=1; j<nrows(obj); j++) {s = s + texpoly("",obj[j]) + sep;}
-      s = s + texpoly("",obj[j])  + "\\right" + CB + newline;
+      @s@ = @s@ + "\\left" + OB;
+      for(j=1; j<nrows(obj); j++) {@s@ = @s@ + texpoly("",obj[j]) + sep;}
+      @s@ = @s@ + texpoly("",obj[j])  + "\\right" + CB + newline;
       TeXwidth = Tw;
      }
     }
@@ -735,17 +735,17 @@ EXAMPLE: example texobj; shows an example
       // else { hintereinander }
       //
       //
-      //  s = s + Iname + "=" + texpoly("",obj,",");
+      //  @s@ = @s@ + Iname + "=" + texpoly("",obj,",");
       //  siehe ebenso noch einmal am Ende : ! (TeXwidth <> 0 !? )
 
-       s =  s + "\\begin{array}{rcl}" + newline;
+       @s@ =  @s@ + "\\begin{array}{rcl}" + newline;
        for (i=1;i<=size(matrix(obj));i++)
-       { s =  s + Iname+ "_{" + string(i) + "} & = & "
+       { @s@ =  @s@ + Iname+ "_{" + string(i) + "} & = & "
                + texpoly("",obj[i]);
-         if (i<size(matrix(obj))){ s = s  + "\\\\" + newline;}
+         if (i<size(matrix(obj))){ @s@ = @s@  + "\\\\" + newline;}
        }
-       s = s + newline;
-       s = s + "\\end{array}" + newline;
+       @s@ = @s@ + newline;
+       @s@ = @s@ + "\\end{array}" + newline;
        TeXwidth = Tw;
        Iname ="";
      }
@@ -759,18 +759,18 @@ EXAMPLE: example texobj; shows an example
         { if (deg(obj[j])>1){linear =0; break;}
         }
         if (!(linear))
-        { s = s + "\\begin{array}{rcl}" + newline;
+        { @s@ = @s@ + "\\begin{array}{rcl}" + newline;
           for(j=1;j<=size(obj);j++)
           { h = jet(obj[j],0);  // absterm
             ineq = "=" ;
             l = texpoly("",obj[j]-h) + " & " + ineq + " & " + texpoly("",-h);
             if(j<size(obj)) { l = l + " \\\\";}
-            s =s+ l + newline;
+            @s@ =@s@+ l + newline;
            }
-          s = s + "\\end{array}" + newline;
+          @s@ = @s@ + "\\end{array}" + newline;
         }
         else   // linear
-        { s = s +
+        { @s@ = @s@ +
    "\\begin{array}{*{" + string(2*nvars(basering)-1) + "}{c}cr}" + newline;
            for(j=1; j<=size(obj);j++)
            { h = jet(obj[j],0);   // absterm
@@ -792,66 +792,66 @@ EXAMPLE: example texobj; shows an example
 
                l = l + " & " + ineq + " & " + texpoly("",-h);
              if (j < size(obj)) { l = l + " \\\\";}
-             s = s + l + newline;
+             @s@ = @s@ + l + newline;
             } // end for (j)
-          s = s + "\\end{array}";
+          @s@ = @s@ + "\\end{array}";
          }  // end else linear
         TeXwidth = 0;
        } // end TeXwidth == 0
    else // TeXwidth <> 0
-   { s =  s + "\\left"+ OB;
+   { @s@ =  @s@ + "\\left"+ OB;
      if (defined(TeXaligned))
-     { s = s + texpoly("",obj,",");
+     { @s@ = @s@ + texpoly("",obj,",");
      }
      else
-     { s = s + newline + "\\begin{array}{c}" + newline +
+     { @s@ = @s@ + newline + "\\begin{array}{c}" + newline +
                texpoly("",obj,", \\\\" + newline) +
                 newline + "\\end{array}" + newline;
      }
-    s = s + "\\right" + CB;
+    @s@ = @s@ + "\\right" + CB;
     } // end TeXwidth <> 0
    }  // not Iname
-// s;
+// @s@;
   }
 
    if (typeof(obj) == "module")
    { M = matrix(obj);
      if (Tw ==0 or Tw > 9) { TeXwidth = -1;}
-     s = s + "\\left" + OB + newline;
+     @s@ = @s@ + "\\left" + OB + newline;
      if (!(defined(TeXaligned)))
      {  // Naechste Zeile nicht notwendig !
-     // s = s + "\\begin{array}{*{"+ string(ncols(M)) + "}{c}}" + newline;
+     // @s@ = @s@ + "\\begin{array}{*{"+ string(ncols(M)) + "}{c}}" + newline;
       for(j=1;j<=ncols(M);j++)
       { l = "\\left" + OB + newline + "\\begin{array}{c}" + newline;
         l = l + texpoly("",ideal(M[1..nrows(M),j]), " \\\\" + newline)
               + newline + "\\end{array}" +newline + "\\right" + CB + newline;
         if (j< ncols(M)) { l = l + " , " + newline;}
-        s = s + l ;
+        @s@ = @s@ + l ;
       }
      }
      else    // TeXaligned
      {
       for(j=1;j<=ncols(M);j++)
-      { s = s + "\\left" + OB + newline +
+      { @s@ = @s@ + "\\left" + OB + newline +
            texpoly("",ideal(M[1..nrows(M),j]),",") + newline + "\\right" + CB;
-        if (j<ncols(M)) { s = s + "," + newline; }
+        if (j<ncols(M)) { @s@ = @s@ + "," + newline; }
       }
      }
-    s = s  + "\\right" + CB + newline;
+    @s@ = @s@  + "\\right" + CB + newline;
    } // module part
 
    if (typeof(obj) == "matrix")
    { if (Tw==0 or Tw > 9) {TeXwidth = -1;}
      l = "";
    //  M = transpose(obj);
-     s = s + "\\left" + OB + newline +
+     @s@ = @s@ + "\\left" + OB + newline +
              "\\begin{array}{*{"+ string(ncols(obj)) + "}{c}" + "}"+ newline;
      for(i=1;i<=nrows(obj);i++)
      { l = l + texpoly("",ideal(obj[i,1..ncols(obj)])," & ");
        if (i<nrows(obj)) { l = l + " \\\\" + newline;}
      }
      l = l + newline;
-     s = s + l + "\\end{array}" + newline +
+     @s@ = @s@ + l + "\\end{array}" + newline +
                  "\\right" + CB + newline;
     TeXwidth = Tw;
   }
@@ -870,16 +870,16 @@ EXAMPLE: example texobj; shows an example
      }
      l = l + newline + "\\end{array}" + newline +
              "\\right" + CB + newline;
-    s = s + l;
+    @s@ = @s@ + l;
   }
 
   if (typeof(obj) == "ring")
-  { s = s + D + texring("",obj) + D + newline;}
+  { @s@ = @s@ + D + texring("",obj) + D + newline;}
 
   kill obj;
  }
 
- s = s +  DE;// + newline;
+ @s@ = @s@ +  DE;// + newline;
 
  if(!(ND)) { kill NoDollars;}  // kill Latex::
  if(!(TW)) { kill TeXwidth;}   // kill Latex::
@@ -892,9 +892,9 @@ EXAMPLE: example texobj; shows an example
   { if(fname[size(fname)-3,4]!=".tex") {fname = fname +".tex"; }
   }
   else {fname = fname + ".tex";}
-  write(fname,s);
+  write(fname,@s@);
  }
- else {return(s);}
+ else {return(@s@);}
 }
 example
 {
@@ -1055,9 +1055,9 @@ NOTE:    preceding \">>\" are deleted and suffix \".tex\" (if not given)
 EXAMPLE: example texring; shows an example
 "
 {
-  int i,galT,intT,flag,mipo,nopar,Dollars,TB,TA;
+  int @i@@,galT,intT,flag,mipo,nopar,Dollars,TB,TA;
   string ob,cb,cf,en,s,t,savebrack; //opening bracket, closing br, coef.field
-  intvec v;
+  intvec @v@@;
 
   setring r;
   if (!(defined(NoDollars))){ Dollars = 1; int NoDollars; export NoDollars;}
@@ -1074,9 +1074,9 @@ EXAMPLE: example texring; shows an example
   if(find(charstr(r),"complex")){cf="\\C"; nopar=1;}   // 28.10.06
   if(char(r)==prime(char(r))){cf="\\Z_{"+string(char(r))+"}";}
   if(char(r)>0 and !intT)
-  { i = find(charstr(r),",");
-    if(i)
-    { t= charstr(r)[1,i-1];
+  { @i@@ = find(charstr(r),",");
+    if(@i@@)
+    { t= charstr(r)[1,@i@@-1];
       galT = (t <> string(char(r)));
       if (galT) { cf = "\\F_{"+ t + "}";}
     }
@@ -1085,27 +1085,27 @@ EXAMPLE: example texring; shows an example
   if (size(#))
   { if (typeof(#[1])=="list") { # = #[1];}
   }
-  for (i=1;i<=size(#);i++)
+  for (@i@@=1;@i@@<=size(#);@i@@++)
   { flag =0;
-    if(typeof(#[i])=="string")
+    if(typeof(#[@i@@])=="string")
     {
-     if(#[i][1]=="^" or #[i][1]=="_"){en=en+#[i];flag = 1;}
-     if(#[i]=="mipo"){mipo=1; flag = 1;}
-     if(#[i]=="{"){ob,cb="\\{","\\}";flag=1;}
-     if(#[i]=="{{"){ob,cb="\\{\\{","\\}\\}";flag=1;}
-     if(#[i]=="["){ob,cb="[","]";flag=1;}
-     if(#[i]=="[["){ob,cb="[[","]]";flag=1;}
-     if(#[i]=="<"){ob,cb="<",">";flag=1;}
-     if(#[i]=="<<"){ob,cb="{\\ll}","{\\gg}";flag=1;}
-     if(#[i]=="C"){cf="\\C";flag=1;}
-     if(#[i]=="Q"){cf="\\Q";flag=1;}
-     if((#[i]=="k" or #[i]=="K" or #[i]=="R") and !(galT))
-                   {cf=#[i]; flag=1; nopar=1;}
-     if (flag!=1) {cf = #[i];}  // for all the cases not covered here e.g Z_(p)
-    }                           // or Q[i]
+     if(#[@i@@][1]=="^" or #[@i@@][1]=="_"){en=en+#[@i@@];flag = 1;}
+     if(#[@i@@]=="mipo"){mipo=1; flag = 1;}
+     if(#[@i@@]=="{"){ob,cb="\\{","\\}";flag=1;}
+     if(#[@i@@]=="{{"){ob,cb="\\{\\{","\\}\\}";flag=1;}
+     if(#[@i@@]=="["){ob,cb="[","]";flag=1;}
+     if(#[@i@@]=="[["){ob,cb="[[","]]";flag=1;}
+     if(#[@i@@]=="<"){ob,cb="<",">";flag=1;}
+     if(#[@i@@]=="<<"){ob,cb="{\\ll}","{\\gg}";flag=1;}
+     if(#[@i@@]=="C"){cf="\\C";flag=1;}
+     if(#[@i@@]=="Q"){cf="\\Q";flag=1;}
+     if((#[@i@@]=="k" or #[@i@@]=="K" or #[@i@@]=="R") and !(galT))
+                   {cf=#[@i@@]; flag=1; nopar=1;}
+     if (flag!=1) {cf = #[@i@@];}  // for all the cases not covered here e.g Z_(p)
+    }                           // or Q[@i@@]
 
-    if ((typeof(#[i])=="intvec") or
-        (typeof(#[i])=="int")){v=#[i];}
+    if ((typeof(#[@i@@])=="intvec") or
+        (typeof(#[@i@@])=="int")){@v@@=#[@i@@];}
    }
   s = cf;
  // now the parameters
@@ -1113,14 +1113,14 @@ EXAMPLE: example texring; shows an example
   if(npars(r) and ((t==string(char(r))) or char(r)==0) and !(nopar))
   {
    s = s + "(";                      // !! mit ideal !!
-   for(i=1;i<npars(r);i++) {s = s + texpoly("",par(i)) + ",";}
+   for(@i@@=1;@i@@<npars(r);@i@@++) {s = s + texpoly("",par(@i@@)) + ",";}
    s = s + texpoly("",par(npars(r))) + ")";
   }                               // parameters done
   if (!(galT) and mipo and minpoly!=0)
   { s = s + "/" + list(parsp(string(minpoly),0))[1];}
   s = s + ob;
-  if (v!=0 and nvars(r)>3)
-  { s = s + tvar(v);}
+  if (@v@@!=0 and nvars(r)>3)
+  { s = s + tvar(@v@@);}
   else
   { s = s + texpoly("",maxideal(1),","); }
    s = s + cb + en;
@@ -1147,9 +1147,9 @@ EXAMPLE: example texring; shows an example
     s =  "$" + s + "$";
   }
   if (size(fname))
-  { i=1;
-     while (fname[i]==">"){i++;}
-     fname = fname[i,size(fname)-i+1];
+  { @i@@=1;
+     while (fname[@i@@]==">"){@i@@++;}
+     fname = fname[@i@@,size(fname)-@i@@+1];
 
      if (size(fname)>=4)           // check if filename is ending with ".tex"
      { if(fname[size(fname)-3,4]!=".tex") {fname = fname +".tex"; }
@@ -1360,9 +1360,9 @@ EXAMPLE: example texpoly; shows an example
   poly f,monom;
   ideal I;
   number cfm;
-  string sign,cfmt,pt,s,bg,t,monomt,lnbreak;
+  string sign,cfmt,pt,@s@,bg,t,monomt,lnbreak;
   string sep = newline;
-  int i,b,b2,n, msz,linesz, count,k;
+  int @i@@,@b@@,b2,n, msz,linesz, count,k;
   int realT, parT, galT, complT;
   int TW = defined(TeXwidth);
 
@@ -1424,18 +1424,18 @@ EXAMPLE: example texpoly; shows an example
   realT = (charstr(@r)=="real");
   complT = find(charstr(@r),"complex");   // 28.10.06
   if (complT) {parT=0;}
-  i = find(charstr(@r),",");
-  if (i and !realT and !complT)
-  { t = charstr(@r)[1,i-1];
+  @i@@ = find(charstr(@r),",");
+  if (@i@@ and !realT and !complT)
+  { t = charstr(@r)[1,@i@@-1];
     galT = (t <> string(char(@r)));  // the char is not the same as the ...
   }
-  i = 0;
+  @i@@ = 0;
 
 //------- parse the polynomial
   pt = bg;
 
  for(k=1;k<=ncols(I);k++)
- { i = 0; linesz = 0; count =0;
+ { @i@@ = 0; linesz = 0; count =0;
    sign ="";
    f = I[k];
    if (f==0) { pt = pt + "0";}
@@ -1448,7 +1448,7 @@ EXAMPLE: example texpoly; shows an example
     cfm = leadcoef(monom);
     if (cfm*1 != 0) { monom = leadmonom(monom);} // to conform with integer
     if (defined(TeXreplace)) { short =0;}  // this is essential //31.5.07
-    s = string(monom) + "!";              // add a terminating sign
+    @s@ = string(monom) + "!";              // add a terminating sign
     cfmt = "";
 
     cfmt = string(cfm);
@@ -1469,9 +1469,9 @@ EXAMPLE: example texpoly; shows an example
 
      if(realT) { monomt,msz = parsr(cfmt);}
      if (galT) { monomt,msz = parsg(cfmt);}
-     b = find(cfmt,"/(");                     // look if fraction  // 31.5.07
+     @b@@ = find(cfmt,"/(");                     // look if fraction  // 31.5.07
      b2 = find(cfmt,"/");
-     // if (b) {b++;}                         // 31.5.07
+     // if (@b@@) {@b@@++;}                         // 31.5.07
      n = size(cfmt);
      if (!(parT) and  !(realT) and !(galT))
      { if( !(b2) or defined(TeXnofrac))
@@ -1483,30 +1483,30 @@ EXAMPLE: example texpoly; shows an example
        }
      }
      if (parT and !(galT))
-     { monomt,msz = parsp(cfmt,b);}
+     { monomt,msz = parsp(cfmt,@b@@);}
     }
     if (monom!=1 and monomt!="" and parT) // 21.4.10
     { monomt = monomt+"\\cdot ";} // at least a blank is needed for TeXreplace
 
 // -- now parse the monom
     if (monom <> 1)
-    { i = 1;
+    { @i@@ = 1;
       if(short)
-      { while(s[i]<>"!")
-        { monomt = monomt + s[i]; i++;
-          b = i;
+      { while(@s@[@i@@]<>"!")
+        { monomt = monomt + @s@[@i@@]; @i@@++;
+          @b@@ = @i@@;
           msz = msz + 3; // it was a single lettered var
-          while(s[i]!="!" and s[i]>="0" and s[i]<="9"){i++;}
-          if (i-b)
-          { monomt = monomt + "^{" + s[b,i-b] + "}";
-            msz = msz + 2*(i-b);
+          while(@s@[@i@@]!="!" and @s@[@i@@]>="0" and @s@[@i@@]<="9"){@i@@++;}
+          if (@i@@-@b@@)
+          { monomt = monomt + "^{" + @s@[@b@@,@i@@-@b@@] + "}";
+            msz = msz + 2*(@i@@-@b@@);
           }
         }
       }
       else          //  not short
-      { t,i = parselong(s);
+      { t,@i@@ = parselong(@s@);
         monomt = monomt + t;
-        msz = msz + i;
+        msz = msz + @i@@;
       }
     }
 
@@ -1531,9 +1531,9 @@ EXAMPLE: example texpoly; shows an example
   if (not(defined(NoDollars))) { pt = "$"+pt+"$";}
 
   if (size(fname))
-  { i=1;
-    while (fname[i]==">"){i++;}
-    fname = fname[i,size(fname)-i+1];
+  { @i@@=1;
+    while (fname[@i@@]==">"){@i@@++;}
+    fname = fname[@i@@,size(fname)-@i@@+1];
 
     if (size(fname)>=4)         // check if filename is ending with ".tex"
     { if(fname[size(fname)-3,4]!=".tex") {fname = fname +".tex"; }
@@ -1561,17 +1561,17 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-static proc parsp(string cfmt, int b)
+static proc parsp(string cfmt, int @b@@)
 { string mt, nom,denom;
   int fl1,fl2,sz1,sz2,msz;
 
-  if (!(b))
+  if (!(@b@@))
   { mt,fl1 = parst(cfmt,0); msz = size(cfmt)-2;
     if (fl1) { mt = "(" + mt + ")"; msz = msz +1; }
   }
   else
-  { nom,fl1 = parst(cfmt[1,b-1],1);
-    denom,fl2 = parst(cfmt[b+1,size(cfmt)-b],1);
+  { nom,fl1 = parst(cfmt[1,@b@@-1],1);
+    denom,fl2 = parst(cfmt[@b@@+1,size(cfmt)-@b@@],1);
     if (defined(TeXnofrac))
     { if(fl1) { nom = "(" + nom + ")"; sz1++;}
       if(fl2) {denom = "(" + denom + ")"; sz2++;}
@@ -1602,7 +1602,7 @@ static proc parst(string s,int sec)                // parse parameter
 // sec parameter to see if in parsp a fraction follows
 {
   int i,j =1,-1;
-  int b,k,jj,mz,in;                         // begin and end, in for index
+  int @b@@,k,jj,mz,in;                         // begin and end, in for index
   int saveshort=short;
   string t,c,vn,nom,denom,sg;
 
@@ -1612,10 +1612,10 @@ static proc parst(string s,int sec)                // parse parameter
   if (short)
   { j = 0;  // 31.5.07
     while(s[i]<>"!")
-    { b=i; if (s[i]=="+" or s[i]=="-") {j++;}  // 31.5.07
+    { @b@@=i; if (s[i]=="+" or s[i]=="-") {j++;}  // 31.5.07
       while(s[i]>="0" and s[i]<="9" or (s[i]=="+" or s[i]=="-") and s[i]!="!")
       {i++;}     // scan the number
-        t =s[b,i-b];
+        t =s[@b@@,i-@b@@];
     //  if (t=="-1" and s[i]!="!" and s[i]!="-" and s[i]!="+"){t = "-";}
       if (t=="-1" and (s[i]<="0" or s[i]>="9") and s[i]!= "/" and s[i]!="!")
       {t = "-";}
@@ -1627,9 +1627,9 @@ static proc parst(string s,int sec)                // parse parameter
           sg = t[1];
         }
         else { nom = t;}
-        b =i;
+        @b@@ =i;
         while(s[i]>="0" and s[i]<="9") {i++;}
-        denom = s[b,i-b];
+        denom = s[@b@@,i-@b@@];
         if (!(sec) and (!(defined(TeXaligned))))
         { t = sg + "\\frac{" + nom + "}{" + denom + "}";}
         else
@@ -1638,17 +1638,17 @@ static proc parst(string s,int sec)                // parse parameter
       }
       c = c + t;
       if(s[i]!="!"){c = c + s[i]; i++;}      // the parameter
-      b=i;
+      @b@@=i;
       while(s[i]>="0" and s[i]<="9")
       {i++;}  //the exponent
-      if(i-b){ c = c + "^{" + s[b,i-b]+"}";}
+      if(i-@b@@){ c = c + "^{" + s[@b@@,i-@b@@]+"}";}
      }
    }
    else                         // if not short ....
    { while (s[i] <> "!")
-   { b=i; j++; in=0;         // 4.10.10
+   { @b@@=i; j++; in=0;         // 4.10.10
        while(s[i]=="-" or s[i]=="+" or (s[i]>="0" and s[i]<="9")){i++;}
-       t = s[b,i-b];
+       t = s[@b@@,i-@b@@];
        if (t=="-1" and s[i]=="*" ) {t="-";}
        if (s[i]=="/")
        { i++;
@@ -1658,9 +1658,9 @@ static proc parst(string s,int sec)                // parse parameter
            sg = t[1];
          }
          else { nom = t;}
-         b =i;
+         @b@@ =i;
          while(s[i]>="0" and s[i]<="9") {i++;}
-         denom = s[b,i-b];
+         denom = s[@b@@,i-@b@@];
          if (!(sec) and (!(defined(TeXaligned))))
          { t = sg + "\\frac{" + nom + "}{" + denom + "}";}
          else
@@ -1669,16 +1669,16 @@ static proc parst(string s,int sec)                // parse parameter
        }
        c = c+t; t="";
        if (s[i]=="*"){i++;}
-       b=i;
-      //  string(s[1,b]);
+       @b@@=i;
+      //  string(s[1,@b@@]);
 
        while(s[i]!="+" and s[i]!="-" and s[i]!="!")  //pass a monom
        { // start with letters
         // alternativ:
         //in=0;         // 4.10.10
         while((s[i]>="a" and s[i]<="z") or (s[i]>="A" and s[i]<="Z")){i++;}
-        k = i-b;
-        vn = s[b,k];
+        k = i-@b@@;
+        vn = s[@b@@,k];
         if (defined(TeXreplace))
         { for (jj=1; jj<= size(TeXreplace);jj++)
          { if (vn == TeXreplace[jj][1])
@@ -1690,23 +1690,23 @@ static proc parst(string s,int sec)                // parse parameter
         t = t + vn;
         mz = mz + 10*k;
         if (s[i]=="_"  or s[i]=="(") {in++; i++;}    // the index is coming
-        b = i;
+        @b@@ = i;
         while(s[i]>="0" and s[i]<="9"){ i++;}
-        k = i-b;
+        k = i-@b@@;
         if (k and in<=1) {t = t + "_{";in++;} //and k  i.e. there was an index
-        if (k){ t = t +s[b,k];}
+        if (k){ t = t +s[@b@@,k];}
         if(s[i]==")") {i++;}
         if(k and s[i]!="(" and s[i]!="_"){ t = t + "}";} // index closed
         if(s[i]=="(" or s[i]=="_") {i++; t = t + ",";in++;}
         if (s[i]=="^")
-        { i++; b = i;
+        { i++; @b@@ = i;
           while(s[i]>="0" and s[i]<="9"){ i++;} // for neg. expon.
-          if (b-i) { t = t + "^{" + s[b,i-b] + "}";}
+          if (@b@@-i) { t = t + "^{" + s[@b@@,i-@b@@] + "}";}
         }
-        if (i-b > k) { mz = mz + 5*(i-b);}
+        if (i-@b@@ > k) { mz = mz + 5*(i-@b@@);}
         else {mz = mz + 5*k;}
         if (s[i]=="*"){i++;in=0;}
-        b=i;
+        @b@@=i;
        }
        c =c+t;
       }

@@ -142,23 +142,23 @@ RETURN: poly:  an irreducible univariate polynomial that defines an
   int n = nvars(basering) - 1;
   poly q = 0;
   int i;
-  list a;
-  for(i=1;i<=n+1;i++){a[i] = 0;}
-  a[m] = var(n+1);
-  // The list a is to be taken with random entries in [-e, e].
+  list @a@@;
+  for(i=1;i<=n+1;i++){@a@@[i] = 0;}
+  @a@@[m] = var(n+1);
+  // The list @a@@ is to be taken with random entries in [-e, e].
   // Every 10 * n trial, e is incremented by 1.
   int e = 1;
   int nbtrial = 0;
   map h;
   while (q == 0)
   {
-    h = basering, a[1..n+1];
+    h = basering, @a@@[1..n+1];
     q = smallestProperSimpleFactor(h(p));
     for(i = 1; i  <= n ; i = i + 1)
     {
       if (i != m)
       {
-        a[i] = random(-e, e);
+        @a@@[i] = random(-e, e);
       }
     }
     nbtrial++;
@@ -181,17 +181,17 @@ NOTE:   To be called by the RothsteinTrager procedure only.
   int n = nvars(MPz) - 1;
   int d = partialDegree(f, m);
   poly df = diff(f, var(m));
-  list a;
+  list @a@@;
   int i;
-  for(i=1;i<=n+1;i++){ a[i] = 0; }
-  a[m] = var(m);
+  for(i=1;i<=n+1;i++){ @a@@[i] = 0; }
+  @a@@[m] = var(m);
   poly q = 0;
   int e = 1;
   int nbtrial = 0;
   map h;
   while (q == 0)
   {
-    h = MPz, a[1..n+1];
+    h = MPz, @a@@[1..n+1];
     q = resultant(h(f), h(df) * var(n+1) - h(g), var(m));
     if (deg(q) == d)
     {
@@ -202,7 +202,7 @@ NOTE:   To be called by the RothsteinTrager procedure only.
     {
       if (i != m)
       {
-        a[i] = random(-e, e);
+        @a@@[i] = random(-e, e);
       }
     }
     nbtrial++;
@@ -227,10 +227,10 @@ NOTE:   the return value is the Rothstein-Trager partial fraction
   int n = nvars(MPz) - 1;
   poly dp = diff(p, var(m));
   int r = size(g);
-  list a;
+  list @a@@;
   int i;
-  for(i=1;i<=r;i++){a[i] = 0;}
-  a[r] = 1;
+  for(i=1;i<=r;i++){@a@@[i] = 0;}
+  @a@@[r] = 1;
   int nbtrial = 0;
   int e = 1;
   poly s;
@@ -238,7 +238,7 @@ NOTE:   the return value is the Rothstein-Trager partial fraction
   while (1)
   {
     s = 0;
-    for(i = 1; i <= r; i++){s = s + a[i] * g[i];}
+    for(i = 1; i <= r; i++){s = s + @a@@[i] * g[i];}
     q = RothsteinTragerResultant(s, p, m);
     q = smallestProperFactor(q);
     if (deg(q) == expectedDegQ)
@@ -258,7 +258,7 @@ NOTE:   the return value is the Rothstein-Trager partial fraction
     }
     for(i = 1; i  <= r ; i++)
     {
-      a[i] = random(-e, e);
+      @a@@[i] = random(-e, e);
     }
     nbtrial++;
     if (nbtrial >= 10 * r)

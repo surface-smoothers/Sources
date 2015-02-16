@@ -3,8 +3,8 @@ LIB "tst.lib"; tst_init();
   link l=":w example.txt";     // type is ASCII, mode is overwrite
   l;
   status(l, "open", "yes");    // link is not yet opened
-  ideal i=x2,y2,z2;
-  write (l,1,";",2,";","ideal i=",i,";");
+  ideal I=x2,y2,z2;
+  write (l,1,";",2,";","ideal I=",I,";");
   status(l, "open", "yes");    // now link is open
   status(l, "mode");           // for writing
   close(l);                    // link is closed

@@ -158,17 +158,17 @@ example
 }
 */
 
-static proc safeVarName (string s)
+static proc safeVarName (string @s@@)
 {
   string S = "," + charstr(basering) + "," + varstr(basering) + ",";
-  s = "," + s + ",";
-  while (find(S,s) <> 0)
+  @s@@ = "," + @s@@ + ",";
+  while (find(S,@s@@) <> 0)
   {
-    s[1] = "@";
-    s = "," + s;
+    @s@@[1] = "@";
+    @s@@ = "," + @s@@;
   }
-  s = s[2..size(s)-1];
-  return(s)
+  @s@@ = @s@@[2..size(@s@@)-1];
+  return(@s@@)
 }
 
 proc allPositive (intvec v)
@@ -752,7 +752,7 @@ example
   linSyzSolve(J);
 }
 
-proc pIntersect (poly s, ideal I, list #)
+proc pIntersect (poly @s@, ideal I, list #)
 "USAGE:  pIntersect(f, I [,s]);  f a poly, I an ideal, s an optional int
 RETURN:  vector, coefficient vector of the monic polynomial
 PURPOSE: compute the intersection of ideal I with the subalgebra K[f]
@@ -798,7 +798,7 @@ EXAMPLE: example pIntersect; shows examples
     }
   }
   // ---case 2: intersection is zero---
-  intvec degs = leadexp(s);
+  intvec degs = leadexp(@s@);
   intvec possdegbounds;
   list degI;
   i = 1;
@@ -827,7 +827,7 @@ EXAMPLE: example pIntersect; shows examples
     return(vector(0));
   }
   dbprint(ppl,"// lower bound for the degree of the insection is " +string(degbound));
-  if (degbound == 0) // lm(s) does not appear in lm(I)
+  if (degbound == 0) // lm(@s@) does not appear in lm(I)
   {
     print("// Intersection is zero");
     return(vector(0));
@@ -846,7 +846,7 @@ EXAMPLE: example pIntersect; shows examples
     if (i>1)
     {
       oldNF = newNF;
-      tobracket = s^(i-1) - oldNF;
+      tobracket = @s@^(i-1) - oldNF;
       if (tobracket==0) // todo bug in bracket?
       {
         toNF = 0;
@@ -855,11 +855,11 @@ EXAMPLE: example pIntersect; shows examples
       {
         toNF = bracket(tobracket,secNF);
       }
-      newNF = NF(toNF+oldNF*secNF,I);  // = NF(s^i,I)
+      newNF = NF(toNF+oldNF*secNF,I);  // = NF(@s@^i,I)
     }
     else
     {
-      newNF = NF(s,I);
+      newNF = NF(@s@,I);
       secNF = newNF;
     }
     ll = linReduce(newNF,redNI,1);
@@ -1356,7 +1356,7 @@ static proc bfctengine (poly f, int inorann, int whichengine, int addPD, int std
     setring D;
     ideal J = inF;
     kill inF;
-    poly s = var(1)*var(n+2);
+    poly @s@@ = var(1)*var(n+2);
   }
   else // bfct using Ann(f^s)
   {
@@ -1366,7 +1366,7 @@ static proc bfctengine (poly f, int inorann, int whichengine, int addPD, int std
     setring D;
     ideal J = LD;
     kill LD;
-    poly s = var(1);
+    poly @s@@ = var(1);
   }
   vector b;
   dbprint(ppl,"// starting to intersect with subalgebra...");
@@ -1417,7 +1417,7 @@ static proc bfctengine (poly f, int inorann, int whichengine, int addPD, int std
           }
           else
           {
-            b = pIntersectSyz(s,J,q,whichengine,modengine);
+            b = pIntersectSyz(@s@@,J,q,whichengine,modengine);
           }
         }
         i++;
@@ -1426,12 +1426,12 @@ static proc bfctengine (poly f, int inorann, int whichengine, int addPD, int std
     }
     else // pIntersectSyz::non-modular
     {
-      b = pIntersectSyz(s,J,0,whichengine);
+      b = pIntersectSyz(@s@@,J,0,whichengine);
     }
   }
   else // pIntersect: linReduce
   {
-    b = pIntersect(s,J);
+    b = pIntersect(@s@@,J);
   }
   dbprint(ppl,"// ...done"); // with the intersection
   poly pb = vec2poly(b);

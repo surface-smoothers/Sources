@@ -248,7 +248,7 @@ example
   print(exp2pt(M,"F"));
 }
 
-static proc mon2pt(poly M, string V)
+static proc mon2pt(poly M, string @V@)
 "USAGE:  mon2pt(M,V);  M poly, V a string
 RETURN:  string
 PURPOSE: convert a monomial M into the TeX format, nodal form
@@ -291,7 +291,7 @@ EXAMPLE: example mon2pt; shows examples
     rs = par2tex(tc)+" ";
   }
 // a = 0 or b = 0
-  rs = rs + V +"^{n";
+  rs = rs + @V@ +"^{n";
   if (a!=0)
   {
     rs = rs +"+"+string(a);

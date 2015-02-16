@@ -119,36 +119,36 @@ EXAMPLE: example pmat; shows an example
    string OUT = "";
    if ( size(#)==0)
    {
-      int elems,mlen,slen,c,r;
+      int elems,mlen,slen,@c@,r;
    //-------------- count maximal size of each column, and sum up -------------
-      for ( c=1; c<=ncols(m); c=c+1)
-      {  int len(c);
+      for ( @c@=1; @c@<=ncols(m); @c@=@c@+1)
+      {  int len(@c@);
          for (r=1; r<=nrows(m); r=r+1)
          {
             elems = elems+1;
-            string s(elems) = string(m[r,c])+",";
+            string s(elems) = string(m[r,@c@])+",";
             slen = size(s(elems));
-            if ( slen>len(c) ) { len(c) = slen; }
+            if ( slen>len(@c@) ) { len(@c@) = slen; }
          }
-         mlen = mlen+len(c);
+         mlen = mlen+len(@c@);
       }
    //---------------------- print all - except last - rows --------------------
       string aus; string sep = " ";
       if (mlen >= pagewidth) { sep = newline; }
       for (r=1; r<nrows(m); r=r+1)
       {  elems = r; aus = "";
-         for (c=1; c<=ncols(m); c=c+1)
+         for (@c@=1; @c@<=ncols(m); @c@=@c@+1)
          {
-            aus = aus + s(elems)[1,len(c)] + sep;
+            aus = aus + s(elems)[1,len(@c@)] + sep;
             elems = elems + nrows(m);
          }
          OUT=OUT+aus+newline;
       }
    //--------------- print last row (no comma after last entry) ---------------
       aus = ""; elems = nrows(m);
-      for (c=1; c<ncols(m); c=c+1)
+      for (@c@=1; @c@<ncols(m); @c@=@c@+1)
       {
-         aus = aus + s(elems)[1,len(c)] + sep;
+         aus = aus + s(elems)[1,len(@c@)] + sep;
          elems = elems + nrows(m);
       }
       aus = aus + string(m[nrows(m),ncols(m)]);
@@ -156,13 +156,13 @@ EXAMPLE: example pmat; shows an example
    }
 //---------- second case: second argument is given and of type int ------------
    if ( typeof(#[1])=="int" and #[1]>1)
-   {  string aus,tmp; int c,r;
+   {  string aus,tmp; int @c@,r;
    //---------------------- print all - except last - rows --------------------
       for ( r=1; r<nrows(m); r=r+1)
       {  aus = "";
-         for (c=1; c<=ncols(m); c=c+1)
+         for (@c@=1; @c@<=ncols(m); @c@=@c@+1)
          {
-            tmp=string(m[r,c]);
+            tmp=string(m[r,@c@]);
             if (size(tmp)>#[1])
             { tmp[#[1]-1]=".";
               tmp[#[1]]  =".";
@@ -177,8 +177,8 @@ EXAMPLE: example pmat; shows an example
       }
    //--------------- print last row (no comma after last entry) ---------------
       aus = "";
-      for (c=1; c<ncols(m); c=c+1)
-      { tmp=string(m[r,c]);
+      for (@c@=1; @c@<ncols(m); @c@=@c@+1)
+      { tmp=string(m[r,@c@]);
         if (size(tmp)>#[1])
         { tmp[#[1]-1]=".";
           tmp[#[1]]  =".";

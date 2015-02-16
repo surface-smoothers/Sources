@@ -663,7 +663,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc nselect (def id, intvec v)
+proc nselect (def id, intvec @v@)
 "USAGE:   nselect(id,v); id = ideal, module or matrix, v = intvec
 RETURN:  generators (or columns) of id not containing the variables with index
          an entry of v
@@ -687,12 +687,12 @@ EXAMPLE: example nselect; shows examples
       ideal id1 = id;
    }
    int j,k;
-   int n,m = size(v), ncols(id1);
+   int n,m = size(@v@), ncols(id1);
    for( k=1; k<=m; k++ )
    {
       for( j=1; j<=n; j++ )
       {
-        if( size(id1[k]/var(v[j]))!=0 )
+        if( size(id1[k]/var(@v@[j]))!=0 )
         {
            id1[k]=0; break;
         }

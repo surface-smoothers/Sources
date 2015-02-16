@@ -260,7 +260,7 @@ NOTE:    the proc algebra_containment tests the same using a different
          separated by comma
 EXAMPLE: example inSubring; shows an example
 "
-{int z=ncols(I);
+{int @z@@=ncols(I);
   int i;
   def gnir=basering;
   int n = nvars(gnir);
@@ -276,14 +276,14 @@ EXAMPLE: example inSubring; shows an example
   // ---------- create new ring with extra variables --------------------
   //the intersection of ideal nett=(p-y(0),I[1]-y(1),...)
   //with the ring k[y(0),...,y(n)] is computed, the result is ker
-   execute ("ring r1= ("+charstr(basering)+"),(x(1..n),y(0..z)),lp;");
- //  execute ("ring r1= ("+charstr(basering)+"),(y(0..z),x(1..n)),dp;");
+   execute ("ring r1= ("+charstr(basering)+"),(x(1..n),y(0..@z@@)),lp;");
+ //  execute ("ring r1= ("+charstr(basering)+"),(y(0..@z@@),x(1..n)),dp;");
   if (mp!="0")
   { execute ("minpoly=number("+mp+");"); }
   ideal va = x(1..n);
   map emb = gnir,va;
   ideal nett = emb(I);
-  for (i=1;i<=z;i++)
+  for (i=1;i<=@z@@;i++)
   { nett[i]=nett[i]-y(i);
   }
   nett=emb(p)-y(0),nett;
@@ -292,7 +292,7 @@ EXAMPLE: example inSubring; shows an example
   //-----------------
   ideal ker=eliminate(nett,product(va));
   ker=std(ker);
-  //---------- test wether y(0)-h(y(1),...,y(z)) is in ker --------------
+  //---------- test wether y(0)-h(y(1),...,y(@z@@)) is in ker --------------
   l[1]=0;
   l[2]="";
   for (i=1;i<=size(ker);i++)
@@ -945,7 +945,7 @@ EXAMPLE: example finitenessTest; shows an example
 "
 {  int n = nvars(basering);
    intvec v,w;
-   int j,z,ii;
+   int j,@z@@,ii;
    v[n]=0;                             //v should have size n
    intvec V = 1..n;
    list nze;                           //the non-zero entries of a leadexp
@@ -994,8 +994,8 @@ EXAMPLE: example finitenessTest; shows an example
    // test this by dividing the product of corresponding variables
    ideal max = maxideal(1);
    max = max[V];
-   z = (product(nonzero)/product(max) != 0);
-   return(list(z,nonzero,zero,relation));
+   @z@@ = (product(nonzero)/product(max) != 0);
+   return(list(@z@@,nonzero,zero,relation));
 }
 example
 { "EXAMPLE:"; echo = 2;

@@ -200,9 +200,9 @@ EXAMPLE:  example createTask; shows an example"
     tasks[ntasks].command = command;
     tasks[ntasks].arguments = arguments;
     tasks[ntasks].state = "created";
-    task t;
-    t.index = ntasks;
-    return(t);
+    task t@@;
+    t@@.index = ntasks;
+    return(t@@);
 }
 example
 {
@@ -217,7 +217,7 @@ example
     killTask(t);
 }
 
-proc killTask(task t)
+proc killTask(task t@@)
 "USAGE:   killTask(t), t task
 RETURN:   nothing. If the state of t is 'started', then t is stopped first. The
           internal data structures of t are erased and its state is set to
@@ -228,16 +228,16 @@ NOTE:     'killTask(t);' is not the same as 'kill t;'. The latter command does
 SEE ALSO: stopTask, getState, createTask, printTask
 EXAMPLE:  example killTask; shows an example"
 {
-    if (t.index == 0) {
+    if (t@@.index == 0) {
         return();
     }
-    if (typeof(tasks[t.index]) != "internal_task") {
+    if (typeof(tasks[t@@.index]) != "internal_task") {
         return();
     }
-    if (tasks[t.index].state == "started") {
-        stopTask(t);
+    if (tasks[t@@.index].state == "started") {
+        stopTask(t@@);
     }
-    tasks[t.index] = def(0);
+    tasks[t@@.index] = def(0);
 }
 example
 {
@@ -1215,7 +1215,7 @@ example
     killTask(t);
 }
 
-proc getArguments(task t)
+proc getArguments(task t@@)
 "USAGE:   getArguments(t), t task
 RETURN:   a list, the arguments of t.
 NOTE:     This command cannot be applied to tasks whose state is
@@ -1223,13 +1223,13 @@ NOTE:     This command cannot be applied to tasks whose state is
 SEE ALSO: getCommand, getResult, getState, createTask, printTask
 EXAMPLE:  example getArguments; shows an example"
 {
-    if (t.index == 0) {
+    if (t@@.index == 0) {
         ERROR("cannot get arguments of an uninitialized task");
     }
-    if (typeof(tasks[t.index]) != "internal_task") {
+    if (typeof(tasks[t@@.index]) != "internal_task") {
         ERROR("cannot get arguments of an uninitialized task");
     }
-    return(tasks[t.index].arguments);
+    return(tasks[t@@.index].arguments);
 }
 example
 {
@@ -1242,7 +1242,7 @@ example
     killTask(t);
 }
 
-proc getResult(task t)
+proc getResult(task t@@)
 "USAGE:   getResult(t), t task
 RETURN:   the result of t.
 NOTE:     This command cannot be applied to tasks whose state is not
@@ -1250,16 +1250,16 @@ NOTE:     This command cannot be applied to tasks whose state is not
 SEE ALSO: getCommand, getArguments, getState, waitTasks, pollTask, printTask
 EXAMPLE:  example getResult; shows an example"
 {
-    if (t.index == 0) {
+    if (t@@.index == 0) {
         ERROR("cannot get result of an uninitialized task");
     }
-    if (typeof(tasks[t.index]) != "internal_task") {
+    if (typeof(tasks[t@@.index]) != "internal_task") {
         ERROR("cannot get result of an uninitialized task");
     }
-    if (tasks[t.index].state != "completed") {
+    if (tasks[t@@.index].state != "completed") {
         ERROR("cannot get result of a task which is not completed");
     }
-    return(tasks[t.index].result);
+    return(tasks[t@@.index].result);
 }
 example
 {

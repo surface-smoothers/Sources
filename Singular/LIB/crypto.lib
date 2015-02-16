@@ -193,13 +193,13 @@ EXAMPLE:example chineseRem; shows an example
       M[i]=N div L[i];
    }
    list S=eexgcdN(M);
-   bigint x;
+   bigint @x@@;
    for(i=1;i<=n;i++)
    {
-      x=x+S[i]*M[i]*T[i];
+      @x@@=@x@@+S[i]*M[i]*T[i];
    }
-   x=x mod N;
-   return(x);
+   @x@@=@x@@ mod N;
+   return(@x@@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -214,12 +214,12 @@ EXAMPLE:example Jacobi; shows an example
 "
 {
    int i;
-   int z=1;
+   int @z@@=1;
    bigint t=1;
    bigint k;
 
-   if((((n-1) div 2) mod 2)!=0){z=-1;}
-   if(a<0){return(z*Jacobi(-a,n));}
+   if((((n-1) div 2) mod 2)!=0){@z@@=-1;}
+   if(a<0){return(@z@@*Jacobi(-a,n));}
    a=a mod n;
    if(n==1){return(1);}
    if(a==0){return(0);}
@@ -307,21 +307,21 @@ example
    primL(20);
 }
 
-proc intPart(number x)
+proc intPart(number @x@@)
 "USAGE:  intPart(x);
 RETURN: the integral part of a rational number
 EXAMPLE:example intPart; shows an example
 "
 {
-  if (x>=0)
+  if (@x@@>=0)
   {
-    return(bigint((numerator(x)-(bigint(numerator(x)) mod bigint(denominator(x)))))
-         div bigint(denominator(x)));
+    return(bigint((numerator(@x@@)-(bigint(numerator(@x@@)) mod bigint(denominator(@x@@)))))
+         div bigint(denominator(@x@@)));
   }
   else
   {
-    return(bigint((numerator(x)-(bigint(numerator(x)) mod bigint(denominator(x)+denominator(x)))))
-         div bigint(denominator(x)));
+    return(bigint((numerator(@x@@)-(bigint(numerator(@x@@)) mod bigint(denominator(@x@@)+denominator(@x@@)))))
+         div bigint(denominator(@x@@)));
   }
 }
 example
@@ -405,9 +405,9 @@ EXAMPLE:example squareRoot; shows an example
    }
    bigint y=powerN(n,q,p);
    bigint r=e;
-   bigint x=powerN(a,(q-1) div 2,p);
-   bigint b=a*x^2 mod p;
-   x=a*x mod p;
+   bigint @x@@=powerN(a,(q-1) div 2,p);
+   bigint b=a*@x@@^2 mod p;
+   @x@@=a*@x@@ mod p;
 
    while(((b-1) mod p)!=0)
    {
@@ -420,10 +420,10 @@ EXAMPLE:example squareRoot; shows an example
       t=powerN(y,powerN(two,r-m-1,p),p);
       y=t^2 mod p;
       r=m;
-      x=x*t mod p;
+      @x@@=@x@@*t mod p;
       b=b*y mod p;
    }
-   return(x);
+   return(@x@@);
 }
 example
 { "EXAMPLE:"; echo = 2;

@@ -312,12 +312,12 @@ EXAMPLE:example maximum; shows an example
 "
 {
   number max=L[1];
-  int i;
-  for(i=2;i<=size(L);i++)
+  int @i@@;
+  for(@i@@=2;@i@@<=size(L);@i@@++)
   {
-    if(L[i]>max)
+    if(L[@i@@]>max)
     {
-      max=L[i];
+      max=L[@i@@];
     }
   }
   return(max);
@@ -330,7 +330,7 @@ example
 }
 
 
-static proc cmod(number x, number y)
+static proc cmod(number @x@@, number y)
 "USAGE: cmod(x,y);
 RETURN: x mod y
 ASSUME: x,y out of Z and x,y<=2147483647
@@ -339,7 +339,7 @@ NOTE:   this algorithm is a helping procedure to be able to calculate
 EXAMPLE:example cmod; shows an example
 "
 {
-  int rest=int(x-y*int(x/y));
+  int rest=int(@x@@-y*int(@x@@/y));
   if(rest<0)
   {
     rest=rest+int(y);

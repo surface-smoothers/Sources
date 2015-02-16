@@ -129,23 +129,23 @@ KEYWORDS: truncated module
   if ( typeof(attrib(phi,"isHomog"))=="string" ) {
     if (size(phi)==0) {
       // assign weights 0 to generators of R^n (n=nrows(phi))
-      intvec v;
-      v[nrows(phi)]=0;
-      attrib(phi,"isHomog",v);
+      intvec @v@;
+      @v@[nrows(phi)]=0;
+      attrib(phi,"isHomog",@v@);
     }
     else {
       ERROR("No admissible degree vector assigned");
     }
   }
   else {
-   intvec v=attrib(phi,"isHomog");
+   intvec @v@=attrib(phi,"isHomog");
   }
   int i,m,dummy;
   int s = nrows(phi);
   module L; // TOO BIG!!!
   for (i=1; i<=s; i++) {
-    if (d>v[i]) {
-      L = L+maxideal(d-v[i])*gen(i);
+    if (d>@v@[i]) {
+      L = L+maxideal(d-@v@[i])*gen(i);
     }
     else {
       L = L+gen(i);
@@ -157,8 +157,8 @@ KEYWORDS: truncated module
 
   // it only remains to set the degrees for L:
   // ------------------------------------------
-  m = v[1];
-  for(i=2; i<=size(v); i++) {  if(v[i]<m) { m = v[i]; } }
+  m = @v@[1];
+  for(i=2; i<=size(@v@); i++) {  if(@v@[i]<m) { m = @v@[i]; } }
   dummy = homog(L);
   intvec vv = attrib(L,"isHomog");
   if (d>m) { vv = vv+d; }
@@ -238,10 +238,10 @@ KEYWORDS: truncated module
     }
   }
   else {
-   intvec v=attrib(M,"isHomog");
+   intvec @v@=attrib(M,"isHomog");
   }
 
-  dbprint(PL-1, "// weighting(M): ["+ string(v) + "]");
+  dbprint(PL-1, "// weighting(M): ["+ string(@v@) + "]");
 
   int i,m,dummy;
   int s = nrows(M);
@@ -284,8 +284,8 @@ KEYWORDS: truncated module
 
     // it only remains to set the degrees for L:
     // ------------------------------------------
-    m = v[1];
-    for(i=2; i<=size(v); i++) {  if(v[i]<m) { m = v[i]; } }
+    m = @v@[1];
+    for(i=2; i<=size(@v@); i++) {  if(@v@[i]<m) { m = @v@[i]; } }
     dummy = homog(L);
     intvec vv = attrib(L,"isHomog");
     if (d>m) { vv = vv+d; }
@@ -379,19 +379,19 @@ KEYWORDS: graded module, graded piece
     else { ERROR("No admissible degree vector assigned"); }
   }
   else {
-    intvec v=attrib(phi,"isHomog");
+    intvec @v@=attrib(phi,"isHomog");
   }
   int s = nrows(phi);
   int i,m,dummy;
   module L,LL;
   for (i=1; i<=s; i++) {
-    if (d>v[i]) {
-      L = L+maxideal(d-v[i])*gen(i);
-      LL = LL+maxideal(d+1-v[i])*gen(i);
+    if (d>@v@[i]) {
+      L = L+maxideal(d-@v@[i])*gen(i);
+      LL = LL+maxideal(d+1-@v@[i])*gen(i);
     }
     else {
       L = L+gen(i);
-      if (d==v[i]) {
+      if (d==@v@[i]) {
         LL = LL+maxideal(1)*gen(i);
       }
       else {

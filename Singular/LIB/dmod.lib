@@ -1490,18 +1490,18 @@ EXAMPLE: example annfs2; shows examples
   }
   L[2] = NName;
   // dp ordering;
-  string s = "iv=";
+  string @s@@ = "iv=";
   for (i=1; i<=Nnew; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)] = ";";
-  execute(s);
+  @s@@[size(@s@@)] = ";";
+  execute(@s@@);
   tmp     = 0;
   tmp[1]  = "dp";  // string
   tmp[2]  = iv;  // intvec
   Lord[1] = tmp;
-  kill s;
+  kill @s@@;
   tmp[1]  = "C";
   iv = 0;
   tmp[2]  = iv;
@@ -1685,18 +1685,18 @@ EXAMPLE: example annfsRB; shows examples
   }
   L[2] = NName;
   // dp ordering;
-  string s = "iv=";
+  string @s@@ = "iv=";
   for (i=1; i<=Nnew; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)] = ";";
-  execute(s);
+  @s@@[size(@s@@)] = ";";
+  execute(@s@@);
   tmp     = 0;
   tmp[1]  = "dp";  // string
   tmp[2]  = iv;  // intvec
   Lord[1] = tmp;
-  kill s;
+  kill @s@@;
   tmp[1]  = "C";
   iv = 0;
   tmp[2]  = iv;
@@ -3691,22 +3691,22 @@ EXAMPLE: example SannfsBM; shows examples
   L[2] = NName;
   tmp = 0;
   // block ord (dp(N),dp);
-  string s = "iv=";
+  string @s@@ = "iv=";
   for (i=1; i<=Nnew-1; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)]=";";
-  execute(s);
+  @s@@[size(@s@@)]=";";
+  execute(@s@@);
   tmp[1] = "dp";  // string
   tmp[2] = iv;   // intvec
   Lord[1] = tmp;
   // continue with dp 1,1,1,1...
   tmp[1] = "dp";  // string
-  s[size(s)] = ",";
-  s = s+"1;";
-  execute(s);
-  kill s;
+  @s@@[size(@s@@)] = ",";
+  @s@@ = @s@@+"1;";
+  execute(@s@@);
+  kill @s@@;
   kill NName;
   tmp[2]      = iv;
   Lord[2]     = tmp;
@@ -4881,18 +4881,18 @@ EXAMPLE: example annfs0; shows examples
   }
   L[2] = NName;
   // dp ordering;
-  string s = "iv=";
+  string @s@@ = "iv=";
   for (i=1; i<=Nnew; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)] = ";";
-  execute(s);
+  @s@@[size(@s@@)] = ";";
+  execute(@s@@);
   tmp     = 0;
   tmp[1]  = "dp";  // string
   tmp[2]  = iv;  // intvec
   Lord[1] = tmp;
-  kill s;
+  kill @s@@;
   tmp[1]  = "C";
   iv = 0;
   tmp[2]  = iv;
@@ -5777,7 +5777,7 @@ EXAMPLE: example checkRoot1; shows examples
   int Nnew = N-1;
   int n = Nnew div 2;
   int i;
-  string s;
+  string @s@@;
   list RL = ringlist(basering);
   list L, Lord;
   list tmp;
@@ -5807,14 +5807,14 @@ EXAMPLE: example checkRoot1; shows examples
   kill Name,NName;
   // block ord (dp);
   tmp[1] = "dp"; // string
-  s = "iv=";
+  @s@@ = "iv=";
   for (i=1; i<=Nnew; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)]=";";
-  execute(s);
-  kill s;
+  @s@@[size(@s@@)]=";";
+  execute(@s@@);
+  kill @s@@;
   tmp[2]  = iv;
   Lord[1] = tmp;
   tmp[1]  = "C";
@@ -5917,7 +5917,7 @@ EXAMPLE: example checkRoot2; shows examples
   int N = nvars(basering);
   int n = (N-1) div 2;
   int i;
-  string s;
+  string @s@@;
   list RL = ringlist(basering);
   list L, Lord;
   list tmp;
@@ -5942,14 +5942,14 @@ EXAMPLE: example checkRoot2; shows examples
   kill Name;
   // block ord (dp);
   tmp[1] = "dp"; // string
-  s = "iv=";
+  @s@@ = "iv=";
   for (i=1; i<=N; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)]=";";
-  execute(s);
-  kill s;
+  @s@@[size(@s@@)]=";";
+  execute(@s@@);
+  kill @s@@;
   tmp[2]  = iv;
   Lord[1] = tmp;
   tmp[1]  = "C";
@@ -6239,18 +6239,18 @@ EXAMPLE: example bernsteinLift; shows examples
   Lord[1] = tmp;
   tmp=0;
   // dp ordering;
-  string s = "iv=";
+  string @s@@ = "iv=";
   for (i=1; i<=Nnew; i++)
   {
-    s = s+"1,";
+    @s@@ = @s@@+"1,";
   }
-  s[size(s)] = ";";
-  execute(s);
+  @s@@[size(@s@@)] = ";";
+  execute(@s@@);
   tmp     = 0;
   tmp[1]  = "dp";  // string
   tmp[2]  = iv;  // intvec
   Lord[2] = tmp;
-  kill s;
+  kill @s@@;
   tmp     = 0;
   L[3]    = Lord;
   // we are done with the list

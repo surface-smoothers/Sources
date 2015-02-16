@@ -398,7 +398,7 @@ EXAMPLE: example Qso3Casimir; shows examples
     return(0);
   }
   if (n<1) { return(0); }
-  number Q = par(1);
+  number @Q@@ = par(1);
   int N=(n-1) div 2;
   int NV=nvars(basering);
   number k1,k2;
@@ -411,7 +411,7 @@ EXAMPLE: example Qso3Casimir; shows examples
     k1 = binomial(n-j,j);
     k1=k1/(n-j);
     k1=k1*((-1)^j);
-    k2=((Q^2)/(Q^4-1))^(2*j);
+    k2=((@Q@@^2)/(Q^4-1))^(2*j);
     k2=k2*k1;
     hlp=k2*(p)^(n-(2*j));
     rs=rs+hlp;

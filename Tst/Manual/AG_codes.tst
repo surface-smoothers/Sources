@@ -16,7 +16,7 @@ intvec D=2..24;
 def RR=KLEIN[1][5];
 setring RR; POINTS[1];        // the place in the support of G (not in supp(D))
 setring s;
-def RR=KLEIN[1][4];
+kill RR;def RR=KLEIN[1][4];
 setring RR;
 matrix C=AGcode_L(G,D,KLEIN); // generator matrix for the evaluation AG code
 nrows(C);
@@ -37,12 +37,12 @@ K[size(K)][1];                // error-correcting capacity
 //  Encoding and Decoding:
 matrix word[1][11];           // a word of length 11 is encoded
 word = 1,1,1,1,1,1,1,1,1,1,1;
-def y=word*CO;                // the code word (length: 23)
+def z=word*CO;                // the code word (length: 23)
 matrix disturb[1][23];
 disturb[1,1]=1;
 disturb[1,10]=a;
 disturb[1,12]=1+a;
-y=y+disturb;                  // disturb the code word (3 errors)
-def yy=decodeSV(y,K);         // error correction
-yy-y;                         // display the error
+z=z+disturb;                  // disturb the code word (3 errors)
+def zz=decodeSV(z,K);         // error correction
+zz-z;                         // display the error
 tst_status(1);$

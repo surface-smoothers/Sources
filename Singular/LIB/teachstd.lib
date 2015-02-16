@@ -323,10 +323,10 @@ EXAMPLE: example NFMora; shows an example
      #[1]=0;
   }
 
-  int y = printlevel - voice + 2;
+  int @y@@ = printlevel - voice + 2;
   if( f==0 or size(G) ==0 )
   {
-     if (y>0)
+     if (@y@@>0)
      {
         "// 1st or 2nd argument 0";
      }
@@ -337,7 +337,7 @@ EXAMPLE: example NFMora; shows an example
   def h = f;
   def T = G;
 // -------------------- start with f to be reduced by G --------------------
-  if (y>0)
+  if (@y@@>0)
   {"";
    "// Input for NFMora is (f,T):";
    "// f:"; f;
@@ -349,7 +349,7 @@ EXAMPLE: example NFMora; shows an example
   def g = minEcart(T,h);
   while (h!=0 and g!=0)
   {
-     if (y>0)
+     if (@y@@>0)
      {  "";
         "//                Reduction-step in NFMora:",i;
         "// h = (f after",i,"reductions) reduction with g from T:";
@@ -357,7 +357,7 @@ EXAMPLE: example NFMora; shows an example
         "// h:";h;
         "// g:";g;
      }
-     if (y>1)
+     if (@y@@>1)
      {
         pause("press <return> to continue");
         "// T, set used for reduction:"; T;
@@ -368,14 +368,14 @@ EXAMPLE: example NFMora; shows an example
      {
         T=T,h;  e=1;
      }
-     if (y>0 )
+     if (@y@@>0 )
      {
         "// T-set enlarged for next reduction? (yes/no = 1/0):  ", e;
         if( e==1 )
         {
           "// T-set for next reduction got enlarged by h:";
           "// h:";h;
-          if (y>1)
+          if (@y@@>1)
           {
              pause("press <return> to continue");
           }
@@ -385,7 +385,7 @@ EXAMPLE: example NFMora; shows an example
      g = minEcart(T,h);
      i=i+1;
   }
-  if(y>0)
+  if(@y@@>0)
   { "";
     "// normal form is:";
   }
@@ -503,7 +503,7 @@ EXAMPLE: example pairset; shows an example
 "
 {
    int i,j,k,s,c,ccrit,pcrit,pr;
-   int y = printlevel - voice + 2;
+   int @y@ = printlevel - voice + 2;
    G = simplify(G,10);
    def g = G;
    ideal pair;
@@ -551,7 +551,7 @@ EXAMPLE: example pairset; shows an example
          }
       }
    }
-   if (y>0)
+   if (@y@>0)
    {  "";
       "// product criterion:",pcrit," chain criterion:",ccrit;
    }
@@ -579,7 +579,7 @@ EXAMPLE: example updatePairs; shows an example
 "
 {
    int i,j,k,s,r,c,ccrit,pcrit,pr;
-   int y = printlevel - voice + 2;
+   int @y@ = printlevel - voice + 2;
    ideal pair;
    list Q = P;           //Q will become enlarged pairset
    s = size(P);
@@ -615,7 +615,7 @@ EXAMPLE: example updatePairs; shows an example
          c=0;
       }
    }
-   if (y>0)
+   if (@y@>0)
    {  "";;
       "// product criterion:",pcrit," chain criterion:",ccrit;
    }
@@ -653,12 +653,12 @@ EXAMPLE: example standard; shows an example
 
    def S = id;                 //S will become the standard basis of id
    def h = S[1];
-   int i,z;
-   int y = printlevel - voice + 2;
-   if(y>0)
+   int i,@z@@;
+   int @y@@ = printlevel - voice + 2;
+   if(@y@@>0)
    {  "";
       "// the set S, to become a standard basis:"; S;
-      if(y>1)
+      if(@y@@>1)
       {
          "// create pairset, i.e. pairs from S,";
          "// after application of product and chain criterion";
@@ -669,13 +669,13 @@ EXAMPLE: example standard; shows an example
    P = P[1];
 //-------------------------- Main loop in SB lgorithm ----------------------
    while (size(P) !=0)
-   {  z=z+1;
-      if(y>0)
+   {  @z@@=@z@@+1;
+      if(@y@@>0)
       {  "";
-         "//              Enter NFMora for next pair, count",z;
+         "//              Enter NFMora for next pair, count",@z@@;
          "// size of partial standard basis S:    (",size(S),")";
          "// number of pairs of S after updating: (",size(P),")";
-         if(y>1)
+         if(@y@@>1)
          {
             "// 1st pair of new pairset:"; P[1];
             "// set T=S used for reduction:";S;
@@ -684,18 +684,18 @@ EXAMPLE: example standard; shows an example
       }
       //-------------------- apply NFMora = Mora's normal form -------------
       h = spoly(P[1][1],P[1][2],#[1]);
-      if(y>1)
+      if(@y@@>1)
       {
          "// spoly:";h;
       }
       h = NFMora(h,S,#[1]);
       if(h==0)           //normal form is 0
       {
-         if(y==1)
+         if(@y@@==1)
          {
             "// pair has reduced to 0";
          }
-          if(y>1)
+          if(@y@@>1)
          { h;"";
            pause("press <return> to continue");
          }
@@ -704,11 +704,11 @@ EXAMPLE: example standard; shows an example
       //--- spoly of pair did not reduce to 0, update S and paiset of S ----
       if( h != 0)
       {
-         if(y==1)
+         if(@y@@==1)
          {
             "// ** new spoly in degree **:", deg(h);
          }
-         if(y>1)
+         if(@y@@>1)
          { h;"";
            pause("press <return> to continue");
            "// update pairset";
@@ -720,7 +720,7 @@ EXAMPLE: example standard; shows an example
       }
    }
 //------------------------------ finished ---------------------------------
-   if( find(option(),"prot") or y>0 )
+   if( find(option(),"prot") or @y@@>0 )
    {  "";                //show how often prodcrit and chaincrit applied
       "// product criterion:",v[1]," chain criterion:",v[2];
       "";

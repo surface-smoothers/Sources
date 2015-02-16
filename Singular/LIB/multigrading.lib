@@ -550,13 +550,13 @@ EXAMPLE: example isGroup; shows an example
   // valid?
   if( typeof(G) != "list" ){ return(0); }
 
-  def a = attrib(G, isGroup);
+  def @a@@ = attrib(G, isGroup);
 
 ///// TODO for Hans: fix attr^2 bug in Singular!
 
-//  if( !defined(a) ) { return(0); }
-//  if( typeof(a) != "int" ) { return(0); }
-  if( defined(a) ){ if(typeof(a) == "int") { return(a); } }
+//  if( !defined(@a@@) ) { return(0); }
+//  if( typeof(@a@@) != "int" ) { return(0); }
+  if( defined(@a@@) ){ if(typeof(@a@@) == "int") { return(@a@@); } }
 
 
   if( (size(G) != 2) && (size(G) != 4) ){ return(0); }
@@ -605,16 +605,16 @@ EXAMPLE: example setBaseMultigrading; shows an example
   int i = 1;
   if( size(#) >= i )
   {
-    def a = #[i];
-    if( typeof(a) == "intmat" )
+    def @a@@ = #[i];
+    if( typeof(@a@@) == "intmat" )
     {
-      def L = createGroup(M, a);
+      def L = createGroup(M, @a@@);
       i++;
     }
 
-    if( isGroup(a) )
+    if( isGroup(@a@@) )
     {
-      def L = a;
+      def L = @a@@;
 
       if( !isSublattice(M, L[1]) )
       {
@@ -623,7 +623,7 @@ EXAMPLE: example setBaseMultigrading; shows an example
       i++;
     }
     if( i == 1 ){ ERROR("Wrong arguments: no group given?"); }
-    kill a;
+    kill @a@@;
   }
   else
   {
@@ -942,12 +942,12 @@ EXAMPLE: example getLattice; shows an example
   int i = 1;
   if( size(#) >= i )
   {
-    def a = #[i];
-    if( typeof(a) == "ring" )
+    def @a@@ = #[i];
+    if( typeof(@a@@) == "ring" )
     {
       i++;
     }
-    kill a;
+    kill @a@@;
   }
 
   string attrGradingGroupHNF = "hermite";
@@ -963,14 +963,14 @@ EXAMPLE: example getLattice; shows an example
 
   if( size(#) >= i )
   {
-    def a = #[i];
+    def @a@@ = #[i];
 
-    if( typeof(a) != "string" )
+    if( typeof(@a@@) != "string" )
     {
       ERROR("Sorry wrong arguments!");
     }
 
-    if( a == "hermite" )
+    if( @a@@ == "hermite" )
     {
       def M = attrib(T, attrGradingGroupHNF);
       if( typeof(M) != "intmat" )
@@ -986,7 +986,7 @@ EXAMPLE: example getLattice; shows an example
       return (M);
     }
 
-    if( a == "smith" )
+    if( @a@@ == "smith" )
     {
       def M = attrib(T, attrGradingGroupSNF);
       if( typeof(M) != "intmat" )
@@ -1563,12 +1563,12 @@ example
 }
 
 
-static proc gcdcomb(int a, int b)
+static proc gcdcomb(int @a@@, int @b@@)
 {
-  // a;
-  // b;
-  intvec av = a,1,0;
-  intvec bv = b,0,1;
+  // @a@@;
+  // @b@@;
+  intvec av = @a@@,1,0;
+  intvec bv = @b@@,0,1;
   intvec save;
   while(av[1]*bv[1] != 0)
   {
@@ -1693,7 +1693,7 @@ EXAMPLE: example smithNormalForm; shows an example
   int rr = nrows(D);
   intmat transform;
   int k = 1;
-  int a, b, c;
+  int @a@@, @b@@, @c@@;
   // D;
   intvec v;
   if((cc==1)||(rr==1)){
@@ -1707,13 +1707,13 @@ EXAMPLE: example smithNormalForm; shows an example
   }
   while(D[k+1,k+1] !=0){
     if(D[k+1,k+1]%D[k,k]!=0){
-      b = D[k, k]; c = D[k+1, k+1];
+      @b@@ = D[k, k]; @c@@ = D[k+1, k+1];
       v = gcdcomb(D[k,k],D[k+1,k+1]);
       transform = unitMatrix(cc);
       transform[k+1,k] = 1;
-      a = -v[3]*D[k+1,k+1] div v[1];
-      transform[k, k+1] = a;
-      transform[k+1, k+1] = a+1;
+      @a@@ = -v[3]*D[k+1,k+1] div v[1];
+      transform[k, k+1] = @a@@;
+      transform[k+1, k+1] = @a@@+1;
       //det(transform);
       D = D*transform;
       Q = Q*transform;
@@ -1721,8 +1721,8 @@ EXAMPLE: example smithNormalForm; shows an example
       transform = unitMatrix(rr);
       transform[k,k] = v[2];
       transform[k,k+1] = v[3];
-      transform[k+1,k] = -c div v[1];
-      transform[k+1,k+1] = b div v[1];
+      transform[k+1,k] = -@c@@ div v[1];
+      transform[k+1,k+1] = @b@@ div v[1];
       D = transform * D;
       P = transform * P;
       //" ";
@@ -1978,15 +1978,15 @@ EXAMPLE: example isZeroElement; shows an example
     intmat H = getLattice("hermite");
   }
 
-  int x, k, row;
+  int @x@@, k, row;
 
   int r = nrows(H);
-  int c = ncols(H);
+  int @c@@ = ncols(H);
 
   int rr = nrows(mdeg);
   row = 1;
   intvec v;
-  for(i=1; (i<=r)&&(row<=r)&&(i<=c); i++)
+  for(i=1; (i<=r)&&(row<=r)&&(i<=@c@@); i++)
   {
     while((H[row,i]==0)&&(row<=r))
     {
@@ -2065,13 +2065,13 @@ EXAMPLE: example defineHomogeneous; shows an example
   int i = 1;
   if( size(#) >= i )
   {
-    def a = #[1];
-    if( typeof(a) == "intmat" )
+    def @a@@ = #[1];
+    if( typeof(@a@@) == "intmat" )
     {
-      intmat grad = a;
+      intmat grad = @a@@;
       i++;
     }
-    kill a;
+    kill @a@@;
   }
 
   if( i == 1 )
@@ -2234,9 +2234,9 @@ EXAMPLE: example pushForward; shows an example
   if(size(ideal(basering))>0)
   {
     //"Entering qring";
-    ideal a=ideal(basering);
-    for(i=1;i<=size(a);i++){
-      toadd = defineHomogeneous(a[i], newgrad);
+    ideal @a@@=ideal(basering);
+    for(i=1;i<=size(@a@@);i++){
+      toadd = defineHomogeneous(@a@@[i], newgrad);
       //toadd;
       columns=columns+ncols(toadd);
       newlat=insert(newlat,toadd);
@@ -2438,27 +2438,27 @@ static proc isFreeRepresented()
 
 
 /******************************************************/
-proc isHomogeneous(def a, list #)
+proc isHomogeneous(def @a@@, list #)
 "USAGE: isHomogeneous(a[, f]); a polynomial/vector/ideal/module
 RETURN: boolean, TRUE if a is (multi)homogeneous, and FALSE otherwise
 EXAMPLE: example isHomogeneous; shows an example
 "
 {
-  if( (typeof(a) == "poly") or (typeof(a) == "vector") )
+  if( (typeof(@a@@) == "poly") or (typeof(@a@@) == "vector") )
   {
-    return ( size(multiDegPartition(a)) <= 1 )
+    return ( size(multiDegPartition(@a@@)) <= 1 )
   }
 
-  if( (typeof(a) == "ideal") or (typeof(a) == "module") )
+  if( (typeof(@a@@) == "ideal") or (typeof(@a@@) == "module") )
   {
     if(size(#) > 0)
     {
       if (#[1] == "checkGens")
       {
         def aa;
-        for( int i = ncols(a); i > 0; i-- )
+        for( int i = ncols(@a@@); i > 0; i-- )
         {
-          aa = getGradedGenerator(a, i);
+          aa = getGradedGenerator(@a@@, i);
 
           if(!isHomogeneous(aa))
           {
@@ -2469,12 +2469,12 @@ EXAMPLE: example isHomogeneous; shows an example
       }
     }
 
-    def g = groebner(a); // !!!!
+    def g = groebner(@a@@); // !!!!
 
     def b, aa; int j;
-    for( int i = ncols(a); i > 0; i-- )
+    for( int i = ncols(@a@@); i > 0; i-- )
     {
-      aa = getGradedGenerator(a, i);
+      aa = getGradedGenerator(@a@@, i);
 
       b = multiDegPartition(aa);
       for( j = ncols(b); j > 0; j-- )
@@ -2619,10 +2619,10 @@ PURPOSE: compute multidegree
 EXAMPLE: example multiDeg; shows an example
 "
 {
-  def a = attrib(A, "grad");
-  if( typeof(a) == "intvec" || typeof(a) == "intmat" )
+  def @a@@ = attrib(A, "grad");
+  if( typeof(@a@@) == "intvec" || typeof(@a@@) == "intmat" )
   {
-    return (a);
+    return (@a@@);
   }
 
   intmat M = getVariableWeights();

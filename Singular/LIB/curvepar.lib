@@ -944,7 +944,7 @@ EXAMPLE:"
   int k=size(G);
   int n=G[1];
   int j;
-  int t;
+  int @t@@;
   int q;
   int c=0;
   intvec w;
@@ -971,9 +971,9 @@ EXAMPLE:"
       {
         if(size(L[i-G[j]])>0)
         {
-          for(t=1;t<=size(L[i-G[j]]);t++)
+          for(@t@@=1;@t@@<=size(L[i-G[j]]);@t@@++)
           {
-            v=L[i-G[j]][t];
+            v=L[i-G[j]][@t@@];
             p=1;
             for(q=1;q<j;q++)
             {
@@ -1078,7 +1078,7 @@ EXAMPLE: example WSemigroup; shows an example"
   int k=size(X);
   intvec G;
   int i,i2;
-  poly t=var(1);
+  poly @t@@=var(1);
   poly h;
   int g;
   for(i=1;i<=k;i++)
@@ -1143,8 +1143,8 @@ EXAMPLE: example WSemigroup; shows an example"
     {
       for(j2=1;j2<j1;j2++)
       {
-        c1=coeffs(N[i][j1],t)[i+1,1];
-        c2=coeffs(N[i][j2],t)[i+1,1];
+        c1=coeffs(N[i][j1],@t@@)[i+1,1];
+        c2=coeffs(N[i][j2],@t@@)[i+1,1];
         f=c2*N[i][j1]-c1*N[i][j2];
         m=ord(f);
         if(m>=0)
@@ -1178,7 +1178,7 @@ EXAMPLE: example WSemigroup; shows an example"
           {
             for(q=1;q<=size(N[m]);q++){I[q]=N[m][q];}
             I[size(N[m])+1]=f;
-            C=coeffs(I,t);
+            C=coeffs(I,@t@@);
             C1=gauss_col(C);
             if(C1[size(N[m])+1]!=0){N[m]=insert(N[m],f);}
           }

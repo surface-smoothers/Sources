@@ -70,16 +70,16 @@ EXAMPLE: example visualize; shows an example
   intvec v;
   if (n>0)
   {
-    int i;
+    int @i@;
     int j;
-    for(i=1;i<=n;i++)
+    for(@i@=1;@i@<=n;@i@++)
     {
       intvec w=leadexp(f);
       for(j=1;j<=size(@variables);j++)
       {
         v[j]=w[j+1];
       }
-      if(i==1)
+      if(@i@==1)
       {
         str=print(leadcoef(f),"%s")+"*"+"U("+print(v,"%s")+")";
       }
@@ -769,20 +769,20 @@ EXAMPLE:  example matrixsystem; shows an example
     }
   ideal Mon=leadmonomial(Approx[1]);
   int N=size(Matrices);
-  int i;
-  for(i=2;i<=N;i++)
+  int @i@@;
+  for(@i@@=2;@i@@<=N;@i@@++)
     {
-      Mon=Mon,leadmonomial(Approx[i]);
+      Mon=Mon,leadmonomial(Approx[@i@@]);
     }
-  kill i;
+  kill @i@@;
   poly LCM=lcm(Mon);
   matrix M[nrows(Matrices[1])][ncols(Matrices[1])];
-  int i;
-  for(i=1;i<=size(Matrices);i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=size(Matrices);@i@@++)
     {
-      M=M+(LCM/leadmonomial(Approx[i]))*normalize(Approx[i])[size(@derivatives)]*Matrices[i];
+      M=M+(LCM/leadmonomial(Approx[@i@@]))*normalize(Approx[@i@@])[size(@derivatives)]*Matrices[@i@@];
     }
-  kill i;
+  kill @i@@;
   return(M);
 }
 example
@@ -805,20 +805,20 @@ EXAMPLE:  example timestep; shows an example
 "
 {
   int N=nrows(M);
-  int i;
+  int @i@;
   int maxdegT;
-  for(i=1;i<=N;i++)
+  for(@i@=1;@i@<=N;@i@++)
     {
       int j;
       for(j=1;j<=N;j++)
   {
-    poly f=M[i,j];
+    poly f=M[@i@,j];
     int k;
     for(k=1;k<=size(f);k++)
       {
-        if(leadexp(M[i,j])[2]>maxdegT)
+        if(leadexp(M[@i@,j])[2]>maxdegT)
     {
-      maxdegT=leadexp(M[i,j])[2];
+      maxdegT=leadexp(M[@i@,j])[2];
     }
         f=f-lead(f);
       }
@@ -827,25 +827,25 @@ EXAMPLE:  example timestep; shows an example
   }
       kill j;
     }
-  kill i;
+  kill @i@;
   matrix highT[nrows(M)][nrows(M)];
   vector leftside=0;
   int GenIndex=0;
-  int i;
-  for(i=1;i<=N;i++)
+  int @i@;
+  for(@i@=1;@i@<=N;@i@++)
     {
       int j;
       for(j=1;j<=N;j++)
   {
-    poly f=M[i,j];
+    poly f=M[@i@,j];
     int k;
     for(k=1;k<=size(f)+1;k++)
       {
         if(leadexp(f)[2]==maxdegT)
     {
       GenIndex++;
-      highT[i,j]=highT[i,j]+lead(f);
-      leftside=leftside+highT[i,j]*gen(GenIndex);
+      highT[@i@,j]=highT[@i@,j]+lead(f);
+      leftside=leftside+highT[@i@,j]*gen(GenIndex);
     }
         f=f-lead(f);
       }
@@ -854,7 +854,7 @@ EXAMPLE:  example timestep; shows an example
   }
       kill j;
     }
-  kill i;
+  kill @i@;
   matrix tUpper=highT;
   matrix tLower=-1*(M-tUpper);
   tUpper=tUpper/content(leftside);
@@ -884,20 +884,20 @@ EXAMPLE:  example fouriersystem; shows an example
   matrix M=matrixsystem(Matrices,Approx);
   matrix T1=timestep(M)[1];
   matrix T0=timestep(M)[2];
-  int i;
-  for(i=1;i<=nrows(M);i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=nrows(M);@i@@++)
     {
       int j;
       for(j=1;j<=nrows(M);j++)
   {
-    T1[i,j]=errormap(T1[i,j]);
-    T1[i,j]=VarToPar(T1[i,j]);
-    T0[i,j]=errormap(T0[i,j]);
-    T0[i,j]=VarToPar(T0[i,j]);
+    T1[@i@@,j]=errormap(T1[@i@@,j]);
+    T1[@i@@,j]=VarToPar(T1[@i@@,j]);
+    T0[@i@@,j]=errormap(T0[@i@@,j]);
+    T0[@i@@,j]=VarToPar(T0[@i@@,j]);
   }
       kill j;
     }
-  kill i;
+  kill @i@@;
   ideal EV1=eigenvals(T1)[1];
   ideal EV0=eigenvals(T0)[1];
   list L=list(T1,T0),list(EV1,EV0);
@@ -905,28 +905,28 @@ EXAMPLE:  example fouriersystem; shows an example
   def N0=size(EV0);
   list CV1;
   list CV0;
-  int i;
-  for(i=1;i<=N1;i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=N1;@i@@++)
   {
-  CV1[i]=VarToPar(EV1[i]);
-  if(content(CV1[i])==CV1[i])
+  CV1[@i@@]=VarToPar(EV1[@i@@]);
+  if(content(CV1[@i@@])==CV1[@i@@])
   {
-  CV1[i]=content(CV1[i]);
-  CV1[i]=VarToPar(ComplexValue(numerator(CV1[i])))/VarToPar(ComplexValue(denominator(CV1[i])));
+  CV1[@i@@]=content(CV1[@i@@]);
+  CV1[@i@@]=VarToPar(ComplexValue(numerator(CV1[@i@@])))/VarToPar(ComplexValue(denominator(CV1[@i@@])));
   }
   }
-  kill i;
-  int i;
-  for(i=1;i<=N0;i++)
+  kill @i@@;
+  int @i@@;
+  for(@i@@=1;@i@@<=N0;@i@@++)
   {
-  CV0[i]=VarToPar(EV0[i]);
-  if(content(CV0[i])==CV0[i])
+  CV0[@i@@]=VarToPar(EV0[@i@@]);
+  if(content(CV0[@i@@])==CV0[@i@@])
   {
-  CV0[i]=content(CV0[i]);
-  CV0[i]=VarToPar(ComplexValue(numerator(CV0[i])))/VarToPar(ComplexValue(denominator(CV0[i])));
+  CV0[@i@@]=content(CV0[@i@@]);
+  CV0[@i@@]=VarToPar(ComplexValue(numerator(CV0[@i@@])))/VarToPar(ComplexValue(denominator(CV0[@i@@])));
   }
   }
-  kill i;
+  kill @i@@;
   list CV=list(CV1,CV0);
   L=L,CV;
   return(L);
@@ -954,10 +954,10 @@ EXAMPLE:  example PartitionVar; shows an example
     {
       ERROR("this variable does not exist in the current basering");
     }
-  int i;
+  int @i@@;
   poly partition=0;
   poly g=f;
-  for(i=1;i<=size(f);i++)
+  for(@i@@=1;@i@@<=size(f);@i@@++)
     {
       if(leadexp(g)[n]!=0)
   {
@@ -1013,11 +1013,11 @@ EXAMPLE:  example VarToPar; shows an example
 "
 {
   int N=nvars(basering);
-  int i;
+  int @i@@;
   def g=f;
-  for(i=1;i<=N;i++)
+  for(@i@@=1;@i@@<=N;@i@@++)
     {
-      g=subst(g,var(i),par(i));
+      g=subst(g,var(@i@@),par(@i@@));
     }
   return(g);
 }
@@ -1041,14 +1041,14 @@ EXAMPLE:  example ParToVar; shows an example
 "
 {
   int N=nvars(basering);
-  int i;
+  int @i@@;
   number g=number(VarToPar(f));
   number denom=denominator(g);
   g=denom*g;
   def gg=subst(g,par(1),var(1));
-  for(i=2;i<=N;i++)
+  for(@i@@=2;@i@@<=N;@i@@++)
     {
-      gg=subst(gg,par(i),var(i));
+      gg=subst(gg,par(@i@@),var(@i@@));
     }
   return(gg/denom);
 }
@@ -1188,7 +1188,7 @@ EXAMPLE:  example qepcadsystem; shows an example
   string thepolys;
   int n2=size(l[2]);
   int count;
-  int i;
+  int @i@@;
   list lpolys;
   int j;
   for(j=1;j<=n2;j++)
@@ -1273,7 +1273,7 @@ example
 ///////////////////////////////////////////
 static proc substbracketstar(string s)
 {
-  int i;
+  int @i@@;
   int k;
   int index=1;
   string finish=s;
@@ -1286,11 +1286,11 @@ static proc substbracketstar(string s)
       string finish=s[index..size(s)];
     }
   }
-  for(i=1;i<=size(finish);i++)
+  for(@i@@=1;@i@@<=size(finish);@i@@++)
   {
-    if(finish[i]=="*" or finish[i]=="(" or finish[i]== ")")
+    if(finish[@i@@]=="*" or finish[@i@@]=="(" or finish[@i@@]== ")")
     {
-      finish[i]=" ";
+      finish[@i@@]=" ";
     }
   }
   return(finish);
@@ -1304,15 +1304,15 @@ static proc distribution(string SUM, string MON)
   string result;
   list signs;
   list p;
-  int i;
+  int @i@@;
   int j;
   int init;
-  for(i=2;i<=size(sum);i++)
+  for(@i@@=2;@i@@<=size(sum);@i@@++)
   {
-    if(sum[i]=="+" or sum[i]=="-")
+    if(sum[@i@@]=="+" or sum[@i@@]=="-")
     {
       j++;
-      p[j]=i;
+      p[j]=@i@@;
     }
   }
   if(j==0)
@@ -1397,8 +1397,8 @@ static proc writepoly(poly f)
   string strpoly;
   string intermediate;
   int n=size(f);
-  int i;
-  for(i=1;i<=n;i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=n;@i@@++)
   {
 
     lc=substbracketstar(string(leadcoef(g)));
@@ -1416,10 +1416,10 @@ static proc varlist()
   p1=ParToVar(p1);
   string name=print(p1,"%s");
   string p="("+name+",";
-  int i;
-  for(i=3+size(@variables);i<=npars(basering);i++)
+  int @i@@;
+  for(@i@@=3+size(@variables);@i@@<=npars(basering);@i@@++)
   {
-    p1=ParToVar(par(i));
+    p1=ParToVar(par(@i@@));
     name=substbracketstar(print(p1,"%s"));
     p=p+name+",";
   }
@@ -1434,10 +1434,10 @@ static proc normalization()
   int n1=npars(basering)-size(@variables);
   int n2=npars(basering)-n1;
   string assumption="assume["+" "+substbracketstar(print(par(n1+1),"%s"))+" >0";
-  int i;
-  for(i=2;i<=n2;i++)
+  int @i@@;
+  for(@i@@=2;@i@@<=n2;@i@@++)
   {
-    string s=" /\\"+" "+substbracketstar(print(par(n1+i),"%s"))+" >0";
+    string s=" /\\"+" "+substbracketstar(print(par(n1+@i@@),"%s"))+" >0";
     assumption=assumption+" "+s;
     kill s;
   }
@@ -1516,10 +1516,10 @@ static proc listpolynew(string thepoly)
   string AND="/"+"\\";
   string OR="\\"+"/";
   list thesigns=AND,OR,"~","<==>","==>","<==";///these can occur in QEPCAD
-  int i;
-  for(i=1;i<=size(thesigns);i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=size(thesigns);@i@@++)
   {
-    list l=TestAndDelete(p,thesigns[i]);
+    list l=TestAndDelete(p,thesigns[@i@@]);
     p=l[1];
     v=addintvec(v,l[2]);
     kill l;
@@ -1565,18 +1565,18 @@ static proc translatenew(string word)
   string subword=word[1..n];
   string strpoly="poly f=";
   list linterim;
-  int i;
-  for(i=1;i<=n;i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=n;@i@@++)
   {
-    if(i<n and subword[i]==" " and subword[i+1]!="+" and subword[i+1]!="-" and subword[i+1]!=" " and subword[i-1]!="+" and subword[i-1]!="-" and subword[i-1]!=" " and i>1)
+    if(@i@@<n and subword[@i@@]==" " and subword[@i@@+1]!="+" and subword[@i@@+1]!="-" and subword[@i@@+1]!=" " and subword[@i@@-1]!="+" and subword[@i@@-1]!="-" and subword[@i@@-1]!=" " and @i@@>1)
     {
-      linterim[i]="*";
+      linterim[@i@@]="*";
     }
     else
     {
-      linterim[i]=word[i];
+      linterim[@i@@]=word[@i@@];
     }
-    strpoly=strpoly+print(linterim[i],"%s");
+    strpoly=strpoly+print(linterim[@i@@],"%s");
   }
   strpoly=strpoly+";";
   execute(strpoly);
@@ -1591,11 +1591,11 @@ static proc rightorder(intvec v)
   intvec v1;
   int counter;
   int min;
-  int i;
-  for(i=1;i<=size(v);i++)
+  int @i@@;
+  for(@i@@=1;@i@@<=size(v);@i@@++)
   {
     min=Min(listintvec(ldown));
-    lup[i]=min;
+    lup[@i@@]=min;
     counter=listfind(ldown,min);
     ldown=delete(ldown,counter);
   }
@@ -1606,14 +1606,14 @@ static proc rightorder(intvec v)
 static proc listfind(list l, int n)
 //////gives the position of n in l, 0 if not found
 {
-  int i;
+  int @i@@;
   intvec counter;
   int j=1;
-  for(i=1;i<=size(l);i++)
+  for(@i@@=1;@i@@<=size(l);@i@@++)
   {
-    if(n==l[i])
+    if(n==l[@i@@])
     {
-      counter[j]=i;
+      counter[j]=@i@@;
       j++;
     }
   }
@@ -1625,11 +1625,11 @@ static proc cutoffrel(string str)
 /////////cut off the relations "/=,<= etc." from output-string
 {
   list rels="<=",">=","<",">","/=","=";  //these are all of qepcad's relations
-  int i;
+  int @i@@;
   list l;
-  for(i=1;i<=size(rels);i++)
+  for(@i@@=1;@i@@<=size(rels);@i@@++)
   {
-    l[i]=find(str,rels[i]);
+    l[@i@@]=find(str,rels[@i@@]);
   }
   intvec v=listintvec(l);
   v=addintvec(v,v);
@@ -1650,14 +1650,14 @@ static proc addintvec(intvec v1, intvec v2)
 ///////concatenates two intvecs and deletes occurring zeroentries, output intvec
 {
   list lresult;
-  int i;
+  int @i@@;
   list l1;
   list l2;
-  for(i=1;i<=size(v1);i++)
+  for(@i@@=1;@i@@<=size(v1);@i@@++)
   {
-    l1[i]=v1[i];
+    l1[@i@@]=v1[@i@@];
   }
-  kill i;
+  kill @i@@;
   int k;
   for(k=1;k<=size(v2);k++)
   {
@@ -1683,10 +1683,10 @@ static proc intveclist(intvec v)
 //////returns the intvec as list
 {
   list l;
-  int i;
-  for(i=size(v);i>=1;i--)
+  int @i@@;
+  for(@i@@=size(v);@i@@>=1;@i@@--)
   {
-    l[i]=v[i];
+    l[@i@@]=v[@i@@];
   }
   return(l);
 }
@@ -1695,10 +1695,10 @@ static proc listintvec(list l)
 //////////returns the list as intvec: only integer-entries allowed
 {
   intvec v;
-  int i;
-  for(i=size(l);i>=1;i--)
+  int @i@@;
+  for(@i@@=size(l);@i@@>=1;@i@@--)
   {
-    v[i]=l[i];
+    v[@i@@]=l[@i@@];
   }
   return(v);
 }
@@ -1727,13 +1727,13 @@ static proc TestAndDelete(string str, string booleansign)
   {
     list l;
     string p;
-    int i;
+    int @i@@;
     int j;
-    for(i=1;i<=size(str);i++)///copy the string str into l
+    for(@i@@=1;@i@@<=size(str);@i@@++)///copy the string str into l
     {
-      l[i]=str[i];
+      l[@i@@]=str[@i@@];
     }
-    kill i;
+    kill @i@@;
     for(j=1;j<=size(v);j++)///replace booleansign by empty char
     {
       int k;

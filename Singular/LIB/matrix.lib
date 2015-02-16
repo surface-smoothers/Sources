@@ -102,8 +102,8 @@ EXAMPLE: example concat; shows an example
 {
    int i;
    for( i=size(#);i>0; i-- ) { #[i]=module(#[i]); }
-   module B=#[1..size(#)];
-   return(matrix(B));
+   module @@B=#[1..size(#)];
+   return(matrix(@@B));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -401,15 +401,15 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc submat (matrix A, intvec r, intvec c)
+proc submat (matrix A@, intvec r, intvec c)
 "USAGE:   submat(A,r,c);  A=matrix, r,c=intvec
-RETURN:  matrix, submatrix of A with rows specified by intvec r
+RETURN:  matrix, submatrix of A@ with rows specified by intvec r
          and columns specified by intvec c.
 EXAMPLE: example submat; shows an example
 "
 {
-   matrix B[size(r)][size(c)]=A[r,c];
-   return(B);
+   matrix @B@@[size(r)][size(c)]=A@[r,c];
+   return(@B@@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -459,32 +459,32 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc tensor (matrix A, matrix B)
-"USAGE:   tensor(A,B); A,B matrices
-RETURN:  matrix, tensor product of A and B
+proc tensor (matrix @A@, matrix @B@)
+"USAGE:   tensor(@A@,@B@); @A@,@B@ matrices
+RETURN:  matrix, tensor product of @A@ and @B@
 EXAMPLE: example tensor; shows an example
 "
 {
-   if (ncols(A)==0)
+   if (ncols(@A@)==0)
    {
-     int q=nrows(A)*nrows(B);
+     int q=nrows(@A@)*nrows(@B@);
      matrix D[q][0];
      return(D);
    }
 
    int i,j;
-   matrix C,D;
-   for( i=1; i<=nrows(A); i++ )
+   matrix @C@,@D@;
+   for( i=1; i<=nrows(@A@); i++ )
    {
-     C = A[i,1]*B;
-     for( j=2; j<=ncols(A); j++ )
+     @C@ = @A@[i,1]*@B@;
+     for( j=2; j<=ncols(@A@); j++ )
      {
-       C = concat(C,A[i,j]*B);
+       @C@ = concat(@C@,@A@[i,j]*@B@);
      }
-     D = concat(D,transpose(C));
+     @D@ = concat(@D@,transpose(@C@));
    }
-   D = transpose(D);
-   return(submat(D,2..nrows(D),1..ncols(D)));
+   @D@ = transpose(@D@);
+   return(submat(@D@,2..nrows(@D@),1..ncols(@D@)));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -514,7 +514,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc gauss_col (matrix A, list #)
+proc gauss_col (matrix @A@@, list #)
 "USAGE:   gauss_col(A[,e]); A a matrix, e any type
 RETURN:  - a matrix B, if called with one argument; B is the complete column-
            reduced upper-triangular normal form of A if A is constant,
@@ -536,9 +536,9 @@ EXAMPLE: example gauss_col; shows an example
 {
    def R=basering; int u;
    string mp = string(minpoly);
-   int n = nrows(A);
-   int m = ncols(A);
-   module M = A;
+   int n = nrows(@A@@);
+   int m = ncols(@A@@);
+   module M = @A@@;
    intvec v = option(get);
 //------------------------ change ordering if necessary ----------------------
    if( ordstr(R) != ("C,dp("+string(nvars(R))+")") )
@@ -546,15 +546,15 @@ EXAMPLE: example gauss_col; shows an example
      def @R=changeord(list(list("C",0:1),list("dp",1:nvars(R))),R);
      setring @R; u=1;
      if (mp!="0") { execute("minpoly="+mp+";");}
-     matrix A = imap(R,A);
-     module M = A;
+     matrix @A@@ = imap(R,@A@@);
+     module M = @A@@;
    }
 //------------------------------ start computation ---------------------------
    option(redSB);
    M = simplify(interred(M),1);
    if(size(#) != 0)
    {
-      module N = lift(A,M);
+      module N = lift(@A@@,M);
    }
 //--------------- reset ring and options and return --------------------------
    if ( u==1 )
@@ -569,10 +569,10 @@ EXAMPLE: example gauss_col; shows an example
    }
    option(set,v);
    // M = sort(M,size(M)..1)[1];
-   A = matrix(M,n,m);
+   @A@@ = matrix(M,n,m);
    if (size(#) != 0)
    {
-     list L= A,matrix(N,m,m);
+     list L= @A@@,matrix(N,m,m);
      return(L);
    }
    return(matrix(M,n,m));
@@ -604,7 +604,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc gauss_row (matrix A, list #)
+proc gauss_row (matrix @A@@, list #)
 "USAGE:  gauss_row(A [,e]); A matrix, e any type
 RETURN: - a matrix B, if called with one argument; B is the complete row-
           reduced lower-triangular normal form of A if A is constant,
@@ -627,11 +627,11 @@ EXAMPLE: example gauss_row; shows an example
 {
    if(size(#) > 0)
    {
-     list L = gauss_col(transpose(A),1);
+     list L = gauss_col(transpose(@A@@),1);
      return(L);
    }
-   A = gauss_col(transpose(A));
-   return(transpose(A));
+   @A@@ = gauss_col(transpose(@A@@));
+   return(transpose(@A@@));
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -655,15 +655,15 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc addcol (matrix A, int c1, poly p, int c2)
+proc addcol (matrix @A@, int c1, poly p, int c2)
 "USAGE:   addcol(A,c1,p,c2);  A matrix, p poly, c1, c2 positive integers
 RETURN:  matrix,  A being modified by adding p times column c1 to column c2
 EXAMPLE: example addcol; shows an example
 "
 {
-   int k=nrows(A);
-   A[1..k,c2]=A[1..k,c2]+p*A[1..k,c1];
-   return(A);
+   int k=nrows(@A@);
+   @A@[1..k,c2]=@A@[1..k,c2]+p*@A@[1..k,c1];
+   return(@A@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -674,15 +674,15 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc addrow (matrix A, int r1, poly p, int r2)
+proc addrow (matrix @A@, int r1, poly p, int r2)
 "USAGE:   addrow(A,r1,p,r2);  A matrix, p poly, r1, r2 positive integers
 RETURN:  matrix,  A being modified by adding p times row r1 to row r2
 EXAMPLE: example addrow; shows an example
 "
 {
-   int k=ncols(A);
-   A[r2,1..k]=A[r2,1..k]+p*A[r1,1..k];
-   return(A);
+   int k=ncols(@A@);
+   @A@[r2,1..k]=@A@[r2,1..k]+p*@A@[r1,1..k];
+   return(@A@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -693,15 +693,15 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc multcol (matrix A, int c, poly p)
+proc multcol (matrix @A@, int c, poly p)
 "USAGE:   multcol(A,c,p);  A matrix, p poly, c positive integer
 RETURN:  matrix,  A being modified by multiplying column c by p
 EXAMPLE: example multcol; shows an example
 "
 {
-   int k=nrows(A);
-   A[1..k,c]=p*A[1..k,c];
-   return(A);
+   int k=nrows(@A@);
+   @A@[1..k,c]=p*@A@[1..k,c];
+   return(@A@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -712,15 +712,15 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc multrow (matrix A, int r, poly p)
+proc multrow (matrix @A@@, int r, poly p)
 "USAGE:   multrow(A,r,p);  A matrix, p poly, r positive integer
 RETURN:  matrix,  A being modified by multiplying row r by p
 EXAMPLE: example multrow; shows an example
 "
 {
-   int k=ncols(A);
-   A[r,1..k]=p*A[r,1..k];
-   return(A);
+   int k=ncols(@A@@);
+   @A@@[r,1..k]=p*@A@@[r,1..k];
+   return(@A@@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -752,17 +752,17 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc permrow (matrix A, int r1, int r2)
+proc permrow (matrix @A@, int r1, int r2)
 "USAGE:   permrow(A,r1,r2);  A matrix, r1,r2 positive integers
 RETURN:  matrix,  A being modified by permuting rows r1 and r2
 EXAMPLE: example permrow; shows an example
 "
 {
-   matrix B=A;
-   int k=ncols(B);
-   B[r1,1..k]=A[r2,1..k];
-   B[r2,1..k]=A[r1,1..k];
-   return(B);
+   matrix @B@=@A@;
+   int k=ncols(@B@);
+   @B@[r1,1..k]=@A@[r2,1..k];
+   @B@[r2,1..k]=@A@[r1,1..k];
+   return(@B@);
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -773,7 +773,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc rowred (matrix A,list #)
+proc rowred (matrix @A@,list #)
 "USAGE:   rowred(A[,e]);  A matrix, e any type
 RETURN:  - a matrix B, being the row reduced form of A, if rowred is called
            with one argument.
@@ -797,36 +797,36 @@ SEE ALSO:  gauss_row
 EXAMPLE: example rowred; shows an example
 "
 {
-   int m,n=nrows(A),ncols(A);
+   int m,n=nrows(@A@),ncols(@A@);
    int i,j,k,l,rk;
    poly p;
    matrix d[m][n];
    for (i=1;i<=m;i++)
    {  for (j=1;j<=n;j++)
-      {  p = A[i,j];
+      {  p = @A@[i,j];
          if (ord(p)==0)
          {  if (deg(p)==0) { d[i,j]=p; }
          }
       }
    }
-   matrix b = A;
-   if (size(#) != 0) { b = concat(b,unitmat(m)); }
+   matrix @b@@ = @A@;
+   if (size(#) != 0) { @b@@ = concat(@b@@,unitmat(m)); }
       for (l=1;l<=n;l=l+1)
    {
       k  = findfirst(ideal(d[l]),rk+1);
       if (k)
       {  rk = rk+1;
-         b  = permrow(b,rk,k);
-         p  = b[rk,l];         p = 1/p;
-         b  = multrow(b,rk,p);
+         @b@@  = permrow(@b@@,rk,k);
+         p  = @b@@[rk,l];         p = 1/p;
+         @b@@  = multrow(@b@@,rk,p);
          for (i=1;i<=m;i++)
          {
-            if (rk-i) { b = addrow(b,rk,-b[i,l],i);}
+            if (rk-i) { @b@@ = addrow(@b@@,rk,-@b@@[i,l],i);}
          }
          d = 0;
          for (i=rk+1;i<=m;i++)
          {  for (j=l+1;j<=n;j++)
-            {  p = b[i,j];
+            {  p = @b@@[i,j];
                if (ord(p)==0)
                {  if (deg(p)==0) { d[i,j]=p; }
                }
@@ -835,10 +835,10 @@ EXAMPLE: example rowred; shows an example
 
       }
    }
-   d = submat(b,1..m,1..n);
+   d = submat(@b@@,1..m,1..n);
    if (size(#))
    {
-      list L=d,submat(b,1..m,n+1..n+m);
+      list L=d,submat(@b@@,1..m,n+1..n+m);
       return(L);
    }
    return(d);
@@ -860,7 +860,7 @@ example
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc colred (matrix A,list #)
+proc colred (matrix @A@,list #)
 "USAGE:   colred(A[,e]);  A matrix, e any type
 RETURN:  - a matrix B, being the column reduced form of A, if colred is
            called with one argument.
@@ -882,11 +882,11 @@ SEE ALSO:  gauss_col
 EXAMPLE: example colred; shows an example
 "
 {
-   A = transpose(A);
+   @A@ = transpose(@A@);
    if (size(#))
-   { list L = rowred(A,1); return(transpose(L[1]),transpose(L[2]));}
+   { list L = rowred(@A@,1); return(transpose(L[1]),transpose(L[2]));}
    else
-   { return(transpose(rowred(A)));}
+   { return(transpose(rowred(@A@)));}
 }
 example
 { "EXAMPLE:"; echo = 2;
@@ -972,7 +972,7 @@ static proc findfirst (ideal i,int t)
 }
 //////////////////////////////////////////////////////////////////////////////
 
-proc rm_unitcol(matrix A)
+proc rm_unitcol(matrix @A@@)
 "USAGE:   rm_unitcol(A); A matrix (being row-reduced)
 RETURN:  matrix, obtained from A by deleting unit columns (having just one 1
          and else 0 as entries) and associated rows
@@ -981,14 +981,14 @@ EXAMPLE: example rm_unitcol; shows an example
 {
  int l,j;
  intvec v;
- for (j=1;j<=ncols(A);j++)
+ for (j=1;j<=ncols(@A@@);j++)
  {
-    if (gen(l+1)==module(A)[j]) {l=l+1;}
+    if (gen(l+1)==module(@A@@)[j]) {l=l+1;}
     else { v=v,j;}
  }
  if (size(v)>1)
     {  v = v[2..size(v)];
-       return(submat(A,l+1..nrows(A),v));
+       return(submat(@A@@,l+1..nrows(@A@@),v));
     }
  else
     { return(0);}
@@ -1007,7 +1007,7 @@ example
 }
 //////////////////////////////////////////////////////////////////////////////
 
-proc rm_unitrow (matrix A)
+proc rm_unitrow (matrix @A@@)
 "USAGE:   rm_unitrow(A); A matrix (being col-reduced)
 RETURN:  matrix, obtained from A by deleting unit rows (having just one 1
          and else 0 as entries) and associated columns
@@ -1016,15 +1016,15 @@ EXAMPLE: example rm_unitrow; shows an example
 {
  int l,j;
  intvec v;
- module M = transpose(A);
- for (j=1; j <= nrows(A); j++)
+ module M = transpose(@A@@);
+ for (j=1; j <= nrows(@A@@); j++)
  {
     if (gen(l+1) == M[j]) { l=l+1; }
     else { v=v,j; }
  }
  if (size(v) > 1)
     {  v = v[2..size(v)];
-       return(submat(A,v,l+1..ncols(A)));
+       return(submat(@A@@,v,l+1..ncols(@A@@)));
     }
  else
     { return(0);}
@@ -1053,15 +1053,15 @@ EXAMPLE: example headStand; shows an example
   int i,j;
   int n=nrows(M);
   int m=ncols(M);
-  matrix B[n][m];
+  matrix @B@@[n][m];
   for(i=1;i<=n;i++)
   {
      for(j=1;j<=m;j++)
      {
-        B[n-i+1,m-j+1]=M[i,j];
+        @B@@[n-i+1,m-j+1]=M[i,j];
      }
   }
-  return(B);
+  return(@B@@);
 }
 example
 { "EXAMPLE:"; echo = 2;

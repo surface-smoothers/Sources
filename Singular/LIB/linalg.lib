@@ -495,7 +495,7 @@ NOTE:    A must be independent of the variable v. The computation uses det.
 EXAMPLE: example charpoly; shows an example"
 {
   int n = nrows(A);
-  int z = nvars(basering);
+  int @z@@ = nvars(basering);
   int i,j;
   string v;
   poly X;
@@ -506,7 +506,7 @@ EXAMPLE: example charpoly; shows an example"
   }
   //---------------------- test for correct variable -------------------------
   if( size(#)==0 ){
-    #[1] = varstr(z);
+    #[1] = varstr(@z@@);
   }
   if( typeof(#[1]) == "string") { v = #[1]; }
   else
@@ -515,7 +515,7 @@ EXAMPLE: example charpoly; shows an example"
     return(X);
   }
   j=-1;
-  for(i=1; i<=z; i++)
+  for(i=1; i<=@z@@; i++)
   {
     if(varstr(i)==v){j=i;}
   }
@@ -1694,7 +1694,7 @@ EXAMPLE: example jordan; shows examples
   module K0;
   list K;
   ideal e;
-  intvec s,m;
+  intvec @s@,m;
 
   for(i=1;i<=ncols(e0);i++)
   {
@@ -1716,7 +1716,7 @@ EXAMPLE: example jordan; shows examples
       {
         k++;
         e[k]=e0[i];
-        s[k]=j-1;
+        @s@[k]=j-1;
         m[k]=2*size(K[j])-size(K[j-1])-size(K[j+1]);
       }
     }
@@ -1724,12 +1724,12 @@ EXAMPLE: example jordan; shows examples
     {
       k++;
       e[k]=e0[i];
-      s[k]=j-1;
+      @s@[k]=j-1;
       m[k]=size(K[j])-size(K[j-1]);
     }
   }
 
-  return(list(e,s,m));
+  return(list(e,@s@,m));
 }
 example
 { "EXAMPLE:"; echo=2;
