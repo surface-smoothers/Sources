@@ -5198,7 +5198,6 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
   int float_len=0;
   int float_len2=0;
   ring R = NULL;
-  idhdl h;
   //BOOLEAN ffChar=FALSE;
 
   /* ch -------------------------------------------------------*/
@@ -5527,61 +5526,6 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord)
   // set current ring
   //omFreeBin(R,  ip_sring_bin);
   //return tmp;
-  
-  /*
-  if (currRing!=NULL)
-  {
-     //Print("current ring is not NULL");
-  }
-  
-  int i,lvl;
-  for(lvl=0; lvl<100; lvl++)
-  {
-       if ((h=IDROOT->get("a",lvl) ) !=NULL)
-         Print(" a defined at level %d \n ", lvl);     
-  }
-    
-
-   
-  for(i=0;i<R->N;i++)
-  {
-     Print("// var nr %d:  %s\n",i,R->names[i]);
-    {
-      // if ((h=IDROOT->get(R->names[i]))!=NULL)
-      //    Warn("redefining %s **",R->names[i]);
-    // if ( strcmp(R->names[i],s)==0)
-    
-    }
-     
-  }
-  for(i=0;i<rPar(R);i++) // possibly empty loop
-  {
-     Print("// par nr %d: %s\n",  i,rParameter(R)[i]);
-    //if ( strcmp( rParameter(R)[i] , s )==0)
-    //{
-    //   Warn("redefining %s **",s);
-    //}
-  }
-  */
-      
-   /*     
- 
-    {
-      if (IDLEV(h)==lev)
-      {
-        if ((IDTYP(h) == t)||(t==DEF_CMD))
-        {
-          if (BVERBOSE(V_REDEFINE))
-            Warn("redefining `%s` **",s);
-          if (s==IDID(h)) IDID(h)=NULL;
-          killhdl2(h,&IDROOT,NULL);
-        }
-        else
-          goto errlabel;
-      }
-    }
-  }
-  */
   return R;
 
   // error case:
