@@ -501,14 +501,14 @@ EXAMPLE: example maxdeg1; shows examples
       {
          while ( @c@ != jet(@c@,i,v) ) { i = 2*(i+1); }
          int o = i-1;
-         int u = (@d@ != i)*((i div  2)-1);
+         int @u = (@d@ != i)*((i div  2)-1);
          int e = 1;
       }
    //----------------------- "quick search" for maxdeg ------------------------
       while ( ( @c@==jet(@c@,i,v) )*( @c@!=jet(@c@,i-1,v) ) == 0 )
       {
-         i = (o+e+u) div  2;
-         if ( @c@!=jet(@c@,i,v) ) { u = i+1; }
+         i = (o+e+@u) div  2;
+         if ( @c@!=jet(@c@,i,v) ) { @u = i+1; }
          else { o = i-1; }
       }
       return(i);
@@ -571,15 +571,15 @@ EXAMPLE: example mindeg; shows examples
       int @i@ = @d@;
       while ( jet(@c@,@i@) == 0 ) { @i@ = 2*(@i@+1); }
       int o = @i@-1;
-      int u = (@d@ != @i@)*((@i@ div  2)-1);
+      int @u = (@d@ != @i@)*((@i@ div  2)-1);
    //----------------------- "quick search" for mindeg ------------------------
-      while ( (jet(@c@,u)==0)*(jet(@c@,o)!=0) )
+      while ( (jet(@c@,@u)==0)*(jet(@c@,o)!=0) )
       {
-         @i@ = (o+u) div 2;
-         if (jet(@c@,@i@)==0) { u = @i@+1; }
+         @i@ = (o+@u) div 2;
+         if (jet(@c@,@i@)==0) { @u = @i@+1; }
          else { o = @i@-1; }
       }
-      if (jet(@c@,u)!=0) { return(u); }
+      if (jet(@c@,@u)!=0) { return(@u); }
       else { return(o+1); }
    }
 //------------------------------ main program ---------------------------------
@@ -629,21 +629,21 @@ EXAMPLE: example mindeg1; shows examples
          i = -@d@;
          while ( jet(@c@,i,v) != 0 ) { i = 2*(i-1); }
          int o = (@d@ != -i)*((i div  2)+2) - 1;
-         int u = i+1;
-         int e = -1; i=u;
+         int @u = i+1;
+         int e = -1; i=@u;
       }
       else                        //case: inded is nonnegative
       {
          while ( jet(@c@,i,v) == 0 ) { i = 2*(i+1); }
          int o = i-1;
-         int u = (@d@ != i)*((i div  2)-1);
-         int e = 1; i=u;
+         int @u = (@d@ != i)*((i div  2)-1);
+         int e = 1; i=@u;
       }
    //----------------------- "quick search" for mindeg ------------------------
       while ( (jet(@c@,i-1,v)==0)*(jet(@c@,i,v)!=0) == 0 )
       {
-         i = (o+e+u) div  2;
-         if (jet(@c@,i,v)==0) { u = i+1; }
+         i = (o+e+@u) div  2;
+         if (jet(@c@,i,v)==0) { @u = i+1; }
          else { o = i-1; }
       }
       return(i);

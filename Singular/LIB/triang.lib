@@ -416,7 +416,7 @@ RETURN:  Entweder ein Quasi-Inverses (r,s) von p modulo (T), d.h.
     if (deg(p) == 0) {return(list(1,p));}
 
     ideal T_bis_k,T1,T2;
-    poly g,a,b;
+    poly g,@a@,@b@@;
     list rq;
     list gab;
     int i;
@@ -453,10 +453,10 @@ RETURN:  Entweder ein Quasi-Inverses (r,s) von p modulo (T), d.h.
         return(list(T1,T2));
     }
 
-    // ansonsten gilt: a*T[k] + b*p = g mod (T_bis_k)
+    // ansonsten gilt: @a@*T[k] + @b@@*p = g mod (T_bis_k)
     g = gab[1];
-    a = gab[2];
-    b = gab[3];
+    @a@ = gab[2];
+    @b@@ = gab[3];
 
     if (degv(g,v) > 0)        // Entweder echten Teiler von T[k] gefunden,
     {                         // dann splitte T,
@@ -484,7 +484,7 @@ RETURN:  Entweder ein Quasi-Inverses (r,s) von p modulo (T), d.h.
     }
     else                      // ansonsten Quasi-Inverses gefunden.
     {
-        return(list(b,g));
+        return(list(@b@@,g));
     }
 }
 
@@ -587,7 +587,7 @@ NOTE:    Dies ist der erweiterte euklidische Algorithmus im Polynom-
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static proc normieren_oT (poly p, poly a, poly b, int v, ideal T)
+static proc normieren_oT (poly p, poly @a@, poly @b@@, int v, ideal T)
 "USAGE:   normieren_oT(p,a,b,v,T); p,a,b Polynome in var(v),
                                   T Dreiecksbasis.
 RETURN:  Entweder Triangulierung [T1,T2] von (T) oder
@@ -598,7 +598,7 @@ RETURN:  Entweder Triangulierung [T1,T2] von (T) oder
 "
 {
     poly lc = lcoef(p,v);
-    if (deg(lc) == 0) {return(list(p,a,b));} // lc im Grundring
+    if (deg(lc) == 0) {return(list(p,@a@,@b@@));} // lc im Grundring
     lc = cleardenom(lc);
 
     // invertieren_oT aufrufen, um lc+(T) zu invertieren.
@@ -607,9 +607,9 @@ RETURN:  Entweder Triangulierung [T1,T2] von (T) oder
 
     // ansonsten Polynom zurueck gekommen.
     p = reduce(inv[1] * p,T);
-    a = reduce(inv[1] * a,T);
-    b = reduce(inv[1] * b,T);
-    return(list(p,a,b));
+    @a@ = reduce(inv[1] * @a@,T);
+    @b@@ = reduce(inv[1] * @b@@,T);
+    return(list(p,@a@,@b@@));
 }
 
 

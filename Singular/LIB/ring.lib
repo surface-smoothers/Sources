@@ -1137,14 +1137,14 @@ example
    hasMixedOrdering();
 }
 
-proc changeordTo(def r,string o)
+proc changeordTo(def @r@,string o)
 "USAGE:  changeordTo(ring, string s);
 RETURN:  a ring with the oderinging changed to the (simple) ordering s
 EXAMPLE: example changeordTo(); shows an example
 "
 {
-  list rl=ringlist(r);
-  rl[3]=list(list("C",0),list(o,1:nvars(r)));
+  list rl=ringlist(@r@);
+  rl[3]=list(list("C",0),list(o,1:nvars(@r@)));
   def rr=ring(rl);
   return(rr);
 }

@@ -70,13 +70,13 @@ RETURN: int;  0 if p is constant. Otherwise, the index of the
 {
   int n = nvars(basering);
   int v = 0;
-  int d = deg(p);
+  int @d@ = deg(p);
   int d_loc;
   for(int i = 1; i <= n; i++) {
     d_loc = partialDegree(p, i);
-    if (d_loc >= 1 and d_loc <= d) {
+    if (d_loc >= 1 and d_loc <= @d@) {
       v = i;
-      d = d_loc;
+      @d@ = d_loc;
     }
   }
   return(v);
@@ -89,19 +89,19 @@ RETURN: poly:  a proper irreducible simple factor of p of smallest
 "
 {
   list p_facts = factorize(p);
-  int s = size(p_facts[1]);
-  int d = deg(p)+1;
+  int @s@ = size(p_facts[1]);
+  int @d@ = deg(p)+1;
   poly q = 0;
   poly f;
   int e;
-  for(int i = 1; i <= s; i++)
+  for(int i = 1; i <= @s@; i++)
   {
     f = p_facts[1][i];
     e = deg(f);
-    if (e >= 1 and e < d and p_facts[2][i] == 1)
+    if (e >= 1 and e < @d@ and p_facts[2][i] == 1)
     {
       q = f / leadcoef(f);
-      d = e;
+      @d@ = e;
     }
   }
   return(q);
@@ -114,12 +114,12 @@ RETURN: poly:  a proper irreducible factor of p of smallest degree.
 "
 {
   list p_facts = factorize(p);
-  int s = size(p_facts[1]);
+  int @s@ = size(p_facts[1]);
   int d = deg(p)+1;
   poly q = 0;
   poly f;
   int e;
-  for(int i = 1; i <= s; i++)
+  for(int i = 1; i <= @s@; i++)
   {
     f = p_facts[1][i];
     e = deg(f);
@@ -281,10 +281,10 @@ RETURN:  list L of two polynomials: q=L[1] is an irreducible polynomial of
   int dblevel = printlevel - voice + 2;
   dbprint(dblevel,"Entering absfact.lib::absFactorizeIrreducible with ",p);
   def MPz = basering;
-  int d = deg(p);
+  int @d@ = deg(p);
   int n = nvars(MPz) - 1;
 
-  if (d < 1)
+  if (@d@ < 1)
   {
     return(list(var(n+1), p));
   }
@@ -312,13 +312,13 @@ RETURN:  list L of two polynomials: q=L[1] is an irreducible polynomial of
   poly f = smallestProperSimpleFactor(p_loc);
   int degf = deg(f);
 
-  if (degf == d)
+  if (degf == @d@)
   {
     setring(MPz);
     return(list(var(n+1), p));
   }
 
-  if (degf * r == d)
+  if (degf * r == @d@)
   {
     setring(MPz);
     return(list(q, imap(MPq, f)));
@@ -337,7 +337,7 @@ RETURN:  list L of two polynomials: q=L[1] is an irreducible polynomial of
     g[i] = subst(e, var(n+1), 0);
     e = diff(e, var(n+1));
   }
-  return(RothsteinTrager(g, p, m, d div degf));
+  return(RothsteinTrager(g, p, m, @d@ div degf));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -476,13 +476,13 @@ EXAMPLE: example absFactorize; shows an example
     int di=deg(p);
   }
   list rat_facts = factorize(p);
-  int s = size(rat_facts[1]);
+  int @s@ = size(rat_facts[1]);
   list tmpf; // absolute factors
   intvec tmpm; // respective multiplicities
   tmpf[1] = list(var(n+1), leadcoef(imap(MP,p)));
   tmpm[1] = 1;
   poly tmp;
-  for(i = 2; i <= s; i++)
+  for(i = 2; i <= @s@; i++)
   {
     tmp = rat_facts[1][i];
     tmp = tmp / leadcoef(tmp);

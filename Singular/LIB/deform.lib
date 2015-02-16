@@ -735,10 +735,10 @@ example
   module kbaseM = [1],[x],[xy],[y],[0,1],[0,y],[0,y2];
   poly f=xy;
   module N = [AB,BBy],[A3xy+x4,AB*(1+y2)];
-  matrix A = lift_rel_kb(N,M,kbaseM,f);
-  print(A);
+  matrix C = lift_rel_kb(N,M,kbaseM,f);
+  print(C);
   "TEST:";
-  print(matrix(kbaseM)*A-matrix(reduce(N,std(M))));
+  print(matrix(kbaseM)*A@-matrix(reduce(N,std(M))));
 }
 ///////////////////////////////////////////////////////////////////////////////
 proc lift_kbase (def N,def M)
@@ -908,13 +908,13 @@ Sub proc: return relative weight string of columns of A with respect
   int @r = nrows(A);
   int @c = ncols(A);
   A = concat(matrix(ideal(Mo),@r,1),A);
-  intmat a = find_ord(A,w_vec);
+  intmat @a@ = find_ord(A,w_vec);
   intmat b[@r][@c];
   for (l=1;l<=@c;l=l+1)
   {
     for (k=1;k<=@r;k=k+1)
     {  if (A[k,l+1]!=0)
-       { b[k,l] = a[k,l+1]-a[k,1];}
+       { b[k,l] = @a@[k,l+1]-@a@[k,1];}
     }
     tv = 0;
     for (k=1;k<=@r;k=k+1)

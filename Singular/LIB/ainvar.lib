@@ -79,8 +79,8 @@ example
    poly f=2xz-y2;
    matrix m[6][1] =x,y,0,u,v;
    derivate(m,f);
-   vector v = [2xz-y2,u6-3];
-   derivate(m,v);
+   vector vv = [2xz-y2,u6-3];
+   derivate(m,vv);
    derivate(m,ideal(2xz-y2,u6-3));
 }
 

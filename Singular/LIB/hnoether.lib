@@ -1438,7 +1438,7 @@ EXAMPLE: example multiplicities;  shows an example
 "
 {
  matrix m=#[1];
- intvec v=#[2];
+ intvec @v@=#[2];
  int switch=#[3];
  list ergebnis;
  if (switch==-1) {
@@ -1457,7 +1457,7 @@ EXAMPLE: example multiplicities;  shows an example
       ordnung[zeile-1]=k*ordnung[zeile];
    }
    else {
-      ordnung[zeile-1]=v[zeile]*ordnung[zeile]+ordnung[zeile+1];
+      ordnung[zeile-1]=@v@[zeile]*ordnung[zeile]+ordnung[zeile+1];
  }}
  return(ordnung);
 }
@@ -1681,7 +1681,7 @@ EXAMPLE: example multsequence;  shows an example
  int k,i,j;
  //----------------- Multiplizitaetensequenz eines Zweiges --------------------
  if (typeof(#[1])=="matrix") {
-  intvec v=#[2];
+  intvec @v@@=#[2];
   list ergebnis;
   if (#[3]==-1) {
     "An error has occurred in develop, so there is no HNE.";
@@ -1690,8 +1690,8 @@ EXAMPLE: example multsequence;  shows an example
   intvec multips,multseq;
   multips=multiplicities(#);
   k=1;
-  for (i=1; i<size(v); i++) {
-    for (j=1; j<=v[i]; j++) {
+  for (i=1; i<size(@v@@); i++) {
+    for (j=1; j<=@v@@[i]; j++) {
       multseq[k]=multips[i];
       k++;
   }}

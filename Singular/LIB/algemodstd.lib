@@ -332,13 +332,13 @@ static proc LiftPolyCRT(ideal I)
      * compute std for each factor and combine this result
      * to modulo minpoly via CRT for poly over char p>0
      */
-    int u,in,j;
+    int @u@,in,j;
     list LL,Lk;
     ideal J,K,II;
     poly f;
-    u=ncols(I);
-    J=I[1..u-1];
-    f=I[u];
+    @u@=ncols(I);
+    J=I[1..@u@-1];
+    f=I[@u@];
     K=factorize(f,1);
     in=ncols(K);
     for(j=1;j<=in;j++)

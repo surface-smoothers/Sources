@@ -317,10 +317,11 @@ static proc branchlocus(ideal id)
   int n = nvars(A);
   list l = equidim(id);
   int k = size(l);
+  int j;
   ideal LastTwo = var(n-1),var(n);
   ideal lowdim = 1;           //the components of id with dimension smaller 2
   if(k>1){
-    for(int j=1;j<k;j++){
+    for(j=1;j<k;j++){
       lowdim = intersect(lowdim,radical(l[j]));
     }
   }
@@ -329,26 +330,30 @@ static proc branchlocus(ideal id)
   ideal I = radical(l[size(l)]);
   poly product=1;
   kill l;
+  intvec w;
+  def R;
+  int k;
+  list @ringl@;
   for(int i=1; i < n-1; i++){ //elimination of all variables exept var(i),var(n-1),var(n)
-    intvec v;
-    for(int j=1; j < n-1; j++){
+    intvec @v@;
+    for(j=1; j < n-1; j++){
       if(j<>i){
-        v[j]=1;
+        @v@[j]=1;
       }
       else{
-        v[j]=0;
+        @v@[j]=0;
       }
     }
-    v[size(v)+1]=0;
-    v[size(v)+1]=0;
-    list ringl = ringlist(A);
+    @v@[size(@v@)+1]=0;
+    @v@[size(@v@)+1]=0;
+    list @ringl@ = ringlist(A);
     list l;
     l[1] = "a";
-    l[2] = v;
-    list ll = insert(ringl[3],l);
-    ringl[3]=ll;
+    l[2] = @v@;
+    list ll = insert(@ringl@[3],l);
+    @ringl@[3]=ll;
     kill l,ll;
-    def R = ring(ringl); //now x_j > x_i > x_n-1 > x_n forall j <> i,n-1,n
+    R = ring(@ringl@); //now x_j > x_i > x_n-1 > x_n forall j <> i,n-1,n
     setring R;
     ideal J = groebner(fetch(A,I));//this eliminates the variables
     setring A;
@@ -360,10 +365,10 @@ static proc branchlocus(ideal id)
     int index = 1;
     if(attrib(J,"isPrincipal")==0){
       setring R;
-      for(int j = 1;j<=size(J);j++){//determines the monic polynomial in var(i) with coefficents in C2
-        intvec w = leadexp(J[j]);
+      for(int @j = 1;@j<=size(J);@j++){//determines the monic polynomial in var(i) with coefficents in C2
+        w = leadexp(J[@j]);
         attrib(w,"isMonic",1);
-        for(int k = 1;k<=size(w);k++){
+        for( k = 1;k<=size(w);k++){
           if(w[k] <> 0 && k <> i){
             attrib(w,"isMonic",0);
             break;
@@ -371,17 +376,17 @@ static proc branchlocus(ideal id)
         }
         //kill k;
         if(attrib(w,"isMonic")==1){
-          index = j;
+          index = @j;
           break;
         }
-        kill w;
+        //kill w;
       }
-      kill j;
+      kill @j;
       setring A;
     }
     product = product*resultant(J[index],diff(J[index],var(i)),var(i));
     //Product of the discriminants, which lies in C2
-    kill index,J,v;
+    kill index,J,@v@;
   }
   ring C2 = 0,(var(n-1),var(n)),dp;
   setring C2;

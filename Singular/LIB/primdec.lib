@@ -285,11 +285,11 @@ static proc testFactor(list act,poly p)
   ASSUME(1, hasGlobalOrdering(basering) ) ;
   poly keep=p;
 
-  int i;
+  int @i@;
   poly q=act[1][1]^act[2][1];
-  for(i=2;i<=size(act[1]);i++)
+  for(@i@=2;@i@<=size(act[1]);@i@++)
   {
-    q=q*act[1][i]^act[2][i];
+    q=q*act[1][@i@]^act[2][@i@];
   }
   q=1/leadcoef(q)*q;
   p=1/leadcoef(p)*p;
@@ -424,17 +424,17 @@ static proc stdIdealsEqual( ideal k1, ideal k2)
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-proc primaryTest (ideal i, poly p)
+proc primaryTest (ideal @I@, poly p)
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
-  if(i[1]==1){return(ideal(1));}
+  if(@I@[1]==1){return(ideal(1));}
   int m=1;
   int n=nvars(basering);
-  int e,@f@;
+  int @e@,@f@;
   poly @t@;
-  ideal h;
+  ideal @h@;
   list act;
 
   ideal prm=p;
@@ -445,28 +445,28 @@ proc primaryTest (ideal i, poly p)
     n--;
     m++;
 
-    //search for i[m] which has a power of var(n) as leading term
+    //search for @I@[m] which has a power of var(n) as leading term
     if (n==1)
     {
-      m=size(i);
+      m=size(@I@);
     }
     else
     {
-      while (lead(i[m])/var(n-1)==0)
+      while (lead(@I@[m])/var(n-1)==0)
       {
         m++;
       }
       m--;
     }
-    //check whether i[m] =(c*var(n)+h)^e modulo prm for some
-    //h in K[var(n+1),...,var(nvars(basering))], c in K
-    //if not (0) is returned, else var(n)+h is added to prm
+    //check whether @I@[m] =(c*var(n)+@h@)^@e@ modulo prm for some
+    //@h@ in K[var(n+1),...,var(nvars(basering))], c in K
+    //if not (0) is returned, else var(n)+@h@ is added to prm
 
-    e=deg(lead(i[m]));
+    @e@=deg(lead(@I@[m]));
     if(char(basering)!=0)
     {
       @f@=1;
-      if(e mod char(basering)==0)
+      if(@e@ mod char(basering)==0)
       {
         if ( voice >=16 )
         {
@@ -475,15 +475,15 @@ proc primaryTest (ideal i, poly p)
           "// This may result in an infinte loop";
           "// loop in primaryTest, voice:",voice;"";
         }
-        while(e mod char(basering)==0)
+        while(@e@ mod char(basering)==0)
         {
           @f@=@f@*char(basering);
-          e=e div char(basering);
+          @e@=@e@ div char(basering);
         }
       }
-      @t@=leadcoef(i[m])*e*var(n)^@f@+(i[m]-lead(i[m]))/var(n)^((e-1)*@f@);
-      i[m]=poly(e)^e*leadcoef(i[m])^(e-1)*i[m];
-      if (reduce(i[m]-@t@^e,prm,1) !=0)
+      @t@=leadcoef(@I@[m])*@e@*var(n)^@f@+(@I@[m]-lead(@I@[m]))/var(n)^((@e@-1)*@f@);
+      @I@[m]=poly(@e@)^@e@*leadcoef(@I@[m])^(@e@-1)*@I@[m];
+      if (reduce(@I@[m]-@t@^@e@,prm,1) !=0)
       {
         return(ideal(0));
       }
@@ -503,16 +503,16 @@ proc primaryTest (ideal i, poly p)
     }
     else
     {
-      @t@=leadcoef(i[m])*e*var(n)+(i[m]-lead(i[m]))/var(n)^(e-1);
-      i[m]=poly(e)^e*leadcoef(i[m])^(e-1)*i[m];
-      if (reduce(i[m]-@t@^e,prm,1) !=0)
+      @t@=leadcoef(@I@[m])*@e@*var(n)+(@I@[m]-lead(@I@[m]))/var(n)^(@e@-1);
+      @I@[m]=poly(@e@)^@e@*leadcoef(@I@[m])^(@e@-1)*@I@[m];
+      if (reduce(@I@[m]-@t@^@e@,prm,1) !=0)
       {
         return(ideal(0));
       }
     }
 
-    h=interred(@t@);
-    @t@=h[1];
+    @h@=interred(@t@);
+    @t@=@h@[1];
 
     prm = prm,@t@;
     attrib(prm,"isSB",1);
@@ -525,16 +525,16 @@ proc gcdTest(ideal act)
 {
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
-  int i,@j@;
+  int @i@,@j@;
   if(size(act)<=1)
   {
     return(0);
   }
-  for (i=1;i<size(act);i++)
+  for (@i@=1;@i@<size(act);@i@++)
   {
-    for(@j@=i+1;@j@<=size(act);@j@++)
+    for(@j@=@i@+1;@j@<=size(act);@j@++)
     {
-      if(deg(std(ideal(act[i],act[@j@]))[1])>0)
+      if(deg(std(ideal(act[@i@],act[@j@]))[1])>0)
       {
         return(0);
       }
@@ -549,95 +549,95 @@ static proc splitPrimary(list l,ideal ser,int @wr,list sact)
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
-  int i,@j@,k,s,r,w;
+  int @i@,@j@,k,s,@r@,@w@;
   list keepresult,act,keepprime;
   poly @f;
   int sl=size(l);
-  for(i=sl div 2;i>=1;i--)
+  for(@i@=sl div 2;@i@>=1;@i@--)
   {
-    if(sact[2][i]>1)
+    if(sact[2][@i@]>1)
     {
-      keepprime[i]=l[2*i-1]+ideal(sact[1][i]);
+      keepprime[@i@]=l[2*@i@-1]+ideal(sact[1][@i@]);
     }
     else
     {
-      keepprime[i]=l[2*i-1];
+      keepprime[@i@]=l[2*@i@-1];
     }
   }
-  i=0;
-  while(i<size(l) div 2)
+  @i@=0;
+  while(@i@<size(l) div 2)
   {
-    i++;
-    if((size(ser)>0)&&(size(reduce(ser,l[2*i-1],1))==0))
+    @i@++;
+    if((size(ser)>0)&&(size(reduce(ser,l[2*@i@-1],1))==0))
     {
-      l[2*i-1]=ideal(1);
-      l[2*i]=ideal(1);
+      l[2*@i@-1]=ideal(1);
+      l[2*@i@]=ideal(1);
       continue;
     }
 
-    if(size(l[2*i])==0)
+    if(size(l[2*@i@])==0)
     {
-      if(homog(l[2*i-1])==1)
+      if(homog(l[2*@i@-1])==1)
       {
-        l[2*i]=maxideal(1);
+        l[2*@i@]=maxideal(1);
         continue;
       }
       @j@=0;
 /*
-      if(i<=sl div 2)
+      if(@i@<=sl div 2)
       {
         @j@=1;
       }
 */
-      while(@j@<size(l[2*i-1]))
+      while(@j@<size(l[2*@i@-1]))
       {
         @j@++;
-        act=factor(l[2*i-1][@j@]);
-        r=size(act[1]);
-        attrib(l[2*i-1],"isSB",1);
-        if((r==1)&&(vdim(l[2*i-1])==deg(l[2*i-1][@j@])))
+        act=factor(l[2*@i@-1][@j@]);
+        @r@=size(act[1]);
+        attrib(l[2*@i@-1],"isSB",1);
+        if((@r@==1)&&(vdim(l[2*@i@-1])==deg(l[2*@i@-1][@j@])))
         {
-          l[2*i]=std(l[2*i-1],act[1][1]);
+          l[2*@i@]=std(l[2*@i@-1],act[1][1]);
           break;
         }
-        if((r==1)&&(act[2][1]>1))
+        if((@r@==1)&&(act[2][1]>1))
         {
-          keepprime[i]=interred(keepprime[i]+ideal(act[1][1]));
-          if(homog(keepprime[i])==1)
+          keepprime[@i@]=interred(keepprime[@i@]+ideal(act[1][1]));
+          if(homog(keepprime[@i@])==1)
           {
-            l[2*i]=maxideal(1);
+            l[2*@i@]=maxideal(1);
             break;
           }
         }
         if(gcdTest(act[1])==1)
         {
-          for(k=2;k<=r;k++)
+          for(k=2;k<=@r@;k++)
           {
-            keepprime[size(l) div 2+k-1]=interred(keepprime[i]+ideal(act[1][k]));
+            keepprime[size(l) div 2+k-1]=interred(keepprime[@i@]+ideal(act[1][k]));
           }
-          keepprime[i]=interred(keepprime[i]+ideal(act[1][1]));
-          for(k=1;k<=r;k++)
+          keepprime[@i@]=interred(keepprime[@i@]+ideal(act[1][1]));
+          for(k=1;k<=@r@;k++)
           {
             if(@wr==0)
             {
-              keepresult[k]=std(l[2*i-1],act[1][k]^act[2][k]);
+              keepresult[k]=std(l[2*@i@-1],act[1][k]^act[2][k]);
             }
             else
             {
-              keepresult[k]=std(l[2*i-1],act[1][k]);
+              keepresult[k]=std(l[2*@i@-1],act[1][k]);
             }
           }
-          l[2*i-1]=keepresult[1];
+          l[2*@i@-1]=keepresult[1];
           if(vdim(keepresult[1])==deg(act[1][1]))
           {
-            l[2*i]=keepresult[1];
+            l[2*@i@]=keepresult[1];
           }
-          if((homog(keepresult[1])==1)||(homog(keepprime[i])==1))
+          if((homog(keepresult[1])==1)||(homog(keepprime[@i@])==1))
           {
-            l[2*i]=maxideal(1);
+            l[2*@i@]=maxideal(1);
           }
           s=size(l)-2;
-          for(k=2;k<=r;k++)
+          for(k=2;k<=@r@;k++)
           {
             l[s+2*k-1]=keepresult[k];
             keepprime[s div 2+k]=interred(keepresult[k]+ideal(act[1][k]));
@@ -654,36 +654,36 @@ static proc splitPrimary(list l,ideal ser,int @wr,list sact)
               l[s+2*k]=maxideal(1);
             }
           }
-          i--;
+          @i@--;
           break;
         }
-        if(r>=2)
+        if(@r@>=2)
         {
           s=size(l);
           @f=act[1][1];
-          act=sat1(l[2*i-1],act[1][1]);
+          act=sat1(l[2*@i@-1],act[1][1]);
           if(deg(act[1][1])>0)
           {
             l[s+2]=ideal(0);
-            l[s+1]=std(l[2*i-1],act[2]);
+            l[s+1]=std(l[2*@i@-1],act[2]);
             if(homog(l[s+1])==1)
             {
               l[s+2]=maxideal(1);
             }
             //else { l[s+2]=ideal(0); }
-            keepprime[s div 2+1]=interred(keepprime[i]+ideal(@f));
+            keepprime[s div 2+1]=interred(keepprime[@i@]+ideal(@f));
             if(homog(keepprime[s div 2+1])==1)
             {
               l[s+2]=maxideal(1);
             }
-            keepprime[i]=act[1];
-            l[2*i-1]=act[1];
-            attrib(l[2*i-1],"isSB",1);
-            if(homog(l[2*i-1])==1)
+            keepprime[@i@]=act[1];
+            l[2*@i@-1]=act[1];
+            attrib(l[2*@i@-1],"isSB",1);
+            if(homog(l[2*@i@-1])==1)
             {
-              l[2*i]=maxideal(1);
+              l[2*@i@]=maxideal(1);
             }
-            i--;
+            @i@--;
             break;
           }
         }
@@ -694,30 +694,30 @@ static proc splitPrimary(list l,ideal ser,int @wr,list sact)
   {
     return(l);
   }
-  for(i=1;i<=size(l) div 2;i++)
+  for(@i@=1;@i@<=size(l) div 2;@i@++)
   {
-    attrib(l[2*i-1],"isSB",1);
+    attrib(l[2*@i@-1],"isSB",1);
 
-    if((size(ser)>0)&&(size(reduce(ser,l[2*i-1],1))==0)&&(deg(l[2*i-1][1])>0))
+    if((size(ser)>0)&&(size(reduce(ser,l[2*@i@-1],1))==0)&&(deg(l[2*@i@-1][1])>0))
     {
       "Achtung in split";
 
-      l[2*i-1]=ideal(1);
-      l[2*i]=ideal(1);
+      l[2*@i@-1]=ideal(1);
+      l[2*@i@]=ideal(1);
     }
-    if((size(l[2*i])==0)&&(specialIdealsEqual(keepprime[i],l[2*i-1])!=1))
+    if((size(l[2*@i@])==0)&&(specialIdealsEqual(keepprime[@i@],l[2*@i@-1])!=1))
     {
-      keepprime[i]=std(keepprime[i]);
-      if(homog(keepprime[i])==1)
+      keepprime[@i@]=std(keepprime[@i@]);
+      if(homog(keepprime[@i@])==1)
       {
-        l[2*i]=maxideal(1);
+        l[2*@i@]=maxideal(1);
       }
       else
       {
-        act=zero_decomp(keepprime[i],ideal(0),@wr,1);
+        act=zero_decomp(keepprime[@i@],ideal(0),@wr,1);
         if(size(act)==2)
         {
-          l[2*i]=act[2];
+          l[2*@i@]=act[2];
         }
       }
     }
@@ -1685,10 +1685,10 @@ EXAMPLE: example clearSB; shows an example
  ASSUME(1, not isQuotientRing(basering) ) ;
  ASSUME(1, hasGlobalOrdering(basering) ) ;
  int k,@j@;
- intvec m,n,v,w;
+ intvec m,n,@v@,@w@;
  int @c@=size(i);
- w=leadexp(0);
- v[size(i)]=0;
+ @w@=leadexp(0);
+ @v@[size(i)]=0;
 
  @j@=0;
  while(@j@<@c@-1)
@@ -1700,24 +1700,24 @@ EXAMPLE: example clearSB; shows an example
       for(k=@j@+1;k<=@c@;k++)
       {
         n=leadexp(i[k]);
-        if(n!=w)
+        if(n!=@w@)
         {
            if(((m==n)&&(#[@j@]>#[k]))||((teilt(n,m))&&(n!=m)))
            {
              i[@j@]=0;
-             v[@j@]=1;
+             @v@[@j@]=1;
              break;
            }
            if(((m==n)&&(#[@j@]<=#[k]))||((teilt(m,n))&&(n!=m)))
            {
              i[k]=0;
-             v[k]=1;
+             @v@[k]=1;
            }
         }
       }
     }
   }
-  return(v);
+  return(@v@);
 }
 
 static proc teilt(intvec va, intvec vb)
@@ -1743,16 +1743,16 @@ EXAMPLE: example independentSet; shows an example
   int n,k,di;
   list resu,hilf;
   string var1,var2;
-  list v=indepSet(@j@,1);
+  list @v@=indepSet(@j@,1);
 
-  for(n=1;n<=size(v);n++)
+  for(n=1;n<=size(@v@);n++)
   {
     di=0;
     var1="";
     var2="";
-    for(k=1;k<=size(v[n]);k++)
+    for(k=1;k<=size(@v@[n]);k++)
     {
-      if(v[n][k]!=0)
+      if(@v@[n][k]!=0)
       {
         di++;
         var2=var2+"var("+string(k)+"),";
@@ -2245,7 +2245,7 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
 
   list q = simplifyIdeal(i);
   list re = maxideal(1);
-  int @a@, k;
+  int @a@, @k;
   intvec op = option(get);
   map phi = P,q[2];
 
@@ -2261,9 +2261,9 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
   {
     for(@j@=1;@j@<=nvars(basering);@j@++)
     {
-      if (q[2][@j@]!=var(@j@)) {k=1;break;}
+      if (q[2][@j@]!=var(@j@)) {@k=1;break;}
     }
-    if(k)
+    if(@k)
     {
       i=groebner(q[1]);
     }
@@ -2309,23 +2309,23 @@ static proc minAssPrimes_i(int patchPrimaryDecomposition, ideal i, list #)
 // Aenderung
     list pr = triangMH(J,2);
     list qr, re;
-    for(k = 1; k <= size(pr); k++)
+    for(@k = 1; @k <= size(pr); @k++)
     {
-      if(primT(pr[k])&&(0))
+      if(primT(pr[@k])&&(0))
       {
-        re[size(re) + 1] = pr[k];
+        re[size(re) + 1] = pr[@k];
       }
       else
       {
-        attrib(pr[k], "isSB", 1);
+        attrib(pr[@k], "isSB", 1);
         // Lines changed
         if (algorithm == "GTZ")
         {
-          qr = decomp_i(patchPrimaryDecomposition,pr[k], 2);
+          qr = decomp_i(patchPrimaryDecomposition,pr[@k], 2);
         }
         else
         {
-          qr = minAssSL(pr[k]);
+          qr = minAssSL(pr[@k]);
         }
         for(@j@ = 1; @j@ <= size(qr) div 2; @j@++)
         {
@@ -2543,7 +2543,7 @@ EXAMPLE:example equidim; shows an example
   list eq;
   intvec @w@;
   int n,m;
-  int g=size(i);
+  int @g=size(i);
   int ia=attrib(i,"isSB");
   int homo=homog(i);
   if(size(#)!=0)
@@ -2584,7 +2584,7 @@ EXAMPLE:example equidim; shows an example
   }
 
   if ((dim(@j@)==-1)||(size(@j@)==0)||(nvars(basering)==1)
-                  ||(dim(@j@)==0)||(dim(@j@)+g==nvars(basering)))
+                  ||(dim(@j@)==0)||(dim(@j@)+@g==nvars(basering)))
   {
     setring P;
     eq[1]=i;
@@ -2652,7 +2652,7 @@ EXAMPLE: example equidimMax; shows an example
   ideal eq;
   intvec @w@;
   int n;
-  int g=size(i);
+  int @g=size(i);
   int ia=attrib(i,"isSB");
   int homo=homog(i);
 
@@ -2690,7 +2690,7 @@ EXAMPLE: example equidimMax; shows an example
      intvec hil=hilb(@j@,1,@w@);
   }
   if ((dim(@j@)==-1)||(size(@j@)==0)||(nvars(basering)==1)
-                  ||(dim(@j@)==0)||(dim(@j@)+g==nvars(basering)))
+                  ||(dim(@j@)==0)||(dim(@j@)+@g==nvars(basering)))
   {
     setring P;
     return(i);
@@ -4143,10 +4143,10 @@ EXAMPLE: example zeroRad; shows an example"
    int m=npars(R);
    int n=nvars(R);
    int p=char(R);
-   int d=vdim(I);
+   int @d@=vdim(I);
    int i,k;
    list l;
-   if(((p==0)||(p>d))&&(d==deg(I[1])))
+   if(((p==0)||(p>@d@))&&(@d@==deg(I[1])))
    {
      intvec e=leadexp(I[1]);
      for(i=1;i<=nvars(basering);i++)
@@ -4425,7 +4425,7 @@ RETURN:  ideal, the annihilator of Ext^n(R/I,R) with given
          resolution re of I
 "
 {
-
+  matrix g;
   if(n < 0)
   {
     return(ideal(1));
@@ -4437,11 +4437,11 @@ RETURN:  ideal, the annihilator of Ext^n(R/I,R) with given
     matrix @f@ = transpose(re[n+1]);
     if(n == 0)
     {
-      matrix g = matrix(0,1,ncols(@f@));
+      g = matrix(0,1,ncols(@f@));
     }
     else
     {
-      matrix g = transpose(re[n]);
+      g = transpose(re[n]);
     }
     module k = syz(@f@);
     return(quotient1(g,k));
@@ -4494,32 +4494,32 @@ static proc simplifyIdeal(ideal i)
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, hasGlobalOrdering(basering) ) ;
 
-  def r=basering;
+  def @R@=basering;
 
   ideal iwork=i;
   ideal imap2=maxideal(1);
 
-  int @j@,k;
+  int @j@,@k;
   map phi;
   poly p;
   ideal imap1=maxideal(1);
   // first try: very simple substitutions
-  intvec tested=0:nvars(r);
-  for(@j@=1;@j@<=nvars(r);@j@++)
+  intvec tested=0:nvars(@R@);
+  for(@j@=1;@j@<=nvars(@R@);@j@++)
   {
-    for(k=1;k<=ncols(i);k++)
+    for(@k=1;@k<=ncols(i);@k++)
     {
-      if(deg(iwork[k]/var(@j@))==0)
+      if(deg(iwork[@k]/var(@j@))==0)
       {
-        p=-1/leadcoef(iwork[k]/var(@j@))*iwork[k];
+        p=-1/leadcoef(iwork[@k]/var(@j@))*iwork[@k];
         if(size(p)<=2)
         {
           tested[@j@]=1;
           imap1[@j@]=p+2*var(@j@);
-          phi=r,imap1;
+          phi=@R@,imap1;
           iwork=phi(iwork);
           iwork=subst(iwork,var(@j@),0);
-          iwork[k]=var(@j@);
+          iwork[@k]=var(@j@);
           imap1=maxideal(1);
           imap2[@j@]=-p;
           break;
@@ -4528,20 +4528,20 @@ static proc simplifyIdeal(ideal i)
     }
   }
   // second try: substitutions not so simple
-  for(@j@=1;@j@<=nvars(r);@j@++)
+  for(@j@=1;@j@<=nvars(@R@);@j@++)
   {
     if (tested[@j@]==0)
     {
-      for(k=1;k<=ncols(i);k++)
+      for(@k=1;@k<=ncols(i);@k++)
       {
-        if(deg(iwork[k]/var(@j@))==0)
+        if(deg(iwork[@k]/var(@j@))==0)
         {
-          p=-1/leadcoef(iwork[k]/var(@j@))*iwork[k];
+          p=-1/leadcoef(iwork[@k]/var(@j@))*iwork[@k];
           imap1[@j@]=p+2*var(@j@);
-          phi=r,imap1;
+          phi=@R@,imap1;
           iwork=phi(iwork);
           iwork=subst(iwork,var(@j@),0);
-          iwork[k]=var(@j@);
+          iwork[@k]=var(@j@);
           imap1=maxideal(1);
           imap2[@j@]=-p;
           break;
@@ -4645,7 +4645,7 @@ static proc min_ass_prim_charsets0_i (int patchPrimaryDecomposition, ideal PS)
   {
     return (min_ass_prim_charsets1_i(patchPrimaryDecomposition,PS));
   }
-  int i,@j@,k;
+  int i,@j@,@k;
   list PSI;
   list PHI;  // the ideals given by the characteristic series
   for(i=nrows(m);i>=1; i--)
@@ -4668,8 +4668,8 @@ static proc min_ass_prim_charsets0_i (int patchPrimaryDecomposition, ideal PS)
     {
       II=0;
       sizeII=0;
-      k=0;
-      while(k<=sizeII)                  // successive saturation
+      @k=0;
+      while(@k<=sizeII)                  // successive saturation
       {
         op=option(get);
         option(returnSB);
@@ -4678,9 +4678,9 @@ static proc min_ass_prim_charsets0_i (int patchPrimaryDecomposition, ideal PS)
         sizeII=size(II);
         if(sizeII==sizeJS)
         {
-          for(k=1;k<=sizeII;k++)
+          for(@k=1;@k<=sizeII;@k++)
           {
-            if(leadexp(II[k])!=leadexp(JS[k])) break;
+            if(leadexp(II[@k])!=leadexp(JS[@k])) break;
           }
         }
         JS=II;
@@ -4761,12 +4761,12 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
   intvec op;
   def oldring=basering;
   string n=system("neworder",PS);
-  execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
+  execute("ring @R@=("+charstr(oldring)+"),("+n+"),dp;");
   ideal PS=imap(oldring,PS);
   matrix m=char_series(PS);  // We compute an irreducible
                              // characteristic series
                              // this series may be empty (1x1: 1)
-  int i,@j@,k,cnt;
+  int i,@j@,@k,cnt;
   while ((cnt<nvars(oldring))
   && (nrows(m)==1)
   && (ncols(m)==1)
@@ -4775,8 +4775,8 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
     cnt++;
     n=string(var(nvars(oldring)));
     for(i=1;i<nvars(oldring);i++) { n=n+","+string(var(i)); }
-    kill r;
-    execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
+    kill @R@;
+    execute("ring @R@=("+charstr(oldring)+"),("+n+"),dp;");
     ideal PS=imap(oldring,PS);
     matrix m=char_series(PS);
   }
@@ -4799,9 +4799,9 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
     ITPHI[i]=I;
   }
   setring oldring;
-  matrix m=imap(r,m);
-  list PHI=imap(r,PHI);
-  list ITPHI=imap(r,ITPHI);
+  matrix m=imap(@R@,m);
+  list PHI=imap(@R@,PHI);
+  list ITPHI=imap(@R@,ITPHI);
   // We compute the radical of each ideal in PHI
   ideal I,JS,II;
   int sizeJS, sizeII;
@@ -4818,8 +4818,8 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
     {
       II=0;
       sizeII=0;
-      k=0;
-      while(k<=sizeII)                  // successive iteration
+      @k=0;
+      while(@k<=sizeII)                  // successive iteration
       {
         op=option(get);
         option(returnSB);
@@ -4830,9 +4830,9 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
         sizeII=size(II);
         if(sizeII==sizeJS)
         {
-          for(k=1;k<=sizeII;k++)
+          for(@k=1;@k<=sizeII;@k++)
           {
-            if(leadexp(II[k])!=leadexp(JS[k])) break;
+            if(leadexp(II[@k])!=leadexp(JS[@k])) break;
           }
         }
         JS=II;
@@ -5324,7 +5324,7 @@ static proc pseudo_prim_dec_i_i (int patchPrimaryDecomposition, ideal SI, list L
 
   poly f0,@f@,g;
   ideal fac;
-  int i,@j@,k,l;
+  int i,@j@,@k,l;
   ideal SQi;
   ideal I'=SI;
   list QP;
@@ -5337,14 +5337,14 @@ static proc pseudo_prim_dec_i_i (int patchPrimaryDecomposition, ideal SI, list L
     {
       if (i!=@j@)                       // search g not in L[i], but L[@j@]
       {
-        for(k=1;k<=ncols(L[@j@]);k++)
+        for(@k=1;@k<=ncols(L[@j@]);@k++)
         {
-          if(NF(L[@j@][k],L[i],1)!=0)
+          if(NF(L[@j@][@k],L[i],1)!=0)
           {
             break;
           }
         }
-        fac=fac+L[@j@][k];
+        fac=fac+L[@j@][@k];
       }
     }
     // delete superfluous polynomials
@@ -5393,7 +5393,7 @@ static proc extraction (ideal SI, ideal SP)
                             // modulo P
     string U;               // the independent variables
     string @A@@;               // the dependent variables
-    int @j@,k;
+    int @j@,@k;
     int sizeA;                  //  the size of A
     int degf;
     ideal g;
@@ -5402,9 +5402,9 @@ static proc extraction (ideal SI, ideal SP)
     list newpoly;
     def R=basering;
     //intvec hv=hilb(SI,1);
-    for (k=1;k<=size(indsets);k++)
+    for (@k=1;@k<=size(indsets);@k++)
     {
-      v=indsets[k];
+      v=indsets[@k];
       for (@j@=1;@j@<=nvars(R);@j@++)
       {
         if (v[@j@]==1)
@@ -5446,11 +5446,11 @@ static proc extraction (ideal SI, ideal SP)
     @f@=polys[1];
     degf=deg(@f@);
     sizepolys=size(polys);
-    for (k=2;k<=sizepolys;k++)
+    for (@k=2;@k<=sizepolys;@k++)
     {
-      if (deg(polys[k])<degf)
+      if (deg(polys[@k])<degf)
       {
-        @f@=polys[k];
+        @f@=polys[@k];
         degf=deg(@f@);
       }
     }
@@ -5496,7 +5496,7 @@ static proc minsat(ideal SI, poly p)
 
   ideal fac=factorize(p,1);       //the irreducible factors of p
   fac=sort(fac)[1];
-  int i,k;
+  int i,@k;
   poly f0=1;
   for(i=ncols(fac);i>=1;i--)
   {
@@ -5545,7 +5545,7 @@ static proc minsat_ppd(ideal SI, ideal fac)
   ASSUME(1, hasGlobalOrdering(basering) ) ;
 
   fac=sort(fac)[1];
-  int i,k;
+  int i,@k;
   poly f0=1;
   for(i=ncols(fac);i>=1;i--)
   {
@@ -5572,7 +5572,7 @@ static proc minsat_ppd(ideal SI, ideal fac)
     @f@=@f@*quotM[3];
     iold=quotM[1];
     quotM=minquot(quotM);
-    k++;
+    @k++;
   }
   return(quotM[1],f0,@f@,fac);           // the quadrupel ((I:p),f0,@f@, irr. factors of @f@)
 }
@@ -5593,7 +5593,7 @@ static proc minquot(list tsil)
    ASSUME(1, hasGlobalOrdering(basering) ) ;
 
    intvec op;
-   int i,@j@,k,action;
+   int i,@j@,@k,action;
    ideal verg;
    list l;
    poly g;
@@ -7167,7 +7167,7 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
   int n, k, di;
   list resu, hilf;
   string var1, var2;
-  list v = indepSet(@j@, 0);
+  list @v@@ = indepSet(@j@, 0);
 
   // SL 2006.04.21 1 Lines modified to use only one independent Set
   int allMaximal;
@@ -7183,7 +7183,7 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
   int nMax;
   if (allMaximal == 1)
   {
-    nMax = size(v);
+    nMax = size(@v@@);
   }
   else
   {
@@ -7196,9 +7196,9 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
     di = 0;
     var1 = "";
     var2 = "";
-    for(k = 1; k <= size(v[n]); k++)
+    for(k = 1; k <= size(@v@@[n]); k++)
     {
-     if(v[n][k] != 0)
+     if(@v@@[n][k] != 0)
       {
         di++;
         var2 = var2 + "var(" + string(k) + "), ";
@@ -7323,7 +7323,6 @@ EXAMPLE: example equidimMaxEHV; shows an example
       return(ideal(1));
     }
 
-  int e;
   ideal ann;
   if(homog(i)==1)
   {
@@ -8818,7 +8817,6 @@ static proc minAssSL(ideal I)
 
   ideal P = 1;
   list pd = list();
-  int k;
   int stop = 0;
   list primaryDec = list();
 
@@ -8860,17 +8858,17 @@ static proc minAssSLIteration(ideal I, ideal P);
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
 
-  int k = 1;
+  int @k = 1;
   int good  = 0;
   list primaryDec = list();
   // Debug
   dbprint (printlevel-voice, "// We search for an element in P - sqrt(I).");
-  while ((k <= size(P)) and (good == 0))
+  while ((@k <= size(P)) and (good == 0))
   {
-    good = 1 - rad_con(P[k], I);
-    k++;
+    good = 1 - rad_con(P[@k], I);
+    @k++;
   }
-  k--;
+  @k--;
   if (good == 0)
   {
     // Debug
@@ -8878,9 +8876,9 @@ static proc minAssSLIteration(ideal I, ideal P);
     return (list(primaryDec, ideal(0)));
   }
   // Debug
-  dbprint (printlevel - voice, "// We found h = ", P[k]);
+  dbprint (printlevel - voice, "// We found h = ", P[@k]);
   dbprint (printlevel - voice, "// We calculate the saturation of I with respect to the element just founded.");
-  ideal J = sat(I, P[k])[1];
+  ideal J = sat(I, P[@k])[1];
 
   // Uses decomp from primdec, modified to avoid the recursion.
   // Debug

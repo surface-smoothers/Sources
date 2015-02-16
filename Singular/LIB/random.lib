@@ -63,12 +63,12 @@ EXAMPLE: example randomid; shows an example
 "
 {
 //----------------------------- set defaults ----------------------------------
-   if( size(#)>=2 ) { int k=#[1]; int @b@@=#[2]; }
-   if( size(#)==1 ) { int k=#[1]; int @b@@=30000; }
-   if( size(#)==0 ) { int k=size(id); int @b@@=30000; }
+   if( size(#)>=2 ) { int @k@=#[1]; int @b@@=#[2]; }
+   if( size(#)==1 ) { int @k@=#[1]; int @b@@=30000; }
+   if( size(#)==0 ) { int @k@=size(id); int @b@@=30000; }
 //--------------------------- create randomid ---------------------------------
    def i = id;
-   i = matrix(id)*random(@b@@,ncols(id),k);
+   i = matrix(id)*random(@b@@,ncols(id),@k@);
    return(i);
 }
 example
@@ -391,12 +391,12 @@ EXAMPLE: example randomLast; shows an example
 "
 {
   ideal i=maxideal(1);
-  int k=size(i);
-  if (k<=1) { return(i);}
-  i[k]=0;
+  int @k@=size(i);
+  if (@k@<=1) { return(i);}
+  i[@k@]=0;
   i=randomid(i,size(i),@b@@);
   ideal ires=maxideal(1);
-  ires[k]=i[1]+var(k);
+  ires[@k@]=i[1]+var(@k@);
   return(ires);
 }
 example

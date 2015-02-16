@@ -130,7 +130,7 @@ EXAMPLE: example createBO;  shows an example
   ideal W;
   list E;
   ideal abb=maxideal(1);
-  intvec v;
+  intvec @v@;
   intvec bvec;
   intvec w=-1;
   matrix intE;
@@ -156,7 +156,7 @@ EXAMPLE: example createBO;  shows an example
       }
     }
   }
-  list BO=W,J,bvec,E,abb,v,w,intE;
+  list BO=W,J,bvec,E,abb,@v@,w,intE;
   return(BO);
 }
 example
@@ -560,7 +560,7 @@ EXAMPLE: example blowUpBO;  shows an example
    def R0=basering;
    if(!defined(locaT)){int locaT;}
    if(locaT){poly pp=@p;}
-   intvec v;
+   intvec @v@;
    int shortC=defined(shortcut);
    int invS=defined(invSat);
    int eq,hy;
@@ -636,8 +636,8 @@ EXAMPLE: example blowUpBO;  shows an example
       if(size(N[1])<n)
       {
          newvar=string(N[1]);
-         v=N[4];
-         for(j=1;j<=size(v);j++){BO[5]=subst(BO[5],var(v[j]),0);}
+         @v@=N[4];
+         for(j=1;j<=size(@v@);j++){BO[5]=subst(BO[5],var(@v@[j]),0);}
          execute("ring R1=("+charstr(R0)+"),("+newvar+"),dp;");
          list BO=imap(R0,BO);
          ideal C=imap(R0,C);
@@ -1088,7 +1088,7 @@ EXAMPLE: example blowUpBO;  shows an example
         E2=B[4];
         for(j=1;j<=size(E2);j++){E2[j]=interred(E2[j]);}
         B[4]=E2;
-        v=0;v[size(E2)]=0;
+        @v@=0;@v@[size(E2)]=0;
 //--- mark those j for which B[4] does not meet B[2]
         for(j=1;j<=size(E2);j++)
         {
@@ -1096,10 +1096,10 @@ EXAMPLE: example blowUpBO;  shows an example
             K=std(K);
             if(deg(K[1])==0)
             {
-              v[j]=1;
+              @v@[j]=1;
             }
         }
-        B[6]=v;
+        B[6]=@v@;
         B[7]=wvec;
 //--- throw away variables which do not occur
         K=B[1],B[2],B[5];          //Aenderung!!!
@@ -1108,11 +1108,11 @@ EXAMPLE: example blowUpBO;  shows an example
         if(size(N[1])<n)
         {
            newvar=string(N[1]);
-           v=N[4];
-           for(j=1;j<=size(v);j++)
+           @v@=N[4];
+           for(j=1;j<=size(@v@);j++)
            {
-              B[5]=subst(B[5],var(v[j]),0);
-              laM=subst(laM,var(v[j]),0);
+              B[5]=subst(B[5],var(@v@[j]),0);
+              laM=subst(laM,var(@v@[j]),0);
            }
            execute("ring R2=("+charstr(S)+"),("+newvar+"),dp;");
            list BO=imap(S,B);
@@ -1155,16 +1155,16 @@ EXAMPLE: example blowUpBO;  shows an example
         list N=findvars(BO[1]+BO[2]);
         if(size(N[1])<nvars(basering))
         {
-           v=N[4];
+           @v@=N[4];
            if(defined(H)){kill H;}
            if(defined(EE)){kill EE;}
            if(defined(vv)){kill vv;}
            list EE;
            intvec vv;
            ideal H=maxideal(1);
-           for(j=1;j<=size(v);j++)
+           for(j=1;j<=size(@v@);j++)
            {
-             H[v[j]]=0;
+             H[@v@[j]]=0;
            }
            H=std(H);
            for(l=1;l<=size(BO[4]);l++)

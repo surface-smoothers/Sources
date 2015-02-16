@@ -66,11 +66,11 @@ NOTE:     Input is a list of J-marked  polynomials
 EXAMPLE:  example Terns; shows an example"
 {
 list T=list();
-int z;
+int @z@;
  for(int k=1; k<=size(G[c]);k=k+1)
     {
 //Loop on G[c] making positions of polynomials in G[c]
-      z=size(T);
+      @z@=size(T);
       T=insert(T,list(1,c,k) ,size(T));
     }
 return(T);

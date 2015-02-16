@@ -504,7 +504,7 @@ static proc zeroRadP(ideal I)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static proc quickSubst(poly h, poly r, ideal I)
+static proc quickSubst(poly @h@, poly r, ideal I)
 {
 //=== assume h is in Q[x_n], r is in Q[x_1,...,x_n], computes h(r) mod I
    attrib(I,"isSB",1);
@@ -513,25 +513,25 @@ static proc quickSubst(poly h, poly r, ideal I)
    int i,j,@d@;
    intvec v;
    list L;
-   for(i = 1; i <= size(h); i++)
+   for(i = 1; i <= size(@h@); i++)
    {
-      L[i] = list(leadcoef(h[i]),leadexp(h[i])[n]);
+      L[i] = list(leadcoef(@h@[i]),leadexp(@h@[i])[n]);
    }
    @d@ = L[1][2];
    i = 0;
-   h = 0;
+   @h@ = 0;
 
    while(i <= @d@)
    {
       if(L[size(L)-j][2] == i)
       {
-         h = reduce(h+L[size(L)-j][1]*q,I);
+         @h@ = reduce(@h@+L[size(L)-j][1]*q,I);
          j++;
       }
       q = reduce(q*r,I);
       i++;
    }
-   return(h);
+   return(@h@);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -570,9 +570,9 @@ static proc pTest_assPrimes(string command, list args, ideal F, int p)
    ideal F = fetch(br, F);
    execute("ideal Fp = "+command+"("
       +Tasks::argsToString("args_p", size(args_p))+");");
-   int k = (Fp[1] == F[1]);
+   int @k = (Fp[1] == F[1]);
    setring br;
-   return(k);
+   return(@k);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
