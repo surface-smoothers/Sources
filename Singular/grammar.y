@@ -1442,7 +1442,7 @@ setringcmd:
                   YYERROR;
                 }
               }
-              if (h!=NULL) rSetHdl(h);
+              if (h!=NULL) { checkForVariableConflicts(myynest, &h ); rSetHdl(h); }
               else
               {
                 Werror("cannot find the name of the basering %s",n);
