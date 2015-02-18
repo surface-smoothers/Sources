@@ -1348,12 +1348,18 @@ proc extF(list l,list #)
     l=delete(l,1);
   }
   if(size(peek)==0){return(peek1);}
+ 
+  // obfuscate the name of the parameter to minimize conflict probability.
+   // the safest variant would be to create at the beginning of the routine a ring R' where this routine controls all variable and parameter names
+   // (so there can be no conflict) and fetch from R ro R'.
+  string extvar = "vevioqjgpemrwcfprndyqodgl"; 
+  string gnir="ring RH=("+string(p)+"^"+string(ex)+","+extvar+"),("+varstr(R)+"),lp;";
+  execute(gnir);
 
-  string gnir="ring RH=("+string(p)+"^"+string(ex)+",a),("+varstr(R)+"),lp;";
+  gnir="ring RL=("+string(p)+","+extvar+"),("+varstr(R)+"),lp;";
   execute(gnir);
-  string mp="minpoly="+string(minpoly)+";";
-  gnir="ring RL=("+string(p)+",a),("+varstr(R)+"),lp;";
-  execute(gnir);
+  string mp="minpoly="+fetchMinpolyStr(RH) + ";";
+    
   execute(mp);
   list L=imap(R,peek);
   list pr, keep;
@@ -1368,10 +1374,11 @@ proc extF(list l,list #)
   {
     keep[i]=simplify(keep[i],1);
   }
-  mp="poly pp="+string(minpoly)+";";
 
-  string gnir1="ring RS="+string(p)+",("+varstr(R)+",a),lp;";
+
+  string gnir1="ring RS="+string(p)+",("+varstr(R)+","+extvar+"),lp;";
   execute(gnir1);
+  mp = "poly pp= " + minpolyToVarStr(RL, nvars() ) + ";";    
   execute(mp);
   list L=imap(RL,keep);
 
@@ -3030,6 +3037,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   intvec initialOp,op,@vv;
   initialOp = option(get);
   def  @P = basering;
+  ideal @mI = maxideal(1);
   list primary,indep,ltras;
   intvec @vh,isat,@w;
   int @wr,@k,@n,@m,@n1,@n2,@n3,homo,seri,keepdi,abspri,ab,nn;
@@ -3140,6 +3148,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
 
   def gnir=changeordTo(basering,"lp");
   setring gnir;
+  ideal @mI = maxideal(1);
   op=option(get);
   option(redSB);
 
@@ -3220,6 +3229,8 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
     {
       string newva;
       string newma;
+      string newmaE;
+      int varnr=1;
       poly f;
       for(@k=1;@k<=nvars(basering);@k++)
       {
@@ -3236,10 +3247,13 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         {
           newva=newva+string(var(@k))+",";
           newma=newma+string(var(@k))+",";
+          newmaE=newmaE+"var("+string(varnr)+"),";
+          varnr=varnr+1;
         }
         else
         {
           newma=newma+string(0)+",";
+          newmaE=newmaE+string(0)+",";
           fried[@n]=fried[@n]/leadcoef(fried[@n]);
           f=fried[@n]-lead(fried[@n]);
           @j=subst(@j,var(@k),-f);
@@ -3247,8 +3261,9 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       }
       newva[size(newva)]=")";
       newma[size(newma)]=";";
+      newmaE[size(newmaE)]=";";
       execute("ring @deirf=("+charstr(gnir)+"),("+newva+",lp;");
-      execute("map @kappa=gnir,"+newma);
+      execute("map @kappa=gnir,"+newmaE);
       ideal @j= @kappa(@j);
       @j=std(@j);
 
@@ -3269,7 +3284,6 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         pr[@k]=@j;
       }
       setring @P;
-      option(set,initialOp);
       primary=imap(gnir,pr);
       if (abspri) { return(prepare_absprimdec(primary));}
       return(primary);
@@ -3377,7 +3391,8 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   }
 
   poly @gs,@gh,@p;
-  string @va;
+  string @va, @vaE;
+ 
   def quotring;
   list quprimary,htprimary,collectprimary,lsau,lnew,allindep,restindep;
   ideal @h;
@@ -3402,7 +3417,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       }
       else
       {
-        lauf++;
+        lauf++; 
         restindep[lauf]=allindep[@m];
       }
     }
@@ -3461,6 +3476,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
     //this is the good case, nothing to do, just to have the same notations
     //change the ring
     {
+      ASSUME(0, 0 == indep[@m][3] );
       def gnir1=ring(ringlist(basering));
       setring gnir1;
       ideal @j=fetch(gnir,@j);
@@ -3469,14 +3485,17 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
     }
     else
     {
+      ASSUME(0, 0 != indep[@m][3] );
       @va=string(maxideal(1));
+      @vaE = varIdealStr(basering);
       if(@m==1)
       {
         @j=fetch(@P,i);
       }
       execute("ring gnir1 = ("+charstr(basering)+"),("+indep[@m][1]+"),("
                               +indep[@m][2]+");");
-      execute("map phi=gnir,"+@va+";");
+      ideal @mI = imap(gnir,@mI);
+      map phi=gnir,@mI;
       op=option(get);
       option(redSB);
       ideal @j=groebner(phi(@j));
@@ -3776,6 +3795,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
            //the good case, nothing to do, just to have the same notations
            //change the ring
         {
+          ASSUME(0, 0 == restindep[@m][3] );
           def gnir1=ring(ringlist(basering));
           setring gnir1;
           ideal @j=fetch(gnir,jkeep);
@@ -3783,10 +3803,13 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         }
         else
         {
+          ASSUME(0, 0 != restindep[@m][3] );
           @va=string(maxideal(1));
+          @vaE = varIdealStr(basering);
           execute("ring gnir1 = ("+charstr(basering)+"),("+
                       restindep[@m][1]+"),(" +restindep[@m][2]+");");
-          execute("map phi=gnir,"+@va+";");
+          ideal @mI = imap(gnir,@mI);
+          map phi=gnir,@mI;
           op=option(get);
           option(redSB);
           if(homo==1)
@@ -4190,8 +4213,10 @@ EXAMPLE: example zeroRad; shows an example"
    string cR="ring @R="+string(p)+",("+parstr(R)+","+varstr(R)+"),dp;";
    execute(cR);
    ideal F=imap(R,F);
-
-   string nR="ring @S="+string(p)+",(@y(1..m),"+varstr(R)+","+parstr(R)+"),dp;";
+   // obfuscating first variable to reduce variable conflict probability
+   // the safest variant would be to create at first a ring R' where this routine controls all variable and parameter names
+   // and then fetch from R ro R'.
+   string nR="ring @S="+string(p)+",(@yfaoiwernvlqwnlkcserv(1..m),"+varstr(R)+","+parstr(R)+"),dp;";
    execute(nR);
 
    ideal G=fetch(@R,F);    //G[i](t(1)^(p^-k),...,t(m)^(p^-k),x(i))=sep(F[i])
@@ -4229,10 +4254,11 @@ static proc algeRad(ideal i)
    def R=basering;
    int n=nvars(R);
 
-   string mp="poly p="+string(minpoly)+";";
+
    string gnir="ring RH="+string(char(R))+",("+varstr(R)+","+string(par(1))
                 +"),dp;";
-   execute(gnir);
+   execute(gnir);   
+   string mp="poly p="+minpolyToVarStr(R, nvars() )+";";      
    execute(mp);
    ideal i=imap(R,i);
    i=i,p;
@@ -6010,6 +6036,8 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
   poly p,q,f,g;
   map phi,psi;
   string tvar;
+  // execute(exportGensStr(basering)) : guard against  definitions like K = K+... and "f = f+..." (bug #677):
+  execute(exportGensStr(basering)); 
   for(i=1;i<=size(L);i++)
   {
     tvar=L[i][4];
@@ -6024,9 +6052,11 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
       if(tvar==string(var(ii))) break;
     }
     I=L[i][2];
+    //dbprint(1, " L[i][3]", L[i][3] );
     execute("K="+L[i][3]+";");
     p=K[1];
     q=K[2];
+    //dbprint(1, " L[i][4]", L[i][4] );
     execute("f="+L[i][4]+";");
     g=2*var(ii)-f;
     M[ii]=f;
@@ -6823,9 +6853,11 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
   int @wr, @n, @m, lauf, di;
   ideal fac, @h, collectrad, lsau;
   poly @q;
-  string @va; def quotring;
+  string @va, @vaE; def quotring;
+ 
 
   def @P = basering;
+  ideal @mI = maxideal(1);
   int jdim = dim(I);               // Computes the dimension of I
   int  homo = homog(I);            // Finds out if I is homogeneous
   ideal rad = ideal(1);            // The unit ideal
@@ -6886,6 +6918,7 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
     //this is the good case, nothing to do, just to have the same notations
     //change the ring
     {
+      ASSUME(0, 0 == indep[@m][3] );
       def gnir1=ring(ringlist(basering));
       setring gnir1;
       ideal @j = fetch(@P, I);
@@ -6893,11 +6926,13 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
     }
     else
     {
+      ASSUME(0, 0 != indep[@m][3] );
       @va = string(maxideal(1));
-
+      @vaE = varIdealStr(basering);
       execute("ring gnir1 = (" + charstr(basering) + "), (" + indep[@m][1] + "),("
                               + indep[@m][2] + ");");
-      execute("map phi = @P," + @va + ";");
+      ideal @mI = imap(@P, @mI);
+      map phi = @P, @mI;
       if(homo == 1)
       {
         ideal @j = std(phi(I), @hilb, @w);
@@ -7468,7 +7503,13 @@ EXAMPLE: example zerodec; shows an example
     "// time for computing multiplication matrix (with generic element) : "+
     string(timer-time));
 //---------------- compute characteristic polynomial of matrix --------------
-  execute("ring P1=("+charstr(R)+"),T,dp;");
+  // varname: obfuscating variable name to reduce probability of variable conflicts.
+  //
+  // the safest variant would be to create at the beginning of the routine a ring R' 
+  // where this routine controls all variable and parameter names
+  // (so there can be no conflict) and fetch from R ro R'.
+  string varname = "Tcweoiuvpqmkfioenrnfwndtr";
+  execute("ring P1=("+charstr(R)+"),"+varname+",dp;");
   matrix n=imap(R,n);
   time = timer;
   poly charpol=det(n-var(1)*freemodule(d));
@@ -7498,7 +7539,8 @@ EXAMPLE: example zerodec; shows an example
 //f_i may result in a huge object although the final result may be small.
 //Hence it is better to simultaneously reduce with I. For this we need a new
 //ring.
-    execute("ring P=("+charstr(R)+"),(T,"+varstr(R)+"),(dp(1),dp);");
+
+    execute("ring P=("+charstr(R)+"),("+varname+","+varstr(R)+"),(dp(1),dp);");
     list rfac=imap(P1,fac);
     intvec ov=option(get);;
     option(redSB);
@@ -7702,7 +7744,7 @@ EXAMPLE: example newDecompStep; shows an example
   op@P = option(get);
   def gnir=changeordTo(basering,"lp");
   setring gnir;
-
+  ideal @mI= maxideal(1);
   op=option(get);
   option(redSB);
 
@@ -7772,6 +7814,8 @@ EXAMPLE: example newDecompStep; shows an example
     {
       string newva;
       string newma;
+      string newmaE;
+      int varnr=1;
       for(@k=1;@k<=nvars(basering);@k++)
       {
         @n1=0;
@@ -7787,16 +7831,20 @@ EXAMPLE: example newDecompStep; shows an example
         {
           newva=newva+string(var(@k))+",";
           newma=newma+string(var(@k))+",";
+          newmaE=newmaE+"var("+string(varnr)+"),";  
+          varnr = varnr+1;
         }
         else
         {
           newma=newma+string(0)+",";
+          newmaE=newmaE+string(0)+","; 
         }
       }
       newva[size(newva)]=")";
       newma[size(newma)]=";";
+      newmaE[size(newmaE)]=";";
       execute("ring @deirf=("+charstr(gnir)+"),("+newva+",lp;");
-      execute("map @kappa=gnir,"+newma);
+      execute("map @kappa=gnir,"+newmaE);
       ideal @j= @kappa(@j);
       @j=simplify(@j, 2);
       attrib(@j,"isSB",1);
@@ -7962,7 +8010,8 @@ EXAMPLE: example newDecompStep; shows an example
   }
 
   poly @gs,@gh,@p;
-  string @va;
+  string @va, @vaE;
+ 
   list quprimary,htprimary,collectprimary,lsau,lnew,allindep,restindep;
   ideal @h;
   int jdim=dim(@j);
@@ -8180,6 +8229,7 @@ EXAMPLE: example newDecompStep; shows an example
            //the good case, nothing to do, just to have the same notations
            //change the ring
            {
+              ASSUME(0, 0==restindep[@m][3]);
               def gnir1=ring(ringlist(basering));
               setring gnir1;
               ideal @j=fetch(gnir,jkeep);
@@ -8187,10 +8237,13 @@ EXAMPLE: example newDecompStep; shows an example
            }
            else
            {
+              ASSUME(0, 0 != restindep[@m][3]);
               @va=string(maxideal(1));
+              @vaE = varIdealStr(basering);
               execute("ring gnir1 = ("+charstr(basering)+"),("+
                       restindep[@m][1]+"),(" +restindep[@m][2]+");");
-              execute("map phi=gnir,"+@va+";");
+              ideal @mI = imap(gnir, @mI);
+              execute("map phi=gnir,@mI;");
               op=option(get);
               option(redSB);
               if(homo==1)
@@ -8483,8 +8536,8 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    ASSUME(1, not isQuotientRing(basering) ) ;
    ASSUME(1, hasGlobalOrdering(basering) ) ;
 
-
-   string @va;
+ 
+   string @va, @vaE;
    def quotring;
    intvec op;
    intvec @vv;
@@ -8520,6 +8573,7 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    //this is the good case, nothing to do, just to have the same notations
    //change the ring
    {
+     ASSUME(0, 0==indepInfo[3]);
      def gnir1=ring(ringlist(basering));
      setring gnir1;
      ideal @j = fetch(gnir, @j);
@@ -8528,7 +8582,9 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    }
    else
    {
-     @va=string(maxideal(1));
+     ASSUME(0, 0 != indepInfo[3] );
+     @va=string(maxideal(1)); 
+     @vaE = varIdealStr(basering);
 //Aenderung==============
      //if(@m==1)
      //{
@@ -8537,7 +8593,8 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
 //=======================
      execute("ring gnir1 = ("+charstr(basering)+"),("+indepInfo[1]+"),("
                               +indepInfo[2]+");");
-     execute("map phi=gnir,"+@va+";");
+     ideal @mI = imap(gnir,@mI);
+     map phi=gnir,@mI;
      op=option(get);
      option(redSB);
      if(homo==1)
