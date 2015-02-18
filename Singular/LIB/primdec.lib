@@ -1775,7 +1775,7 @@ EXAMPLE: example independentSet; shows an example
       var1=var1[1..size(var1)-1];
       var1e=var1e+var2e;
       var1e=var1e[1..size(var1e)-1];
-      hilf[1]=list(var1,var1e);
+      hilf[1]=list(var1e,var1e);
       dbprint(1, "hilf",hilf);
       dbprint(1, "var1",var1);
       dbprint(1, "var1e",var1e);
@@ -1855,7 +1855,7 @@ EXAMPLE: example maxIndependentSet; shows an example
       var1=var1[1..size(var1)-1];
       var1e=var1e+var2e;
       var1e=var1e[1..size(var1e)-1];
-      hilf[1]=list(var1,var1e);
+      hilf[1]=list(var1e,var1e);
       dbprint(1, "var1",var1);
       dbprint(1, "var1e",var1e);
       dbprint(1, "hilf",hilf);
@@ -3263,7 +3263,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         else
         {
           newma=newma+string(0)+",";
-          varnr = varnr+1;
+          //varnr = varnr+1;
           fried[@n]=fried[@n]/leadcoef(fried[@n]);
           f=fried[@n]-lead(fried[@n]);
           @j=subst(@j,var(@k),-f);
@@ -7274,7 +7274,7 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
       var1e = var1e + var2e;
       var1 = var1[1..size(var1) - 1];                         // The "- 2" removes the trailer comma
       var1e = var1e[1..size(var1e) - 1];                         // The "- 2" removes the trailer comma
-      hilf[1] = list(var1,var1e);
+      hilf[1] = list(var1e,var1e);
       dbprint(1, "hilf",hilf);
       dbprint(1, "var1",var1);
       dbprint(1, "var1e",var1e);
@@ -7858,7 +7858,7 @@ EXAMPLE: example newDecompStep; shows an example
         }
         else
         {
-          //newma=newma+string(0)+",";
+          newma=newma+string(0)+",";
           //varnr = varnr+1;
         }
       }
@@ -9063,7 +9063,7 @@ EXAMPLE: example newMaxIndependentSetLp; shows an example
       var1e = var1e + var2e;
       var1 = var1[1..size(var1) - 2];       // The "- 2" removes the trailer comma
       var1e = var1e[1..size(var1e) - 2];       // The "- 2" removes the trailer comma
-      hilf[1] = list(var1, var1e);
+      hilf[1] = list(var1e, var1e);
       dbprint(1, "hilf",hilf);
       dbprint(1, "var1",var1);
       dbprint(1, "var1e",var1e);
