@@ -1351,9 +1351,11 @@ proc extF(list l,list #)
 
   string gnir="ring RH=("+string(p)+"^"+string(ex)+",a),("+varstr(R)+"),lp;";
   execute(gnir);
-  string mp="minpoly="+string(minpoly)+";";
+
   gnir="ring RL=("+string(p)+",a),("+varstr(R)+"),lp;";
   execute(gnir);
+  string mp="minpoly="+fetchMinpolyStr(RH) + ";";
+    
   execute(mp);
   list L=imap(R,peek);
   list pr, keep;
@@ -1368,10 +1370,11 @@ proc extF(list l,list #)
   {
     keep[i]=simplify(keep[i],1);
   }
-  mp="poly pp="+string(minpoly)+";";
+
 
   string gnir1="ring RS="+string(p)+",("+varstr(R)+",a),lp;";
   execute(gnir1);
+  mp = "poly pp= " + minpolyToVarStr(RL, nvars() ) + ";";    
   execute(mp);
   list L=imap(RL,keep);
 
@@ -1742,7 +1745,7 @@ EXAMPLE: example independentSet; shows an example
 {
   int n,k,di;
   list resu,hilf;
-  string var1,var2;
+  string var1,var2,var1e,var2e;
   list v=indepSet(j,1);
 
   for(n=1;n<=size(v);n++)
@@ -1750,23 +1753,32 @@ EXAMPLE: example independentSet; shows an example
     di=0;
     var1="";
     var2="";
+    var1e="";
+    var2e="";
     for(k=1;k<=size(v[n]);k++)
     {
       if(v[n][k]!=0)
       {
         di++;
-        var2=var2+"var("+string(k)+"),";
+        var2e=var2e+"var("+string(k)+"),";
+        var2=var2+string(var(k))+",";
       }
       else
       {
-        var1=var1+"var("+string(k)+"),";
+        var1e=var1e+"var("+string(k)+"),";
+        var1=var1+string(var(k))+",";
       }
     }
     if(di>0)
     {
       var1=var1+var2;
       var1=var1[1..size(var1)-1];
-      hilf[1]=var1;
+      var1e=var1e+var2e;
+      var1e=var1e[1..size(var1e)-1];
+      hilf[1]=list(var1,var1e);
+      dbprint(1, "hilf",hilf);
+      dbprint(1, "var1",var1);
+      dbprint(1, "var1e",var1e);
       hilf[2]="lp";
       //"lp("+string(nvars(basering)-di)+"),dp("+string(di)+")";
       hilf[3]=di;
@@ -1774,7 +1786,7 @@ EXAMPLE: example independentSet; shows an example
     }
     else
     {
-      resu[n]=varstr(basering),ordstr(basering),0;
+      resu[n]=list(varstr(basering),varIdealStr(basering)),ordstr(basering),0;
     }
   }
   return(resu);
@@ -1813,7 +1825,7 @@ EXAMPLE: example maxIndependentSet; shows an example
   ASSUME(1, hasGlobalOrdering(basering) ) ;
   int n,k,di;
   list resu,hilf;
-  string var1,var2;
+  string var1,var2, var1e,var2e;
   list v=indepSet(j,0);
 
   for(n=1;n<=size(v);n++)
@@ -1821,30 +1833,39 @@ EXAMPLE: example maxIndependentSet; shows an example
     di=0;
     var1="";
     var2="";
+    var1e="";
+    var2e="";
     for(k=1;k<=size(v[n]);k++)
     {
       if(v[n][k]!=0)
       {
         di++;
-        var2=var2+"var("+string(k)+"),";
+        var2e=var2e+"var("+string(k)+"),";
+        var2=var2+ string(var(k))+",";
       }
       else
       {
-        var1=var1+"var("+string(k)+"),";
+        var1e=var1e+"var("+string(k)+"),";
+        var1=var1+ string(var(k))+",";
       }
     }
     if(di>0)
     {
       var1=var1+var2;
       var1=var1[1..size(var1)-1];
-      hilf[1]=var1;
+      var1e=var1e+var2e;
+      var1e=var1e[1..size(var1e)-1];
+      hilf[1]=list(var1,var1e);
+      dbprint(1, "var1",var1);
+      dbprint(1, "var1e",var1e);
+      dbprint(1, "hilf",hilf);
       hilf[2]="lp";
       hilf[3]=di;
       resu[n]=hilf;
     }
     else
     {
-      resu[n]=varstr(basering),ordstr(basering),0;
+      resu[n]=list(varstr, varIdealStr(basering)),ordstr(basering),0;
     }
   }
   return(resu);
@@ -2698,7 +2719,7 @@ EXAMPLE: example equidimMax; shows an example
 
   indep=maxIndependSet(j);
 
-  execute("ring gnir1 = ("+charstr(basering)+"),("+indep[1][1]+"),("
+  execute("ring gnir1 = ("+charstr(basering)+"),("+indep[1][1][1]+"),("
                               +indep[1][2]+");");
   if(homo==1)
   {
@@ -2961,7 +2982,7 @@ static proc prepare_absprimdec(list primary)
   for(int ab=1;ab<=size(primary) div 2;ab++)
   {
     absotto= absFactorize(primary[2*ab][1],77);
-    tempo=primary[2*ab-1],primary[2*ab],absotto,string(var(nvars(basering)));
+    tempo=primary[2*ab-1],primary[2*ab],absotto,"var("+string(nvars(basering))+")";
     resu[ab]=tempo;
   }
   return(resu);
@@ -3142,7 +3163,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   setring gnir;
   op=option(get);
   option(redSB);
-
+  string cmd;
   ideal ser=fetch(@P,ser);
 
   if(homo==1)
@@ -3224,6 +3245,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       for(@k=1;@k<=nvars(basering);@k++)
       {
         @n1=0;
+        int varnr=1;
         for(@n=1;@n<=size(fried);@n++)
         {
           if(leadmonom(fried[@n])==var(@k))
@@ -3235,11 +3257,13 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         if(@n1==0)
         {
           newva=newva+string(var(@k))+",";
-          newma=newma+string(var(@k))+",";
+          newma=newma+"var(+"string(varnr)+")"+",";
+          varnr = varnr+1;
         }
         else
         {
           newma=newma+string(0)+",";
+          varnr = varnr+1;
           fried[@n]=fried[@n]/leadcoef(fried[@n]);
           f=fried[@n]-lead(fried[@n]);
           @j=subst(@j,var(@k),-f);
@@ -3248,6 +3272,8 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
       newva[size(newva)]=")";
       newma[size(newma)]=";";
       execute("ring @deirf=("+charstr(gnir)+"),("+newva+",lp;");
+      dbprint(1, "newma = "+newma);
+      // execute( exportGensStr(@deirf) );
       execute("map @kappa=gnir,"+newma);
       ideal @j= @kappa(@j);
       @j=std(@j);
@@ -3352,7 +3378,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         {
           absotto= absFactorize(primary[2*ab][1],77);
           tempo=
-            primary[2*ab-1],primary[2*ab],absotto,string(var(nvars(basering)));
+            primary[2*ab-1],primary[2*ab],absotto,"var("+string(nvars(basering))+")";
         }
         else
         {
@@ -3364,7 +3390,10 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
           II=groebner(sigma(II));
           absotto = absFactorize(II[1],77);
           II=var(nn);
+          dbprint(1, "II="+string(II));
+          dbprint(1, "invsigma(II)="+string(invsigma(II) ));
           tempo= primary[2*ab-1],primary[2*ab],absotto,string(invsigma(II));
+          //tempo= primary[2*ab-1],primary[2*ab],absotto,"var("+string(nn)+")");
         }
         resu[ab]=tempo;
       }
@@ -3453,11 +3482,17 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
   keepdi=di;
 
   setring gnir;
+  
+  // execute( exportGensStr(basering) );
+  
   for(@m=1;@m<=size(indep);@m++)
   {
     isat=0;
     @n2=0;
-    if((indep[@m][1]==varstr(basering))&&(@m==1))
+    dbprint(1, "indep[@m][1][1]="+indep[@m][1][1]);
+    dbprint(1, "indep[@m][1][2]="+indep[@m][1][2]);
+    dbprint(1, "varIdealStr(basering)="+varIdealStr(basering));
+    if((indep[@m][1][1]==varstr(basering))&&(@m==1))
     //this is the good case, nothing to do, just to have the same notations
     //change the ring
     {
@@ -3469,13 +3504,17 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
     }
     else
     {
-      @va=string(maxideal(1));
+      @va = string( maxideal(1) );
+      dbprint(1, "maxideal @va=", @va );
+      @va = varIdealStr(basering);
+      dbprint(1, "varIdealStr @va=", @va );
       if(@m==1)
       {
         @j=fetch(@P,i);
       }
-      execute("ring gnir1 = ("+charstr(basering)+"),("+indep[@m][1]+"),("
+      execute("ring gnir1 = ("+charstr(basering)+"),("+indep[@m][1][1]+"),("
                               +indep[@m][2]+");");
+      dbprint(1, " gnir1",basering);
       execute("map phi=gnir,"+@va+";");
       op=option(get);
       option(redSB);
@@ -3772,7 +3811,10 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         isat=0;
         @n2=0;
 
-        if(restindep[@m][1]==varstr(basering))
+        dbprint(1, "restindep[@m][1]="+restindep[@m][1]);
+        dbprint(1, "varIdealStr(basering)="+varIdealStr(basering));
+    
+        if(restindep[@m][1][1]==varstr(basering))
            //the good case, nothing to do, just to have the same notations
            //change the ring
         {
@@ -3784,8 +3826,11 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
         else
         {
           @va=string(maxideal(1));
+          dbprint(1, "maxideal @va=", @va );
+          @va = varIdealStr(basering);
+          dbprint(1, "varIdealStr @va=", @va );
           execute("ring gnir1 = ("+charstr(basering)+"),("+
-                      restindep[@m][1]+"),(" +restindep[@m][2]+");");
+                      restindep[@m][1][1]+"),(" +restindep[@m][2]+");");
           execute("map phi=gnir,"+@va+";");
           op=option(get);
           option(redSB);
@@ -3878,6 +3923,7 @@ static proc decomp_i(int patchPrimaryDecomposition, ideal i,list #)
             }
             absprimarytmp[ab]= absFactorize(II[1],77);
             II=var(nn);
+            dbprint(1,"string(invsigma(II))",string(invsigma(II)));
             abskeeptmp[ab]=string(invsigma(II));
             invsigma=basering,maxideal(1);
           }
@@ -4229,10 +4275,11 @@ static proc algeRad(ideal i)
    def R=basering;
    int n=nvars(R);
 
-   string mp="poly p="+string(minpoly)+";";
+
    string gnir="ring RH="+string(char(R))+",("+varstr(R)+","+string(par(1))
                 +"),dp;";
-   execute(gnir);
+   execute(gnir);   
+   string mp="poly p="+minpolyToVarStr(R, nvars() )+";";      
    execute(mp);
    ideal i=imap(R,i);
    i=i,p;
@@ -4761,6 +4808,7 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
   intvec op;
   def oldring=basering;
   string n=system("neworder",PS);
+  dbprint(1, "// neworder n = " + n );
   execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
   ideal PS=imap(oldring,PS);
   matrix m=char_series(PS);  // We compute an irreducible
@@ -5986,7 +6034,9 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
   {
      "// will not handle case with unit ideal";
   }
+  dbprint (1, "L[1][3]",L[1][3]);
   string newvar=L[1][3];
+  dbprint (1, "newvar",newvar);
   int k=find(newvar,",",find(newvar,",")+1);
   newvar=newvar[k+1..size(newvar)];
   list lR=ringlist(R);
@@ -6013,6 +6063,7 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
   for(i=1;i<=size(L);i++)
   {
     tvar=L[i][4];
+    dbprint (1, "tvar:",tvar);
     ii=find(tvar,"+");
     while(ii)
     {
@@ -6021,7 +6072,7 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
     }
     for(ii=1;ii<=nvars(basering);ii++)
     {
-      if(tvar==string(var(ii))) break;
+      if(tvar=="var("+string(ii)+")") break;
     }
     I=L[i][2];
     execute("K="+L[i][3]+";");
@@ -6823,7 +6874,7 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
   int @wr, @n, @m, lauf, di;
   ideal fac, @h, collectrad, lsau;
   poly @q;
-  string @va; def quotring;
+  string @va,@vae; def quotring;
 
   def @P = basering;
   int jdim = dim(I);               // Computes the dimension of I
@@ -6882,7 +6933,9 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
 
   for(@m = 1; @m <= size(indep); @m++)
   {
-    if((indep[@m][1] == varstr(basering)) && (@m == 1))
+    dbprint(1, "indep[@m][1][1]= "+ indep[@m][1][1] );
+    dbprint(1, "varIdealStr(basering)= "+ varIdealStr(basering) );
+    if((indep[@m][1][1] == varstr(basering)) && (@m == 1))
     //this is the good case, nothing to do, just to have the same notations
     //change the ring
     {
@@ -6894,10 +6947,13 @@ static proc radicalReduction(ideal I, ideal ser, int allIndep, list #)
     else
     {
       @va = string(maxideal(1));
+      dbprint(1, "maxideal @va=", @va );
+      @vae = varIdealStr(basering);
+      dbprint(1, "varIdealStr @vae=", @vae );
 
-      execute("ring gnir1 = (" + charstr(basering) + "), (" + indep[@m][1] + "),("
+      execute("ring gnir1 = (" + charstr(basering) + "), (" + indep[@m][1][1] + "),("
                               + indep[@m][2] + ");");
-      execute("map phi = @P," + @va + ";");
+      execute("map phi = @P," + @vae + ";");
       if(homo == 1)
       {
         ideal @j = std(phi(I), @hilb, @w);
@@ -7166,7 +7222,7 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
 
   int n, k, di;
   list resu, hilf;
-  string var1, var2;
+  string var1, var2, var1e,var2e;
   list v = indepSet(j, 0);
 
   // SL 2006.04.21 1 Lines modified to use only one independent Set
@@ -7196,23 +7252,32 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
     di = 0;
     var1 = "";
     var2 = "";
+    var1e = "";
+    var2e = "";
     for(k = 1; k <= size(v[n]); k++)
     {
      if(v[n][k] != 0)
       {
         di++;
-        var2 = var2 + "var(" + string(k) + "), ";
+        var2e = var2e + "var(" + string(k) + "),";
+        var2 = var2 + string(var(k)) + ",";
       }
       else
       {
-        var1 = var1 + "var(" + string(k) + "), ";
+        var1e = var1e + "var(" + string(k) + "),";
+        var1 = var1 + string(var(k)) + ",";
       }
     }
     if(di > 0)
     {
       var1 = var1 + var2;
-      var1 = var1[1..size(var1) - 2];                         // The "- 2" removes the trailer comma
-      hilf[1] = var1;
+      var1e = var1e + var2e;
+      var1 = var1[1..size(var1) - 1];                         // The "- 2" removes the trailer comma
+      var1e = var1e[1..size(var1e) - 1];                         // The "- 2" removes the trailer comma
+      hilf[1] = list(var1,var1e);
+      dbprint(1, "hilf",hilf);
+      dbprint(1, "var1",var1);
+      dbprint(1, "var1e",var1e);
       // SL 2006.21.04 1 The order is now block dp instead of lp
       hilf[2] = "dp(" + string(nvars(basering) - di) + "), dp(" + string(di) + ")";
       // SL 2006.21.04 2
@@ -7221,7 +7286,7 @@ EXAMPLE: example newMaxIndependentSetDp; shows an example
     }
     else
     {
-      resu[n] = varstr(basering), ordstr(basering), 0;
+      resu[n] = list( varstr(basering),varIdealStr(basering) ), ordstr(basering), 0;
     }
   }
   return(resu);
@@ -7772,6 +7837,8 @@ EXAMPLE: example newDecompStep; shows an example
     {
       string newva;
       string newma;
+      int varnr = 1;
+      dbprint(1, "basering",basering);
       for(@k=1;@k<=nvars(basering);@k++)
       {
         @n1=0;
@@ -7786,16 +7853,23 @@ EXAMPLE: example newDecompStep; shows an example
         if(@n1==0)
         {
           newva=newva+string(var(@k))+",";
-          newma=newma+string(var(@k))+",";
+          newma=newma+"var("+string(varnr)+"),";
+          varnr = varnr+1;
         }
         else
         {
-          newma=newma+string(0)+",";
+          //newma=newma+string(0)+",";
+          //varnr = varnr+1;
         }
       }
       newva[size(newva)]=")";
       newma[size(newma)]=";";
+      // dbprint(1, "basering",basering);
+
       execute("ring @deirf=("+charstr(gnir)+"),("+newva+",lp;");
+      dbprint(1, "gnir",gnir);
+       dbprint(1, "@deirf",@deirf);
+      dbprint(1, "newma",newma);
       execute("map @kappa=gnir,"+newma);
       ideal @j= @kappa(@j);
       @j=simplify(@j, 2);
@@ -7901,7 +7975,7 @@ EXAMPLE: example newDecompStep; shows an example
       for(ab=1;ab<=size(primary) div 2;ab++)
       {
         absotto= absFactorize(primary[2*ab][1],77);
-        tempo=primary[2*ab-1],primary[2*ab],absotto,string(var(nvars(basering)));
+        tempo=primary[2*ab-1],primary[2*ab],absotto,"var(",string(nvars(basering))+")";
         resu[ab]=tempo;
       }
       primary=resu;
@@ -7945,7 +8019,7 @@ EXAMPLE: example newDecompStep; shows an example
       for(ab=1;ab<=size(primary) div 2;ab++)
       {
         absotto= absFactorize(primary[2*ab][1],77);
-        tempo=primary[2*ab-1],primary[2*ab],absotto,string(var(nvars(basering)));
+        tempo=primary[2*ab-1],primary[2*ab],absotto,"var("+string(nvars(basering))+")";
         resu[ab]=tempo;
       }
       primary=resu;
@@ -8176,7 +8250,10 @@ EXAMPLE: example newDecompStep; shows an example
            isat=0;
            @n2=0;
 
-           if(restindep[@m][1]==varstr(basering))
+           dbprint(1, "restindep[@m][1]="+restindep[@m][1]);
+           dbprint(1, "varIdealStr(basering)="+varIdealStr(basering));
+        
+           if(restindep[@m][1][1]==varstr(basering))
            //the good case, nothing to do, just to have the same notations
            //change the ring
            {
@@ -8188,8 +8265,12 @@ EXAMPLE: example newDecompStep; shows an example
            else
            {
               @va=string(maxideal(1));
+              dbprint(1, "maxideal @va=", @va );
+              @va = varIdealStr(basering);
+              dbprint(1, "varIdealStr @va=", @va );
+      
               execute("ring gnir1 = ("+charstr(basering)+"),("+
-                      restindep[@m][1]+"),(" +restindep[@m][2]+");");
+                      restindep[@m][1][1]+"),(" +restindep[@m][2]+");");
               execute("map phi=gnir,"+@va+";");
               op=option(get);
               option(redSB);
@@ -8282,7 +8363,9 @@ EXAMPLE: example newDecompStep; shows an example
                   }
                   absprimarytmp[ab]= absFactorize(II[1],77);
                   II=var(nn);
+                  dbprint(1, "II)",string(II) );
                   abskeeptmp[ab]=string(invsigma(II));
+                  dbprint(1, "invsigma(II)",string(invsigma(II)) );
                   invsigma=basering,maxideal(1);
               }
            }
@@ -8515,8 +8598,12 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    //}
    // Debug
    dbprint(printlevel - voice, "newReduction, v2.0");
+   
+   dbprint(1, "indepInfo[1]="+indepInfo[1]);
+   dbprint(1, "varIdealStr(basering)="+varIdealStr(basering));
+           
 
-   if((indepInfo[1]==varstr(basering)))  // &&(@m==1)
+   if((indepInfo[1][1]==varstr(basering)))  // &&(@m==1)
    //this is the good case, nothing to do, just to have the same notations
    //change the ring
    {
@@ -8529,13 +8616,17 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    else
    {
      @va=string(maxideal(1));
+     dbprint(1, "maxideal @va=", @va );
+     @va = varIdealStr(basering);
+     dbprint(1, "varIdealStr @va=", @va );
+      
 //Aenderung==============
      //if(@m==1)
      //{
      //  @j=fetch(@P,i);
      //}
 //=======================
-     execute("ring gnir1 = ("+charstr(basering)+"),("+indepInfo[1]+"),("
+     execute("ring gnir1 = ("+charstr(basering)+"),("+indepInfo[1][1]+"),("
                               +indepInfo[2]+");");
      execute("map phi=gnir,"+@va+";");
      op=option(get);
@@ -8650,6 +8741,8 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
          }
          absprimarytmp[ab]= absFactorize(II[1],77);
          II=var(nn);
+         dbprint(1, " (II) "+string( II) );
+         dbprint(1, "invsigma(II) "+string(invsigma(II)) );
          abskeeptmp[ab]=string(invsigma(II));
          invsigma=basering,maxideal(1);
        }
@@ -8918,7 +9011,7 @@ EXAMPLE: example newMaxIndependentSetLp; shows an example
 
   int n, k, di;
   list resu, hilf;
-  string var1, var2;
+  string var1, var2, var1e,var2e;
   list v = indepSet(j, 0);
 
   // SL 2006.04.21 1 Lines modified to use only one independent Set
@@ -8948,23 +9041,32 @@ EXAMPLE: example newMaxIndependentSetLp; shows an example
     di = 0;
     var1 = "";
     var2 = "";
+    var1e = "";
+    var2e = "";
     for(k = 1; k <= size(v[n]); k++)
     {
       if(v[n][k] != 0)
       {
         di++;
-        var2 = var2 + "var(" + string(k) + "), ";
+        var2e = var2e + "var(" + string(k) + "),";
+        var2 = var2 + string(var(k)) + ",";
       }
       else
       {
-        var1 = var1 + "var(" + string(k) + "), ";
+        var1e = var1e + "var(" + string(k) + "),";
+        var1 = var1 + string(var(k)) + ",";
       }
     }
     if(di > 0)
     {
       var1 = var1 + var2;
+      var1e = var1e + var2e;
       var1 = var1[1..size(var1) - 2];       // The "- 2" removes the trailer comma
-      hilf[1] = var1;
+      var1e = var1e[1..size(var1e) - 2];       // The "- 2" removes the trailer comma
+      hilf[1] = list(var1, var1e);
+      dbprint(1, "hilf",hilf);
+      dbprint(1, "var1",var1);
+      dbprint(1, "var1e",var1e);
       // SL 2006.21.04 1 The order is now block dp instead of lp
       //hilf[2] = "dp(" + string(nvars(basering) - di) + "), dp(" + string(di) + ")";
       // SL 2006.21.04 2
@@ -8975,7 +9077,7 @@ EXAMPLE: example newMaxIndependentSetLp; shows an example
     }
     else
     {
-      resu[n] = varstr(basering), ordstr(basering), 0;
+      resu[n] = list(varstr(basering), varIdealStr(basering)), ordstr(basering), 0;
     }
   }
   return(resu);
