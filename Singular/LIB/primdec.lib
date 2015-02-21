@@ -1378,7 +1378,7 @@ proc extF(list l,list #)
 
   string gnir1="ring RS="+string(p)+",("+varstr(R)+","+extvar+"),lp;";
   execute(gnir1);
-  mp = "poly pp= " + minpolyToVarStr(RL, nvars() ) + ";";    
+  mp = "poly pp= " + minpolyToVarStr(RL, nvars(R) ) + ";";    
   execute(mp);
   list L=imap(RL,keep);
 
@@ -4258,7 +4258,7 @@ static proc algeRad(ideal i)
    string gnir="ring RH="+string(char(R))+",("+varstr(R)+","+string(par(1))
                 +"),dp;";
    execute(gnir);   
-   string mp="poly p="+minpolyToVarStr(R, nvars() )+";";      
+   string mp="poly p="+minpolyToVarStr(R, nvars(gnir) )+";";      
    execute(mp);
    ideal i=imap(R,i);
    i=i,p;
