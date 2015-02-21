@@ -1294,12 +1294,12 @@ example
 
 proc minpolyToVarStr(R, int varnr)
 {
-  return ( minpolyToParVarStr(R, "var", int varnr) );
+  return ( minpolyToParVarStr(R, "var", varnr) );
 }
 
 proc minpolyToParStr(R, int varnr)
 {
-  return ( minpolyToParVarStr(R, "var", int varnr) );
+  return ( minpolyToParVarStr(R, "var", varnr) );
 }
 
 
