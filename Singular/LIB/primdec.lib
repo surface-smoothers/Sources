@@ -8542,6 +8542,7 @@ static proc newReduction(ideal @j, ideal ser, intvec @hilb, intvec @w, int jdim,
    intvec op;
    intvec @vv;
    def gnir = basering;
+   ideal @mI = maxideal(1);
    ideal isat=0;
    int @n;
    int @n1 = 0;
