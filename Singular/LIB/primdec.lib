@@ -58,6 +58,7 @@ LIB "matrix.lib";
 LIB "triang.lib";
 LIB "absfact.lib";
 LIB "ring.lib";
+LIB "reslipman/wrappers.lib";
 ///////////////////////////////////////////////////////////////////////////////
 //
 //                      Gianni/Trager/Zacharias
@@ -1421,6 +1422,9 @@ proc zeroSp(ideal i)
 
   //i has to be a reduced groebner basis
   ASSUME(1, dim(i)==0);
+  ASSUME(1, attrib(i, "isSB"));
+  ASSUME(1, idealRepresentationReduced(i) );
+  dbprint(1, "checked idealRepresentationReduced");
   ideal F=finduni(i);
 
   int j,k,l,ready;
@@ -1557,6 +1561,7 @@ proc insepDecomp_i(int patchPrimaryDecomposition, ideal i)
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  ASSUME(0, optionIsSet("redSB"));
   def R=basering;
   list pr=zeroSp(i);
   int l,k;
@@ -9016,9 +9021,15 @@ NOTE:    Algorithm of Gianni/Trager/Zacharias
 EXAMPLE: example newZero_decomp; shows an example
 "
 {
+  //dbprint(1, " entering newZero_decomp ");
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(0, hasGlobalOrdering(basering) ) ;
+  //ASSUME(0, attrib(j,"isSB") );
+  ASSUME(0, optionIsSet("redSB") );
+  //dbprint(1, "basering",basering);
+  //dbprint(1, "ringlist(basering)",ringlist(basering));
+  //ASSUME(0, ordering_is_certainly_lp(basering));
 
   def   @P = basering;
   int uytrewq;

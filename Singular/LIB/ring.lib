@@ -1221,3 +1221,57 @@ example
   def rr=addNvarsTo(r,2,"@",2);
   rr;
 }
+
+// checks only straight ordering, no block and no weighted degree orderings.
+static proc orderingIs(def R, string ordstring)
+{
+    ASSUME(1, "lp"==ordstring ||
+              "dp"==ordstring ||
+              "rp"==ordstring ||
+              "Dp"==ordstring ||
+              "ds"==ordstring ||
+              "ls"==ordstring ||
+              "Ds"==ordstring ||
+              "rs"==ordstring );
+                  
+    list rl = ringlist(R);
+    ASSUME(1, size(rl[3])==2 );
+    intvec v  = 1:nvars(R);
+    if (rl[3][1][1]=="C")
+    {
+       if (ordstring != rl[3][2][1]) {      return (0); }
+       if ( v != rl[3][2][2] )       {      return (0); }
+    }
+    else
+    {
+        ASSUME(1, "C"==rl[3][2][1] );
+        
+        if (ordstring != rl[3][1][1]) {     return (0); }
+        if ( v != rl[3][1][2] )       {     return (0); }
+    }
+    return (1);
+}
+
+proc ordering_is_certainly_lp( def R )  { return ( orderingIs(R,"lp") ); }
+example
+{
+   ring R = 0,(x,y,z),lp;
+   ordering_is_certainly_lp(R);
+   
+   // not ordering_is_certainly_lp() is not equivalent to 'ordering is not lp':
+   // therefore the naming contains the word 'certainly'
+   ring R = 0,(x,y,z),( lp(1), lp(1), lp(1));
+   ordering_is_certainly_lp(R);    
+}
+
+proc ordering_is_certainly_dp( def R )  { return ( orderingIs(R,"dp") ); }
+proc ordering_is_certainly_rp( def R )  { return ( orderingIs(R,"rp") ); }
+proc ordering_is_certainly_Dp( def R )  { return ( orderingIs(R,"Dp") ); }
+proc ordering_is_certainly_ls( def R )  { return ( orderingIs(R,"ls") ); }
+proc ordering_is_certainly_ds( def R )  { return ( orderingIs(R,"ds") ); }
+proc ordering_is_certainly_rs( def R )  { return ( orderingIs(R,"rs") ); }
+proc ordering_is_certainly_Ds( def R )  { return ( orderingIs(R,"Ds") ); }
+ 
+
+
+
