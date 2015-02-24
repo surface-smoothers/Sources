@@ -6040,6 +6040,49 @@ BOOLEAN iiTestAssume(leftv a, leftv b)
   return FALSE;
 }
 
+
+BOOLEAN jjTestMAssume(leftv a, leftv b, leftv v)
+{
+  // assume a: level
+
+  
+  if ((a->Typ()==INT_CMD)&&((long)a->Data()>=0))
+  {
+    char       assume_yylinebuf[80];
+    strncpy(assume_yylinebuf,my_yylinebuf,79);
+    int lev=(long)a->Data();
+    int startlev=0;
+    idhdl h=ggetid("assumeLevel");
+    if ((h!=NULL)&&(IDTYP(h)==INT_CMD)) startlev=(long)IDINT(h);
+    if(lev <=startlev)
+    {
+      BOOLEAN bo=b->Eval();
+      if (bo) { WerrorS("syntax error in ASSUME");return TRUE;}
+      if (b->Typ()!=INT_CMD) { WerrorS("ASSUME(<level>,<int expr>, <string msg>)");return TRUE; }
+      if (b->Data()==NULL) 
+      {
+         BOOLEAN bb=v->Eval();
+         {
+            if (v->Typ()!=STRING_CMD) { WerrorS("ASSUME(<level>,<int expr>, <string msg>)");return TRUE; }
+         }
+         char *msg=(char *)v->Data();
+           
+         Werror("ERROR: %s", msg); 
+      
+         Werror("ASSUME failed:%s",assume_yylinebuf); 
+         return TRUE;
+
+      }
+    }
+  }
+  v->CleanUp();
+  b->CleanUp();
+  a->CleanUp();
+  return FALSE;
+}
+
+
+
 #include "libparse.h"
 
 BOOLEAN iiARROW(leftv r, char* a, char *s)

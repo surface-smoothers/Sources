@@ -785,6 +785,13 @@ expr:   expr_arithmetic
             memset(&$$,0,sizeof($$));
             $$.rtyp=NONE;
           }
+        | assume_start expr ',' expr  ',' expr quote_end
+          {            
+            jjTestMAssume(&$2,&$4,&$6);
+            memset(&$$,0,sizeof($$));
+            $$.rtyp=NONE;
+          }
+          
         | EVAL  '('
           {
             #ifdef SIQ
@@ -810,7 +817,7 @@ quote_start:    QUOTE  '('
             #endif
           }
           ;
-
+          
 assume_start:    ASSUME_CMD '('
           {
             #ifdef SIQ

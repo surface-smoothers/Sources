@@ -293,10 +293,7 @@ static proc testFactor(list act,poly p)
   }
   q=1/leadcoef(q)*q;
   p=1/leadcoef(p)*p;
-  if(p-q!=0)
-  {
-    "ERROR IN FACTOR, please inform the authors";
-  }
+  ASSUME(0, p-q == 0,  "ERROR IN FACTOR, please inform the authors");
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -342,7 +339,7 @@ EXAMPLE: example factor; shows an example
             @i=@i+ideal(@l[1][@j]);
             if(size(@i)==pleh)
             {
-              "//factorization error";
+              ERROR("factorization error");
               @l;
               @k--;
               @v[@k]=@v[@k]+@l[2][@j];
@@ -2532,12 +2529,7 @@ EXAMPLE:example equidim; shows an example
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-      ERROR(
-      "// Not implemented for this ordering, please change to global ordering."
-      );
-  }
+  ASSUME(0, attrib(basering,"global") == 1, "Not implemented for this ordering, please change to global ordering.");
   intvec op ;
   def  P = basering;
   list eq;
@@ -2641,13 +2633,7 @@ EXAMPLE: example equidimMax; shows an example
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-      ERROR(
-      "Not implemented for this ordering, please change to a global ordering."
-      );
-  }
-
+  ASSUME(0, attrib(basering,"global") == 1, "Not implemented for this ordering, please change to global ordering.");
   def  P = basering;
   ideal eq;
   intvec w;
@@ -4265,12 +4251,8 @@ EXAMPLE: example radicalEHV; shows an example
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-    ERROR(
-      "// Not implemented for this ordering, please change to global ordering."
-    );
-  }
+  ASSUME(0, attrib(basering,"global") == 1, " Not implemented for this ordering, please change to global ordering.");
+
 
   if ( size(i)==0 ) { return(ideal(0)); }
   if(hasAlgExtensionCoefficient(basering))
@@ -4600,10 +4582,9 @@ static proc min_ass_prim_charsets_i (int patchPrimaryDecomposition, ideal PS, in
   ASSUME(1, hasGlobalOrdering(basering) ) ;
   ASSUME(1, not isQuotientRing(basering) ) ;
 
-  if((cho<0) or (cho>1))
-  {
-    ERROR("<int> must be 0 or 1");
-  }
+  ASSUME(0, (cho==0) || (cho==1), "<int> cho must be 0 or 1"");
+  
+
   intvec saveopt=option(get);
   option(notWarnSB);
   list L;
@@ -4919,10 +4900,8 @@ static proc prim_dec_i(int patchPrimaryDecomposition, ideal I, int choose)
   ASSUME(1, hasFieldCoefficient(basering) );
   ASSUME(1, not isQuotientRing(basering) ) ;
   ASSUME(1, hasGlobalOrdering(basering) ) ;
-  if((choose<0) or (choose>3))
-  {
-    ERROR("ERROR: <int> must be 0 or 1 or 2 or 3");
-  }
+  ASSUME(0, (choose>=0) && (choose<=3), "ERROR: <int> must be 0 or 1 or 2 or 3");
+
   ideal H=1; // The intersection of the primary components
   list U;    // the leaves of the decomposition tree, i.e.,
              // pairs consisting of a primary component of I
@@ -5820,7 +5799,7 @@ static proc primdecGTZ_i(int patchPrimaryDecomposition,ideal i, list #)
    {
       return(algeDeco_i(patchPrimaryDecomposition,i,0));
       ERROR(
-      "// Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
+      "Not implemented yet for algebraic extensions.Simulate the ring extension by adding the minpoly to the ideal"
       );
    }
   return(convList(decomp_i(patchPrimaryDecomposition,i)));
@@ -5915,10 +5894,7 @@ static proc absPrimdecGTZ_i(int patchPrimaryDecomposition, ideal I, list #)
 // For other parameters see 'absPrimdecGTZ' or 'absPrimdecGTZE'.
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if (char(basering) != 0)
-  {
-    ERROR("primdec.lib::absPrimdecGTZ is only implemented for "+
-           +"characteristic 0");
+  ASSUME(0, char(basering) == 0, "primdec.lib::absPrimdecGTZ is only implemented for characteristic 0");
   }
 
   if(size(#)>0)
@@ -6460,15 +6436,9 @@ NOTE:    A combination of the algorithms of Krick/Logar (with modifications by L
 EXAMPLE: example equiRadical; shows an example
 "
 {
-  ASSUME(0, hasFieldCoefficient(basering) );
-  ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-     ERROR(
-     "// Not implemented for this ordering, please change to global ordering."
-     );
-  }
-
+  ASSUME(0,  hasFieldCoefficient(basering) );
+  ASSUME(0,  not isQuotientRing(basering) ) ;
+  ASSUME(0, attrib(basering,"global")==1, " Not implemented for this ordering, please change to global ordering.");
   return(radical(i, 1));
 }
 example
@@ -7254,12 +7224,7 @@ EXAMPLE: example prepareAss; shows an example
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-      ERROR(
-      "// Not implemented for this ordering, please change to global ordering."
-      );
-  }
+  ASSUME(0, attrib(basering,"global")==1, " Not implemented for this ordering, please change to global ordering.");
 
   ideal j=std(i);
   int cod=nvars(basering)-dim(j);
@@ -7305,12 +7270,8 @@ EXAMPLE: example equidimMaxEHV; shows an example
 {
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
-  if(attrib(basering,"global")!=1)
-  {
-      ERROR(
-      "// Not implemented for this ordering, please change to global ordering."
-      );
-  }
+  ASSUME(0, attrib(basering,"global")==1, " Not implemented for this ordering, please change to global ordering.");
+
 
   ideal j=groebner(i);
   int cod=nvars(basering)-dim(j);
@@ -7432,12 +7393,8 @@ EXAMPLE: example zerodec; shows an example
   ASSUME(0, hasFieldCoefficient(basering) );
   ASSUME(0, not isQuotientRing(basering) ) ;
   ASSUME(2, dim(groebner(I))==0 );
-  if(attrib(basering,"global")!=1)
-  {
-    ERROR(
-    "// Not implemented for this ordering, please change to global ordering."
-    );
-  }
+  ASSUME(0, attrib(basering,"global")==1, " Not implemented for this ordering, please change to global ordering.");
+
 
   def R=basering;
   poly q;

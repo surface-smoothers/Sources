@@ -249,6 +249,7 @@ void paPrint(const char *n,package p);
 
 
 BOOLEAN iiTestAssume(leftv a, leftv b);
+BOOLEAN jjTestMAssume(leftv a, leftv b, leftv v);
 
 /* table inteface for iiAddCproc */
 /// apply an operation 'op' to an argument a
