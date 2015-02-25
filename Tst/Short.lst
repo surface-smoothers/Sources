@@ -35,6 +35,7 @@ Short/bug_32.tst
 Short/bug_33.tst
 Short/bug_34.tst
 Short/bug_35.tst
+Short/bug_358.tst
 Short/bug_36.tst
 Short/bug_37.tst
 Short/bug_38.tst
@@ -93,7 +94,6 @@ Short/bug_interpol.tst
 Short/bug_mres.tst
 ;;;; Short/bug_M.tst
 Short/bug_napMultT.tst
-Short/bug_newstruct3.tst
 Short/bug_pd.tst
 Short/bug_presolve.tst
 Short/bug_primdec.tst
@@ -160,6 +160,7 @@ Short/eliminate_7.tst
 Short/elimlib_s.tst
 Short/equising_s.tst
 ;;;; Short/facstd.tst
+Short/factorize_mod7.tst
 Short/factorizep_s.tst
 Short/factorizeQa_s.tst
 Short/factorizeQ_s.tst
@@ -273,6 +274,8 @@ Short/std_s.tst
 ;MP Short/stratify.tst
 Short/string.tst
 Short/test_c_dp.tst
+Short/test_unit_ideal_decomposition.tst
+Short/test_zero_ideal_decomposition.tst
 Short/triang_s.tst
 ; Short/tropical.tst ;; too long ?
 Short/tst_s.tst
@@ -311,7 +314,6 @@ Short/zerodim_5_32003_lp_slimgb.tst
 Short/zerodim_54_32003_lp_slimgb.tst
 Short/zerodim_57_32003_lp_slimgb.tst
 Short/zerodim_58_32003_lp_slimgb.tst
-Short/zerodim_59_32003_lp_slimgb.tst
 Short/zerodim_60_32003_lp_slimgb.tst
 Short/zerodim_61_32003_lp_slimgb.tst
 Short/zerodim_62_32003_lp_slimgb.tst
@@ -321,7 +323,7 @@ Short/zerodim_9_32003_lp_slimgb.tst
 ;;;; Short/zerored.tst
 Short/ZidealAdd_s.tst
 Short/sba_s.tst
-Short/countedref_s.tst 
+Short/countedref_s.tst
 ;;;; new tests from master
 Short/alias.tst
 Short/bug_charseries2.tst

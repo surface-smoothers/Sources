@@ -8,11 +8,14 @@
 
 
 
+#include <kernel/mod2.h>
+#include <omalloc/omalloc.h>
+#include <resources/feResource.h>
+#include <Singular/feOpt.h>
+
 #ifdef __CYGWIN__
 #define BOOLEAN boolean
 #endif
-#include <kernel/mod2.h>
-
 
 #include <stdio.h>
 #include <unistd.h>
@@ -29,9 +32,6 @@
 #include <windows.h>
 #endif
 
-#include <omalloc/omalloc.h>
-#include <resources/feResource.h>
-#include <Singular/feOpt.h>
 
 #if !defined(TSINGULAR) && !defined(ESINGULAR)
 #define ESINGULAR
@@ -62,7 +62,7 @@ void error(const char *fmt, ...)
   vfprintf(stderr, fmt, ap);
 }
 #else
-void error(char* fmt, ...)
+void error(const char* fmt, ...)
 {
    char buf[4096];
    int j =0;
@@ -134,14 +134,14 @@ int main(int argc, char** argv)
 
           feOptHelp(feArgv0);
           exit(0);
-
-        case '?':
-        case ':':
-        case '\0':
+          break;
+      case '?':
+      case ':':
+      case '\0':
           mainUsage();
           exit(1);
 
-        case  LONG_OPTION_RETURN:
+      case  LONG_OPTION_RETURN:
         {
           switch(option_index)
           {
@@ -168,6 +168,11 @@ int main(int argc, char** argv)
 
               case FE_OPT_NO_CALL:
                 no_emacs_call = 1;
+                break;
+
+              case FE_OPT_DUMP_VERSIONTUPLE:
+                feOptDumpVersionTuple();
+                exit(0);
                 break;
 
               default:
