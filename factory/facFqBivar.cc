@@ -7,7 +7,7 @@
  * \f$ F_{p} \f$ , \f$ F_{p}(\alpha ) \f$ or GF, based on "Modern Computer
  * Algebra, Chapter 15" by J. von zur Gathen & J. Gerhard and "Factoring
  * multivariate polynomials over a finite field" by L. Bernardin.
- * Factor Recombination is described in "Factoring polynomials over global 
+ * Factor Recombination is described in "Factoring polynomials over global
  * fields" by K. Belabas, M. van Hoeij, J. Klueners, A. Steel
  *
  *
@@ -171,7 +171,7 @@ uniFactorizer (const CanonicalForm& A, const Variable& alpha, const bool& GF)
     CanonicalForm buf= GF2FalphaRep (A, beta);
     if (getCharacteristic() > 2)
     {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo, leadingCoeff;
       fq_nmod_ctx_t fq_con;
       fq_nmod_poly_t FLINTA;
@@ -232,12 +232,13 @@ uniFactorizer (const CanonicalForm& A, const Variable& alpha, const bool& GF)
       buf= Falpha2GFRep (buf);
       i.getItem()= CFFactor (buf, i.getItem().exp());
     }
+    prune (beta);
   }
   else if (alpha.level() != 1)
   {
     if (getCharacteristic() > 2)
     {
-#if (HAVE_FLINT && __FLINT_VERSION_MINOR >= 4)
+#if (HAVE_FLINT && __FLINT_RELEASE >= 20400)
       nmod_poly_t FLINTmipo, leadingCoeff;
       fq_nmod_ctx_t fq_con;
       fq_nmod_poly_t FLINTA;
@@ -814,7 +815,7 @@ Variable chooseExtension (const Variable & alpha, const Variable& beta, int k)
 void
 earlyFactorDetection (CFList& reconstructedFactors, CanonicalForm& F, CFList&
                       factors, int& adaptedLiftBound, int*& factorsFoundIndex,
-                      DegreePattern& degs, bool& success, int deg, const 
+                      DegreePattern& degs, bool& success, int deg, const
                       CanonicalForm& eval, const modpk& b, CanonicalForm& den)
 {
   DegreePattern bufDegs1= degs;
@@ -7709,7 +7710,7 @@ extHenselLiftAndLatticeRecombi(const CanonicalForm& G, const CFList& uniFactors,
 
   if (success)
   {
-    F= H;
+    F= H/Lc(H);
     delete [] bounds;
     bounds= computeBounds (F, d, isIrreducible);
     if (isIrreducible)
@@ -8261,9 +8262,9 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     return factors;
   }
 
-  
+
   //check trivial case
-  if (degree (A) == 1 || degree (A, 1) == 1 || 
+  if (degree (A) == 1 || degree (A, 1) == 1 ||
       (size (A) == 2 && igcd (degree (A), degree (A,1))==1))
   {
     factors.append (A);
@@ -8666,7 +8667,7 @@ biFactorize (const CanonicalForm& F, const ExtensionInfo& info)
     }
     else if (alpha.level() == 1 && !GF)
     {
-      CFList lll= henselLiftAndLatticeRecombi (A, uniFactors, alpha, degs, 
+      CFList lll= henselLiftAndLatticeRecombi (A, uniFactors, alpha, degs,
                                                symmetric, evaluation);
       factors= Union (lll, factors);
     }
@@ -8849,6 +8850,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable vBuf= rootOf (mipo.mapinto());
       for (CFListIterator j= factors; j.hasItem(); j++)
         j.getItem()= GF2FalphaRep (j.getItem(), vBuf);
+      prune (vBuf);
     }
     else // not able to pass to GF, pass to F_p(\alpha)
     {
@@ -8856,6 +8858,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable v= rootOf (mipo);
       ExtensionInfo info2= ExtensionInfo (v);
       factors= biFactorize (A, info2);
+      prune (v);
     }
     return factors;
   }
@@ -8869,6 +8872,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable v= rootOf (mipo);
       ExtensionInfo info2= ExtensionInfo (v);
       factors= biFactorize (A, info2);
+      prune (v);
     }
     else
     {
@@ -8890,6 +8894,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
                                    source, dest);
         ExtensionInfo info2= ExtensionInfo (v, alpha, imPrimElem, primElem);
         factors= biFactorize (bufA, info2);
+        prune (v);
       }
       else
       {
@@ -8910,6 +8915,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         bufA= mapUp (bufA, beta, v, delta, imPrimElem, source, dest);
         ExtensionInfo info2= ExtensionInfo (v, beta, imPrimElem, delta);
         factors= biFactorize (bufA, info2);
+        prune (v);
       }
     }
     return factors;
@@ -8932,6 +8938,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, extensionDeg, 'Z');
         ExtensionInfo info2= ExtensionInfo (extension);
         factors= biFactorize (A.mapinto(), info2);
+        prune (vBuf);
       }
       else // not able to pass to another GF, pass to F_p(\alpha)
       {
@@ -8942,6 +8949,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         Variable v= chooseExtension (vBuf, beta, k);
         ExtensionInfo info2= ExtensionInfo (v, extension);
         factors= biFactorize (A, info2);
+        prune (vBuf);
       }
     }
     else // need factorization over GF (p^k)
@@ -8979,6 +8987,7 @@ extBiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, k, cGFName);
         for (CFListIterator i= factors; i.hasItem(); i++)
           i.getItem()= Falpha2GFRep (i.getItem());
+        prune (v1);
       }
     }
     return factors;

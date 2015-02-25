@@ -9,7 +9,7 @@
  * @note some of the code is code from libfac or derived from code from libfac.
  * Libfac is written by M. Messollen. See also COPYING for license information
  * and README for general information on characteristic sets.
- * 
+ *
  * ABSTRACT: Descriptions can be found in B. Trager "Algebraic Factoring and
  * Rational Function Integration" and A. Steel "Conquering Inseparability:
  * Primary decomposition and multivariate factorization over algebraic function
@@ -29,6 +29,7 @@
 #include "cf_iter.h"
 #include "cf_util.h"
 #include "cf_algorithm.h"
+#include "templates/ftmpl_functions.h"
 #include "cf_map.h"
 #include "cfModResultant.h"
 #include "cfCharSets.h"
@@ -187,9 +188,11 @@ resultante (const CanonicalForm & f, const CanonicalForm& g, const Variable & v)
   if (!on_rational && getCharacteristic() == 0)
     Off(SW_RATIONAL);
   CanonicalForm result;
+#ifdef HAVE_NTL
   if (getCharacteristic() == 0)
     result= resultantZ (fz, gz,v);
   else
+#endif
     result= resultant (fz,gz,v);
 
   return result;
@@ -363,44 +366,41 @@ simpleExtension (CFList& backSubst, const CFList & Astar,
         rb= R.mvar()-s*ra;
         for (; j.hasItem(); j++)
         {
-          j.getItem()= j.getItem() (ra, oldR.mvar());
           j.getItem()= j.getItem() (rb, i.getItem().mvar());
+          j.getItem()= j.getItem() (ra, oldR.mvar());
         }
+        prune (alpha);
       }
       else
       {
         if (getCharacteristic() == 0)
           On (SW_RATIONAL);
-        h= swapvar (g, g.mvar(), oldR.mvar());
-        tmp= CFList (swapvar (R, g.mvar(), oldR.mvar()));
-        h= alg_gcd (h, swapvar (oldR, g.mvar(), oldR.mvar()), tmp);
-        CanonicalForm hh= replacevar (h, oldR.mvar(), alpha);
+        Variable v= Variable (tmax (g.level(), oldR.level()) + 1);
+        h= swapvar (g, oldR.mvar(), v);
+        tmp= CFList (R);
+        h= alg_gcd (h, swapvar (oldR, oldR.mvar(), v), tmp);
 
         CanonicalForm numinv, deninv;
         numinv= QuasiInverse (tmp.getFirst(), LC (h), tmp.getFirst().mvar());
-
-        if (getCharacteristic() == 0)
-          Off (SW_RATIONAL);
         h *= numinv;
-        h= reduce (h, tmp.getFirst());
+        h= Prem (h, tmp);
         deninv= LC(h);
 
         ra= -h[0];
         denra= gcd (ra, deninv);
         ra /= denra;
         denra= deninv/denra;
-        denra= replacevar (denra, ra.mvar(), g.mvar());
-        ra= replacevar(ra, ra.mvar(), g.mvar());
         rb= R.mvar()*denra-s*ra;
         denrb= denra;
         for (; j.hasItem(); j++)
         {
           CanonicalForm powdenra= power (denra, degree (j.getItem(),
-                                                        oldR.mvar()));
-          j.getItem()= evaluate (j.getItem(),ra, denra, powdenra, oldR.mvar());
-          powdenra= power (denra, degree (j.getItem(), i.getItem().mvar()));
+                                         i.getItem().mvar()));
           j.getItem()= evaluate (j.getItem(), rb, denrb, powdenra,
                                  i.getItem().mvar());
+          powdenra= power (denra, degree (j.getItem(), oldR.mvar()));
+          j.getItem()= evaluate (j.getItem(),ra, denra, powdenra, oldR.mvar());
+
         }
       }
 
@@ -462,6 +462,7 @@ Trager (const CanonicalForm & F, const CFList & Astar,
     }
     if (!isRat && getCharacteristic() == 0)
       Off (SW_RATIONAL);
+    prune (alpha);
     return L;
   }
   // after here we are over an extension of a function field
@@ -515,7 +516,7 @@ Trager (const CanonicalForm & F, const CFList & Astar,
 
       if (normFactors.getFirst().factor().inCoeffDomain())
         normFactors.removeFirst();
-      if (normFactors.length() == 1 && normFactors.getLast().exp() == 1)
+      if (normFactors.length() < 1 || (normFactors.length() == 1 && normFactors.getLast().exp() == 1))
       {
         f= backSubst (f, backSubsts, Astar);
         f *= bCommonDen (f);
@@ -523,7 +524,6 @@ Trager (const CanonicalForm & F, const CFList & Astar,
         f /= vcontent (f, as.getFirst().mvar());
 
         L.append (CFFactor (f, 1));
-        break;
       }
       else
       {
@@ -537,7 +537,7 @@ Trager (const CanonicalForm & F, const CFList & Astar,
           else
           {
             fnew= fnew (g.mvar() + s*Rstar.mvar(), g.mvar());
-            fnew= reduce (fnew, Rstar);
+            fnew= Prem (fnew, CFList (Rstar));
           }
 
           h= alg_gcd (g, fnew, Rstarlist);
@@ -999,6 +999,8 @@ facAlgFunc2 (const CanonicalForm & f, const CFList & as)
         vminpoly= rootOf(MIPO);
       }
       Factorlist= Trager(f, Astar, vminpoly, as, isFunctionField);
+      if (extdeg > 1)
+        prune (vminpoly);
       return Factorlist;
     }
     else if (isInseparable(Astar) || derivZero) // inseparable case
@@ -1014,6 +1016,8 @@ facAlgFunc2 (const CanonicalForm & f, const CFList & as)
         vminpoly= rootOf (MIPO);
       }
       Factorlist= Trager (f, Astar, vminpoly, as, isFunctionField);
+      if (extdeg > 1)
+        prune (vminpoly);
       return Factorlist;
     }
   }

@@ -266,6 +266,7 @@ BOOLEAN newstruct_Assign(leftv l, leftv r)
       }
       lists n2=(lists)r->Data();
       n2=lCopy_newstruct(n2);
+      r->CleanUp();
       if (l->rtyp==IDHDL)
       {
         IDDATA((idhdl)l->data)=(char *)n2;
@@ -360,9 +361,12 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
             res->rtyp=RING_CMD;
             res->data=al->m[nm->pos-1].data;
             r=(ring)res->data;
-            if (r==NULL) { res->data=(void *)currRing; r=currRing; }
-            if (r!=NULL) r->ref++;
-            else Werror("ring of this member is not set and no basering found");
+            if (r==NULL)
+            {
+              res->data=(void *)currRing; r=currRing;
+              if (r!=NULL) r->ref++;
+              else Werror("ring of this member is not set and no basering found");
+            }
             return r==NULL;
           }
           else if (RingDependend(nm->typ)
@@ -544,9 +548,18 @@ BOOLEAN newstruct_CheckAssign(blackbox */*b*/, leftv L, leftv R)
   int rt=R->Typ();
   if ((lt!=DEF_CMD)&&(lt!=rt))
   {
-    Werror("can not assign %s(%d) to member of type %s(%d)",
-            Tok2Cmdname(rt),rt,
-            Tok2Cmdname(lt),lt);
+    const char *rt1=Tok2Cmdname(rt);
+    const char *lt1=Tok2Cmdname(lt);
+    if ((rt>0) && (lt>0)
+    && ((strcmp(rt1,Tok2Cmdname(0))==0)||(strcmp(lt1,Tok2Cmdname(0))==0)))
+    {
+      Werror("can not assign %s(%d) to member of type %s(%d)",
+            rt1,rt,lt1,lt);
+    }
+    else
+    {
+      Werror("can not assign %s to member of type %s",rt1,lt1);
+    }
     return TRUE;
   }
   return FALSE;
@@ -858,6 +871,7 @@ BOOLEAN newstruct_set_proc(const char *bbname,const char *func, int args,procinf
   }
   p->args=args;
   p->p=pr; pr->ref++;
+  pr->is_static=0;
   currRingHdl = save_ring;
   return FALSE;
 }

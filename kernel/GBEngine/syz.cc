@@ -16,7 +16,7 @@
 #include <kernel/polys.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/kutil.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <misc/intvec.h>
 #include <coeffs/numbers.h>
 #include <kernel/ideals.h>
@@ -603,10 +603,7 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
   {
     if (! idIs0(res[i]))
     {
-      for (j=0; j<IDELEMS(res[i]); j++)
-      {
-        p_Shift(&res[i]->m[j], -rGetMaxSyzComp(i, currRing),currRing);
-      }
+      id_Shift(res[i],-rGetMaxSyzComp(i, currRing),currRing);
     }
   }
 /*--- going back to the original ring -------------------------*/

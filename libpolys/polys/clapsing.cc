@@ -56,16 +56,19 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
   assume(f!=NULL);
   assume(g!=NULL);
 
-  if(pNext(f)==NULL) 
+  if(pNext(f)==NULL && pNext(g)==NULL)
   {
     poly p=p_One(r);
-    if (pNext(g)==NULL)
+    for(int i=rVar(r);i>0;i--)
+      p_SetExp(p,i,si_min(p_GetExp(f,i,r),p_GetExp(g,i,r)),r);
+    if (rField_is_Ring(r))
     {
-      for(int i=rVar(r);i>0;i--)
-        p_SetExp(p,i,si_min(p_GetExp(f,i,r),p_GetExp(g,i,r)),r);
-      p_Setm(p,r);
-      return p;
+      number c = p_GetCoeff(f,r);
+      number d = p_GetCoeff(g,r);
+      p_SetCoeff(p,n_Gcd(c,d,r->cf),r);
     }
+    p_Setm(p,r);
+    return p;
 #if 0
     else
     {
@@ -76,7 +79,7 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
       {
         for(int i=rVar(r);i>0;i--)
           p_SetExp(p,i,si_min(p_GetExp(p,i,r),p_GetExp(h,i,r)),r);
-	pIter(h);
+        pIter(h);
       }
       p_Setm(p,r);
       return p;
@@ -90,6 +93,12 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
     poly h=f;
     for(int i=rVar(r);i>0;i--)
       p_SetExp(p,i,p_GetExp(g,i,r),r);
+    if (rField_is_Ring(r))
+    {
+      number c = p_GetCoeff(f,r);
+      number d = p_GetCoeff(g,r);
+      p_SetCoeff(p,n_Gcd(c,d,r->cf),r);
+    }
     while(h!=NULL)
     {
       for(int i=rVar(r);i>0;i--)
@@ -102,7 +111,7 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
 #endif
 
   Off(SW_RATIONAL);
-  if (rField_is_Q(r) || (rField_is_Zp(r)))
+  if (rField_is_Q(r) || rField_is_Zp(r) || rField_is_Ring_Z(r))
   {
     setCharacteristic( rChar(r) );
     CanonicalForm F( convSingPFactoryP( f,r ) ), G( convSingPFactoryP( g, r ) );
@@ -123,6 +132,7 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
       CanonicalForm F( convSingAPFactoryAP( f,a,r ) ),
                     G( convSingAPFactoryAP( g,a,r ) );
       res= convFactoryAPSingAP( gcd( F, G ),r );
+      prune (a);
       if (!b1) Off(SW_USE_QGCD);
     }
     else
@@ -143,15 +153,13 @@ poly singclap_gcd_and_divide ( poly& f, poly& g, const ring r)
 
   if (g == NULL)
   {
-    res= p_Copy (f,r);
-    p_Delete (&f, r);
+    res= f;
     f=p_One (r);
     return res;
   }
   if (f==NULL)
   {
-    res= p_Copy (g,r);
-    p_Delete (&g, r);
+    res= g;
     g=p_One (r);
     return res;
   }
@@ -234,6 +242,7 @@ poly singclap_gcd_and_divide ( poly& f, poly& g, const ring r)
         g= convFactoryAPSingAP( G,r );
       }
       res= convFactoryAPSingAP( GCD,r );
+      prune (a);
       if (!b1) Off(SW_USE_QGCD);
     }
     else
@@ -279,7 +288,7 @@ poly singclap_gcd ( poly f, poly g, const ring r)
 {
   poly res=NULL;
 
-  if (f!=NULL) p_Cleardenom(f, r);             
+  if (f!=NULL) p_Cleardenom(f, r);
   if (g!=NULL) p_Cleardenom(g, r);
   else         return f; // g==0 => gcd=f (but do a p_Cleardenom)
   if (f==NULL) return g; // f==0 => gcd=g (but do a p_Cleardenom)
@@ -342,6 +351,7 @@ poly singclap_resultant ( poly f, poly g , poly x, const ring r)
       CanonicalForm F( convSingAPFactoryAP( f,a,r ) ),
                     G( convSingAPFactoryAP( g,a,r ) );
       res= convFactoryAPSingAP( resultant( F, G, X ),r );
+      prune (a);
     }
     else
     {
@@ -496,6 +506,7 @@ BOOLEAN singclap_extgcd ( poly f, poly g, poly &res, poly &pa, poly &pb , const 
       res= convFactoryAPSingAP( extgcd( F, G, Fa, Gb ),r );
       pa=convFactoryAPSingAP(Fa,r);
       pb=convFactoryAPSingAP(Gb,r);
+      prune (a);
     }
     else
     {
@@ -543,6 +554,13 @@ poly singclap_pdivide ( poly f, poly g, const ring r )
     CanonicalForm F( convSingPFactoryP( f,r ) ), G( convSingPFactoryP( g,r ) );
     res = convFactoryPSingP( F / G,r );
   }
+  else if (rField_is_Ring_Z(r))
+  {
+    Off(SW_RATIONAL);
+    setCharacteristic( rChar(r) );
+    CanonicalForm F( convSingPFactoryP( f,r ) ), G( convSingPFactoryP( g,r ) );
+    res = convFactoryPSingP( F / G,r );
+  }
   else if (r->cf->extRing!=NULL)
   {
     if (rField_is_Q_a(r)) setCharacteristic( 0 );
@@ -555,6 +573,7 @@ poly singclap_pdivide ( poly f, poly g, const ring r )
       CanonicalForm F( convSingAPFactoryAP( f,a,r ) ),
                     G( convSingAPFactoryAP( g,a,r ) );
       res= convFactoryAPSingAP(  F / G, r  );
+      prune (a);
     }
     else
     {
@@ -666,7 +685,7 @@ void singclap_divide_content ( poly f, const ring r )
         //#ifdef LDEBUG
         //number cn=(number)c;
         //StringSetS(""); nWrite(nt); StringAppend(" ==> ");
-        //nWrite(cn);PrintS(StringEndS("\n")); // NOTE/TODO: use StringAppendS("\n"); omFree(s); 
+        //nWrite(cn);PrintS(StringEndS("\n")); // NOTE/TODO: use StringAppendS("\n"); omFree(s);
         //#endif
       }
     }
@@ -744,6 +763,9 @@ BOOLEAN count_Factors(ideal I, intvec *v,int j, poly &f, poly fac, const ring r)
         break;
       }
     }
+    if (r->cf->extRing!=NULL)
+      if (r->cf->extRing->qideal!=NULL)
+        prune (a);
     if (e==0)
     {
       Off(SW_RATIONAL);
@@ -840,6 +862,7 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
   number NN=NULL;
   number old_lead_coeff=n_Copy(pGetCoeff(f), r->cf);
 
+  Variable a;
   if (!rField_is_Zp(r) && !rField_is_Zp_a(r)) /* Q, Q(a) */
   {
     //if (f!=NULL) // already tested at start of routine
@@ -893,7 +916,7 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
     {
       CanonicalForm mipo=convSingPFactoryP(r->cf->extRing->qideal->m[0],
                                            r->cf->extRing);
-      Variable a=rootOf(mipo);
+      a=rootOf(mipo);
       CanonicalForm F( convSingAPFactoryAP( f, a, r ) );
       if (rField_is_Zp_a(r))
       {
@@ -981,6 +1004,9 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps, const ring r)
         }
       }
     }
+    if (r->cf->extRing!=NULL)
+      if (r->cf->extRing->qideal!=NULL)
+        prune (a);
 #ifndef SING_NDEBUG
     if ((r->cf->extRing!=NULL) && (!p_IsConstantPoly(ff,r)))
     {
@@ -1209,6 +1235,7 @@ ideal singclap_sqrfree ( poly f, intvec ** v , int with_exps, const ring r)
   number N=NULL;
   number NN=NULL;
   number old_lead_coeff=n_Copy(pGetCoeff(f), r->cf);
+  Variable a;
 
   if (!rField_is_Zp(r) && !rField_is_Zp_a(r)) /* Q, Q(a) */
   {
@@ -1260,7 +1287,7 @@ ideal singclap_sqrfree ( poly f, intvec ** v , int with_exps, const ring r)
     {
       CanonicalForm mipo=convSingPFactoryP(r->cf->extRing->qideal->m[0],
                                            r->cf->extRing);
-      Variable a=rootOf(mipo);
+      a=rootOf(mipo);
       CanonicalForm F( convSingAPFactoryAP( f, a, r ) );
       L= sqrFree (F);
     }
@@ -1335,6 +1362,9 @@ ideal singclap_sqrfree ( poly f, intvec ** v , int with_exps, const ring r)
       N=NULL;
     }
   }
+  if (r->cf->extRing!=NULL)
+    if (r->cf->extRing->qideal!=NULL)
+      prune (a);
   if (rField_is_Q_a(r) && (r->cf->extRing->qideal!=NULL))
   {
     int i=IDELEMS(res)-1;
@@ -1572,7 +1602,7 @@ poly singclap_det( const matrix m, const ring s )
 int singclap_det_i( intvec * m, const ring /*r*/)
 {
 //  assume( r == currRing ); // Anything else is not guaranted to work!
-   
+
   setCharacteristic( 0 ); // ?
   CFMatrix M(m->rows(),m->cols());
   int i,j;
@@ -1597,11 +1627,11 @@ number singclap_det_bi( bigintmat * m, const coeffs cf)
   {
     for(j=m->cols();j>0;j--)
     {
-      M(i,j)=cf->convSingNFactoryN(BIMATELEM(*m,i,j),setchar,cf);
+      M(i,j)=n_convSingNFactoryN(BIMATELEM(*m,i,j),setchar,cf);
       setchar=FALSE;
     }
   }
-  number res= cf->convFactoryNSingN( determinant(M,m->rows()),cf ) ;
+  number res=n_convFactoryNSingN( determinant(M,m->rows()),cf ) ;
   return res;
 }
 
@@ -1615,9 +1645,9 @@ matrix singntl_HNF(matrix  m, const ring s )
     Werror("HNF of %d x %d matrix",r,m->cols());
     return NULL;
   }
-   
+
   matrix res=mp_New(r,r);
-   
+
   if (rField_is_Q(s))
   {
 
@@ -1643,7 +1673,7 @@ matrix singntl_HNF(matrix  m, const ring s )
   return res;
 }
 
-intvec* singntl_HNF(intvec*  m, const ring)
+intvec* singntl_HNF(intvec*  m)
 {
   int r=m->rows();
   if (r!=m->cols())
@@ -1703,7 +1733,7 @@ matrix singntl_LLL(matrix  m, const ring s )
   return res;
 }
 
-intvec* singntl_LLL(intvec*  m, const ring)
+intvec* singntl_LLL(intvec*  m)
 {
   int r=m->rows();
   int c=m->cols();
@@ -1712,7 +1742,7 @@ intvec* singntl_LLL(intvec*  m, const ring)
   int i,j;
   for(i=r;i>0;i--)
   {
-    for(j=r;j>0;j--)
+    for(j=c;j>0;j--)
     {
       M(i,j)=IMATELEM(*m,i,j);
     }
@@ -1793,6 +1823,8 @@ ideal singclap_absFactorize ( poly f, ideal & mipos, intvec ** exps, int & numFa
       count= iter.getItem().exp()*degree (iter.getItem().minpoly());
       mipos->m[i]= convFactoryPSingTrP (replacevar (iter.getItem().minpoly(), alpha, x), r);
     }
+    if (!iter.getItem().minpoly().isOne())
+      prune (alpha);
     numFactors += count;
   }
   if (!isRat)

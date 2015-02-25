@@ -2,15 +2,6 @@
 using namespace std;
 
 // the following headers are private...
-#include <coeffs/longrat.h>
-#include <coeffs/gnumpfl.h>
-#include <coeffs/gnumpc.h>
-#include <coeffs/shortfl.h>
-#include <coeffs/ffields.h>
-#include <coeffs/modulop.h>
-#include <coeffs/rmodulon.h>
-#include <coeffs/rmodulo2m.h>
-#include <coeffs/rintegers.h>
 
 
 #include <polys/monomials/ring.h>
@@ -24,20 +15,20 @@ class MyGlobalPrintingFixture : public GlobalPrintingFixture
   public:
     virtual bool setUpWorld()
     {
-    
+
       GlobalPrintingFixture::setUpWorld();
-      
+
 
       //TS_ASSERT_EQUALS( nRegister( n_Zp, npInitChar), n_Zp );
       //TS_ASSERT_EQUALS( nRegister( n_GF, nfInitChar), n_GF );
       //TS_ASSERT_EQUALS( nRegister( n_R, nrInitChar), n_R );
       //TS_ASSERT_EQUALS( nRegister( n_Q, nlInitChar), n_Q );
       //TS_ASSERT_EQUALS( nRegister( n_R, nrInitChar), n_R );
-      
+
 #ifdef HAVE_RINGS
       //TS_ASSERT_EQUALS( nRegister( n_Z, nrzInitChar), n_Z ); // these are UNusable at the moment!
 #endif
-      
+
       return true;
     }
 };
@@ -66,7 +57,7 @@ static inline void Test(const ring)
 
 }
 
-class PolysTestSuite : public CxxTest::TestSuite 
+class PolysTestSuite : public CxxTest::TestSuite
 {
 public:
   void test_Z13_t()
@@ -74,7 +65,7 @@ public:
     clog << "Creating  Z/13[t]: " << endl;
 
     char* n[] = { (char*)"t"};
-    ring r = rDefault( 13, 1, n);     
+    ring r = rDefault( 13, 1, n);
     TS_ASSERT_DIFFERS( r, NULLp );
 
     PrintRing(r);
@@ -89,7 +80,7 @@ public:
     TS_ASSERT_EQUALS( rVar(r), 1);
 
     Test(r);
-     
+
     rDelete(r);
   }
 
@@ -98,14 +89,14 @@ public:
     clog << "Creating  Q[s]: " << endl;
 
     char* n[] = {(char*)"s"};
-    ring r = rDefault( 0, 1, n);     
+    ring r = rDefault( 0, 1, n);
     TS_ASSERT_DIFFERS( r, NULLp );
 
     PrintRing(r);
 
     TS_ASSERT( rField_is_Domain(r) );
     TS_ASSERT( rField_is_Q(r) );
-    
+
     TS_ASSERT( !rField_is_Zp(r) );
     TS_ASSERT( !rField_is_Zp(r, 11) );
 
@@ -115,17 +106,17 @@ public:
 
     rDelete(r);
   }
-  
+
   void test_Z11_x_y_z()
   {
      clog << "Creating  Z/11[x, y, z]: " << endl;
-     
+
      char* n[] = {(char*)"x", (char*)"y", (char*)"z"};
-     ring r = rDefault( 11, 3, n);     
+     ring r = rDefault( 11, 3, n);
      TS_ASSERT_DIFFERS( r, NULLp );
 
      PrintRing(r);
-     
+
      TS_ASSERT( rField_is_Domain(r) );
      TS_ASSERT( !rField_is_Q(r) );
 
@@ -136,7 +127,7 @@ public:
      TS_ASSERT_EQUALS( rVar(r), 3);
 
      Test(r);
-     
+
      rDelete(r);
   }
 
@@ -145,7 +136,7 @@ public:
      clog << "Creating  QQ[x, y, z, u]: " << endl;
 
      char* n[] = {(char*)"x", (char*)"y", (char*)"z", (char*)"u"};
-     ring r = rDefault( 0, 4, n);     
+     ring r = rDefault( 0, 4, n);
      TS_ASSERT_DIFFERS( r, NULLp );
 
      PrintRing(r);
@@ -159,7 +150,7 @@ public:
      TS_ASSERT_EQUALS( rVar(r), 4);
 
      Test(r);
-      
+
      rDelete(r);
    }
 
@@ -202,7 +193,7 @@ public:
 
      rDelete(r); // kills 'cf' as well!
    }
-   
+
 
 
 
@@ -241,7 +232,7 @@ public:
      TS_ASSERT_EQUALS( rVar(r), N);
 
      Test(r);
-      
+
      rDelete(r);
    }
 };

@@ -13,7 +13,10 @@
 #include "NTLconvert.h"
 #endif
 
-/// coprimality check
+/// Coprimality Check. f and g are assumed to have the same level. If swap is
+/// true, the main variables of f and g are swapped with Variable(1). If the
+/// result is false, d is set to the degree of the gcd of f and g evaluated at a
+/// random point in K^n-1. This gcd is a gcd of univariate polynomials.
 bool
 gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int & d )
 {
@@ -51,6 +54,8 @@ gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int 
     int p= getCharacteristic();
     bool passToGF= false;
     int k= 1;
+    bool extOfExt= false;
+    Variable v3;
     if (p > 0 && p < TEST_ONE_MAX && CFFactory::gettype() != GaloisFieldDomain && !algExtension)
     {
       if (p == 2)
@@ -77,7 +82,6 @@ gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int 
     }
     else if (p > 0 && p < TEST_ONE_MAX && algExtension)
     {
-      bool extOfExt= false;
 #ifdef HAVE_NTL
       int d= degree (getMipo (v));
       CFList source, dest;
@@ -131,6 +135,7 @@ gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int 
       }
       if (extOfExt)
       {
+        v3= v;
         F= mapUp (F, v, v2, primElem, imPrimElem, source, dest);
         G= mapUp (G, v, v2, primElem, imPrimElem, source, dest);
         lcf= mapUp (lcf, v, v2, primElem, imPrimElem, source, dest);
@@ -180,6 +185,8 @@ gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int 
           setCharacteristic (p);
         if (k > 1)
           setCharacteristic (p, k, gf_name);
+        if (extOfExt)
+          prune1 (v3);
         return false;
     }
 
@@ -207,17 +214,14 @@ gcd_test_one ( const CanonicalForm & f, const CanonicalForm & g, bool swap, int 
       setCharacteristic (p);
     if (k > 1)
       setCharacteristic (p, k, gf_name);
+    if (extOfExt)
+      prune1 (v3);
     return result;
 }
 
-/** static CanonicalForm balance_p ( const CanonicalForm & f, const CanonicalForm & q )
- *
- * balance_p() - map f from positive to symmetric representation
- *   mod q.
- *
- * This makes sense for polynomials over Z only.
- * q should be an integer.
- *
+/**
+ * same as balance_p ( const CanonicalForm & f, const CanonicalForm & q )
+ * but qh= q/2 is provided, too.
 **/
 CanonicalForm
 balance_p ( const CanonicalForm & f, const CanonicalForm & q, const CanonicalForm & qh )
@@ -242,6 +246,15 @@ balance_p ( const CanonicalForm & f, const CanonicalForm & q, const CanonicalFor
     return result;
 }
 
+/** static CanonicalForm balance_p ( const CanonicalForm & f, const CanonicalForm & q )
+ *
+ * balance_p() - map f from positive to symmetric representation
+ *   mod q.
+ *
+ * This makes sense for polynomials over Z only.
+ * q should be an integer.
+ *
+**/
 CanonicalForm
 balance_p ( const CanonicalForm & f, const CanonicalForm & q )
 {

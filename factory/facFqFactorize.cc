@@ -2043,7 +2043,7 @@ checkOneToOne (const CFList& factors1, const CFList& factors2, CFList& factors3,
   {
     tmp= iter.getItem() (evalPoint, x);
     tmp /= Lc (tmp);
-    if (pos= findItem (factors2, tmp))
+    if ((pos= findItem (factors2, tmp)))
     {
       result2.append (getItem (factors3, pos));
       result.append (iter.getItem());
@@ -2442,7 +2442,7 @@ extNonMonicFactorRecombination (const CFList& factors, const CanonicalForm& F,
         {
           g= prod (T);
           T.removeFirst();
-          result.append (g/myContent (g));
+          g /= myContent (g);
           g /= Lc (g);
           appendTestMapDown (result, g, info, source, dest);
           return result;
@@ -2503,7 +2503,9 @@ extNonMonicFactorRecombination (const CFList& factors, const CanonicalForm& F,
     if (T.length() < 2*s || T.length() == s)
     {
       delete [] v;
-      appendTestMapDown (result, buf/myContent(buf), info, source, dest);
+      buf /= myContent (buf);
+      buf /= Lc (buf);
+      appendTestMapDown (result, buf, info, source, dest);
       return result;
     }
     for (int i= 0; i < T.length(); i++)
@@ -2511,7 +2513,11 @@ extNonMonicFactorRecombination (const CFList& factors, const CanonicalForm& F,
     noSubset= false;
   }
   if (T.length() < 2*s)
-    appendMapDown (result, F/myContent(F), info, source, dest);
+  {
+    buf= F/myContent (F);
+    buf /= Lc (buf);
+    appendMapDown (result, buf, info, source, dest);
+  }
 
   delete [] v;
   return result;
@@ -2614,7 +2620,7 @@ LCHeuristic (CanonicalForm& A, const CanonicalForm& LCmultiplier,
     for (iter= oldAeval[i]; iter.hasItem(); iter++, iter2++)
       iter2.getItem() *= power (xx, degree (LC (iter.getItem(),1), xx));
   }
-  CanonicalForm tmp;
+  CanonicalForm tmp, quot1, quot2, quot3;
   iter2= vars1;
   for (iter= leadingCoeffs[lengthAeval-1]; iter.hasItem(); iter++, iter2++)
   {
@@ -2654,24 +2660,33 @@ LCHeuristic (CanonicalForm& A, const CanonicalForm& LCmultiplier,
             else
             {
               tmp= ii.getItem().factor();
-              iter2.getItem() /= tmp;
-              CFListIterator iter3= evaluation;
-              for (int jj= A.level(); jj > 2; jj--, iter3++)
-                tmp= tmp (iter3.getItem(), jj);
-              if (!tmp.inCoeffDomain())
+              if (fdivides (tmp, iter2.getItem(), quot1))
               {
-                int index3= 1;
-                for (iter3= biFactors; iter3.hasItem(); iter3++, index3++)
+                CFListIterator iter3= evaluation;
+                for (int jj= A.level(); jj > 2; jj--, iter3++)
+                  tmp= tmp (iter3.getItem(), jj);
+                if (!tmp.inCoeffDomain())
                 {
-                  if (index3 == index2)
+                  int index3= 1;
+                  for (iter3= biFactors; iter3.hasItem(); iter3++, index3++)
                   {
-                    iter3.getItem() /= tmp;
-                    iter3.getItem() /= Lc (iter3.getItem());
-                    break;
+                    if (index3 == index2)
+                    {
+                      if (fdivides (tmp, iter3.getItem(), quot2))
+                      {
+                        if (fdivides (ii.getItem().factor(), A, quot3))
+                        {
+                          A               = quot3;
+                          iter2.getItem() = quot2;
+                          iter3.getItem() = quot3;
+                          iter3.getItem() /= Lc (iter3.getItem());
+                          break;
+                        }
+                      }
+                    }
                   }
                 }
               }
-              A /= ii.getItem().factor();
             }
           }
           iter.getItem() /= getVars (ii.getItem().factor());
@@ -2692,21 +2707,30 @@ LCHeuristic (CanonicalForm& A, const CanonicalForm& LCmultiplier,
             if (index2 == index)
             {
               tmp= power (ii.getItem().factor(), ii.getItem().exp());
-              iter2.getItem() /= tmp;
-              A /= tmp;
-              CFListIterator iter3= evaluation;
-              for (int jj= A.level(); jj > 2; jj--, iter3++)
-                tmp= tmp (iter3.getItem(), jj);
-              if (!tmp.inCoeffDomain())
+              if (fdivides (tmp, A, quot1))
               {
-                int index3= 1;
-                for (iter3= biFactors; iter3.hasItem(); iter3++, index3++)
+                if (fdivides (tmp, iter2.getItem()))
                 {
-                  if (index3 == index2)
+                  CFListIterator iter3= evaluation;
+                  for (int jj= A.level(); jj > 2; jj--, iter3++)
+                    tmp= tmp (iter3.getItem(), jj);
+                  if (!tmp.inCoeffDomain())
                   {
-                    iter3.getItem() /= tmp;
-                    iter3.getItem() /= Lc (iter3.getItem());
-                    break;
+                    int index3= 1;
+                    for (iter3= biFactors; iter3.hasItem(); iter3++, index3++)
+                    {
+                      if (index3 == index2)
+                      {
+                        if (fdivides (tmp, iter3.getItem(), quot3))
+                        {
+                          A               =  quot1;
+                          iter2.getItem() =  quot2;
+                          iter3.getItem() =  quot3;
+                          iter3.getItem() /= Lc (iter3.getItem());
+                          break;
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2919,7 +2943,9 @@ multiFactorize (const CanonicalForm& F, const ExtensionInfo& info)
   //bivariate case
   if (A.level() == 2)
   {
-    CFList buf= biFactorize (F, info);
+    CFList buf= biSqrfFactorizeHelper (F, info);
+    if (buf.getFirst().inCoeffDomain())
+      buf.removeFirst();
     return buf;
   }
 
@@ -3646,6 +3672,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable vBuf= rootOf (mipo.mapinto());
       for (CFListIterator j= factors; j.hasItem(); j++)
         j.getItem()= GF2FalphaRep (j.getItem(), vBuf);
+      prune (vBuf);
     }
     else if (p >= 7 && p*p < (1<<16)) // pass to GF if possible
     {
@@ -3659,6 +3686,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable vBuf= rootOf (mipo.mapinto());
       for (CFListIterator j= factors; j.hasItem(); j++)
         j.getItem()= GF2FalphaRep (j.getItem(), vBuf);
+      prune (vBuf);
     }
     else  // not able to pass to GF, pass to F_p(\alpha)
     {
@@ -3666,6 +3694,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable v= rootOf (mipo);
       ExtensionInfo info= ExtensionInfo (v);
       factors= multiFactorize (A, info);
+      prune (v);
     }
     return factors;
   }
@@ -3679,6 +3708,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
       Variable v= rootOf (mipo);
       ExtensionInfo info= ExtensionInfo (v);
       factors= multiFactorize (A, info);
+      prune (v);
     }
     else
     {
@@ -3693,13 +3723,14 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         if (primFail)
           ; //ERROR
         else
-          imPrimElem= mapPrimElem (primElem, vBuf, v);
+          imPrimElem= mapPrimElem (primElem, alpha, v);
 
         CFList source, dest;
         CanonicalForm bufA= mapUp (A, alpha, v, primElem, imPrimElem,
                                    source, dest);
         ExtensionInfo info= ExtensionInfo (v, alpha, imPrimElem, primElem);
         factors= multiFactorize (bufA, info);
+        prune (v);
       }
       else
       {
@@ -3720,6 +3751,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         bufA= mapUp (bufA, beta, v, delta, imPrimElem, source, dest);
         ExtensionInfo info= ExtensionInfo (v, beta, imPrimElem, delta);
         factors= multiFactorize (bufA, info);
+        prune (v);
       }
     }
     return factors;
@@ -3742,6 +3774,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, extensionDeg, 'Z');
         ExtensionInfo info= ExtensionInfo (extension);
         factors= multiFactorize (A.mapinto(), info);
+        prune (vBuf);
       }
       else // not able to pass to another GF, pass to F_p(\alpha)
       {
@@ -3752,6 +3785,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         Variable v= chooseExtension (vBuf, beta, k);
         ExtensionInfo info= ExtensionInfo (v, extension);
         factors= multiFactorize (A, info);
+        prune (vBuf);
       }
     }
     else // need factorization over GF (p^k)
@@ -3787,6 +3821,7 @@ extFactorize (const CanonicalForm& F, const ExtensionInfo& info)
         setCharacteristic (p, k, cGFName);
         for (CFListIterator i= factors; i.hasItem(); i++)
           i.getItem()= Falpha2GFRep (i.getItem());
+        prune (v1);
       }
     }
     return factors;

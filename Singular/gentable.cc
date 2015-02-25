@@ -20,6 +20,8 @@
 #include "grammar.h"
 #include "tok.h"
 
+inline int RingDependend(int t) { return (BEGIN_RING<t)&&(t<END_RING); }
+
 // to produce convert_table.texi for doc:
 int produce_convert_table=0;
 
@@ -125,7 +127,6 @@ struct sConvertTypes
 
 const char * Tok2Cmdname(int tok)
 {
-  int i = 0;
   if (tok < 0)
   {
     return cmds[0].name;
@@ -140,8 +141,10 @@ const char * Tok2Cmdname(int tok)
   //if (tok==OBJECT) return "object";
   //if (tok==PRINT_EXPR) return "print_expr";
   if (tok==IDHDL) return "identifier";
+  if (tok==CRING_CMD) return "(c)ring";
   // we do not blackbox objects during table generation:
   //if (tok>MAX_TOK) return getBlackboxName(tok);
+  int i = 0;
   while (cmds[i].tokval!=0)
   {
     if ((cmds[i].tokval == tok)&&(cmds[i].alias==0))
@@ -150,7 +153,22 @@ const char * Tok2Cmdname(int tok)
     }
     i++;
   }
+  i=0;// try again for old/alias names:
+  while (cmds[i].tokval!=0)
+  {
+    if (cmds[i].tokval == tok)
+    {
+      return cmds[i].name;
+    }
+    i++;
+  }
+  #if 0
+  char *s=(char*)malloc(10);
+  sprintf(s,"(%d)",tok);
+  return s;
+  #else
   return cmds[0].name;
+  #endif
 }
 /*---------------------------------------------------------------------*/
 /**
@@ -267,6 +285,7 @@ const char * iiTwoOps(int t)
 /*2
 * try to convert 'inputType' in 'outputType'
 * return 0 on failure, an index (<>0) on success
+* GENTABLE variant!
 */
 int iiTestConvert (int inputType, int outputType)
 {
@@ -330,6 +349,10 @@ void ttGen1()
           s,
           Tok2Cmdname(dArith1[i].arg),
           Tok2Cmdname(dArith1[i].res));
+    if (RingDependend(dArith1[i].res) && (!RingDependend(dArith1[i].arg)))
+    {
+      fprintf(outfile,"// WARNING: %s requires currRing\n",s);
+    }
     i++;
   }
   fprintf(outfile,"/*---------------------------------------------*/\n");
@@ -344,6 +367,12 @@ void ttGen1()
           Tok2Cmdname(dArith2[i].arg1),
           Tok2Cmdname(dArith2[i].arg2),
           Tok2Cmdname(dArith2[i].res));
+    if (RingDependend(dArith2[i].res)
+       && (!RingDependend(dArith2[i].arg1))
+       && (!RingDependend(dArith2[i].arg2)))
+    {
+      fprintf(outfile,"// WARNING: %s requires currRing\n",s);
+    }
     i++;
   }
   fprintf(outfile,"/*---------------------------------------------*/\n");
@@ -359,6 +388,13 @@ void ttGen1()
           Tok2Cmdname(dArith3[i].arg2),
           Tok2Cmdname(dArith3[i].arg3),
           Tok2Cmdname(dArith3[i].res));
+    if (RingDependend(dArith3[i].res)
+       && (!RingDependend(dArith3[i].arg1))
+       && (!RingDependend(dArith3[i].arg2))
+       && (!RingDependend(dArith3[i].arg3)))
+    {
+      fprintf(outfile,"// WARNING: %s requires currRing\n",s);
+    }
     i++;
   }
   fprintf(outfile,"/*---------------------------------------------*/\n");

@@ -21,11 +21,6 @@
 #include <coeffs/coeffs.h>
 #include <coeffs/bigintmat.h>
 //#include <polys/ext_fields/longalg.h>
-#ifdef HAVE_RINGS
-#include <coeffs/rmodulon.h>
-#include <coeffs/rmodulo2m.h>
-#include <coeffs/rintegers.h>
-#endif
 #include <polys/matpol.h>
 #include <Singular/links/silink.h>
 #include <kernel/GBEngine/syz.h>
@@ -54,7 +49,13 @@ static void * iiI2P(void *data)
 
 static void * iiBI2P(void *data)
 {
-  number n=n_Init_bigint((number)data, coeffs_BIGINT /*currRing->cf*/, currRing->cf);
+  nMapFunc nMap=n_SetMap(coeffs_BIGINT,currRing->cf);
+  if (nMap==NULL)
+  {
+    Werror("no conversion from bigint to %s", nCoeffString(currRing->cf));
+    return NULL;
+  }
+  number n=nMap((number)data,coeffs_BIGINT,currRing->cf);
   n_Delete((number *)&data, coeffs_BIGINT);
   poly p=p_NSet(n, currRing);
   return (void *)p;
@@ -69,7 +70,13 @@ static void * iiI2V(void *data)
 
 static void * iiBI2V(void *data)
 {
-  number n=n_Init_bigint((number)data, coeffs_BIGINT/*currRing->cf*/, currRing->cf);
+  nMapFunc nMap=n_SetMap(coeffs_BIGINT,currRing->cf);
+  if (nMap==NULL)
+  {
+    Werror("no conversion from bigint to %s", nCoeffString(currRing->cf));
+    return NULL;
+  }
+  number n=nMap((number)data,coeffs_BIGINT,currRing->cf);
   n_Delete((number *)&data, coeffs_BIGINT);
   poly p=p_NSet(n, currRing);
   if (p!=NULL) pSetComp(p,1);
@@ -86,7 +93,13 @@ static void * iiI2Id(void *data)
 static void * iiBI2Id(void *data)
 {
   ideal I=idInit(1,1);
-  number n=n_Init_bigint((number)data, coeffs_BIGINT, currRing->cf);
+  nMapFunc nMap=n_SetMap(coeffs_BIGINT,currRing->cf);
+  if (nMap==NULL)
+  {
+    Werror("no conversion from bigint to %s", nCoeffString(currRing->cf));
+    return NULL;
+  }
+  number n=nMap((number)data,coeffs_BIGINT,currRing->cf);
   n_Delete((number *)&data,coeffs_BIGINT);
   poly p=pNSet(n);
   I->m[0]=p;
@@ -164,9 +177,13 @@ static void * iiI2BI(void *data)
 static void * iiBI2N(void *data)
 {
   if (currRing==NULL) return NULL;
-  // a bigint is really a number from char 0, with diffrent
-  // operations...
-  number n = n_Init_bigint((number)data, coeffs_BIGINT, currRing->cf);
+  nMapFunc nMap=n_SetMap(coeffs_BIGINT,currRing->cf);
+  if (nMap==NULL)
+  {
+    Werror("no conversion from bigint to %s", nCoeffString(currRing->cf));
+    return NULL;
+  }
+  number n=nMap((number)data,coeffs_BIGINT,currRing->cf);
   n_Delete((number *)&data, coeffs_BIGINT);
   return (void*)n;
 }
@@ -275,7 +292,7 @@ static void * iiL2R(void * data)
 * try to convert 'input' of type 'inputType' to 'output' of type 'outputType'
 * return FALSE on success
 */
-BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv output)
+BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv output,struct sConvertTypes *dConvertTypes)
 {
   memset(output,0,sizeof(sleftv));
   if ((inputType==outputType)
@@ -327,13 +344,21 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
           }
           else if(pIsConstant((poly)input->data))
           {
-            output->name=ndName(pGetCoeff((poly)input->data), currRing->cf);
+            StringSetS("");
+            number n=(pGetCoeff((poly)input->data));
+            n_Write(n, currRing->cf);
+            (pGetCoeff((poly)input->data))=n;
+            output->name=StringEndS();
           }
         }
       }
       else if ((input->rtyp==NUMBER_CMD) && (input->name==NULL))
       {
-        output->name=ndName((number)input->data, currRing->cf);
+        StringSetS("");
+        number n=(number)input->data;
+        n_Write(n, currRing->cf);
+        input->data=(void*)n;
+        output->name=StringEndS();
       }
       else
       {
@@ -390,7 +415,7 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
 * try to convert 'inputType' in 'outputType'
 * return 0 on failure, an index (<>0) on success
 */
-int iiTestConvert (int inputType, int outputType)
+int iiTestConvert (int inputType, int outputType,struct sConvertTypes *dConvertTypes)
 {
   if ((inputType==outputType)
   || (outputType==DEF_CMD)

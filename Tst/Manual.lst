@@ -251,7 +251,6 @@ Manual/NullCone.tst
 Manual/nvars.tst
 Manual/pardeg.tst
 Manual/pmat.tst
-Manual/poly_BR_PLURAL_BR.tst
 Manual/poly_operations.tst
 Manual/primecoeffs.tst
 Manual/primefactors.tst
@@ -378,7 +377,6 @@ Manual/trapezoid.tst
 Manual/triangL_solve.tst
 Manual/triangM_solve.tst
 Manual/truncate.tst
-Manual/varNum.tst
 Manual/absFactorize.tst
 Manual/absValue.tst
 Manual/Ann.tst
@@ -477,9 +475,7 @@ Manual/addrow.tst
 Manual/adjoint.tst
 Manual/algebra_containment.tst
 Manual/allPositive.tst
-Manual/AltVarEnd.tst
 Manual/annil.tst
-Manual/applyAdF.tst
 Manual/binomial.tst
 Manual/blowUp2.tst
 Manual/bracket.tst
@@ -1414,7 +1410,6 @@ Manual/spectralNeg.tst
 Manual/SannfsBFCT.tst
 Manual/startNmz.tst ; needs normaliz!
 ; Manual/memory.tst ; HW-dependent: contains memory output!
-; Manual/LLL.tst
 ; Manual/system.tst ;; outputs build-dependent info!
 Manual/solve_IP.tst ; needs solve_IP!
 ; Manual/datetime.tst
@@ -1436,6 +1431,5 @@ Manual/ellipticcovers.tst
 Manual/multiDegBasis.tst
 Manual/graver4ti2.tst
 Manual/hilbert4ti2.tst
-Manual/isPositive.tst
 Manual/markov4ti2.tst
 

@@ -35,13 +35,12 @@
 #include <kernel/ideals.h>
 #include <coeffs/numbers.h>
 #include <kernel/polys.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <kernel/oswrapper/timer.h>
 #include <Singular/cntrlc.h>
 #include <polys/monomials/maps.h>
 #include <kernel/GBEngine/syz.h>
 #include <Singular/lists.h>
-#include <coeffs/longrat.h>
 #include <Singular/libparse.h>
 #include <coeffs/bigintmat.h>
 
@@ -676,7 +675,9 @@ elemexpr:
           }
         | CMD_M '(' exprlist ')'
           {
-            if(iiExprArithM(&$$,&$3,$1)) YYERROR;
+            int b=iiExprArithM(&$$,&$3,$1); // handle branchTo
+            if (b==TRUE) YYERROR;
+            if (b==2) YYACCEPT;
           }
         | mat_cmd '(' expr ',' expr ',' expr ')'
           {
@@ -1369,6 +1370,11 @@ ringcmd:
             if (!inerror) rDefault(ring_name);
             yyInRingConstruction = FALSE;
             $2.CleanUp();
+          }
+        | ringcmd1 elemexpr cmdeq elemexpr
+          {
+            yyInRingConstruction = FALSE;
+            if (iiAssignCR(&$2,&$4)) YYERROR;
           }
         ;
 

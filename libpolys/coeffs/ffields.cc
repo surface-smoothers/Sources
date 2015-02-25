@@ -4,23 +4,17 @@
 /*
 * ABSTRACT: finite fields with a none-prime number of elements (via tables)
 */
-
-
-
-
-
+#include <misc/auxiliary.h>
 #include <omalloc/omalloc.h>
 
-#include <misc/auxiliary.h>
 #include <misc/mylimits.h>
 #include <misc/sirandom.h>
 
 #include <reporter/reporter.h>
 
-#include <coeffs/coeffs.h>
-#include <coeffs/numbers.h>
-#include <coeffs/ffields.h>
-#include <coeffs/longrat.h>
+#include "coeffs.h"
+#include "numbers.h"
+#include "longrat.h"
 
 #include <string.h>
 #include <math.h>
@@ -30,7 +24,7 @@ BOOLEAN nfGreaterZero (number k, const coeffs r);
 number  nfMult        (number a, number b, const coeffs r);
 number  nfInit        (long i, const coeffs r);
 number  nfParameter   (int i, const coeffs r);
-int     nfInt         (number &n, const coeffs r);
+long    nfInt         (number &n, const coeffs r);
 number  nfAdd         (number a, number b, const coeffs r);
 number  nfSub         (number a, number b, const coeffs r);
 void    nfPower       (number a, int i, number * result, const coeffs r);
@@ -250,9 +244,9 @@ static int nfParDeg(number n, const coeffs r)
 /*2
 * number -> int
 */
-int nfInt (number &, const coeffs )
+long nfInt (number &n, const coeffs )
 {
-  return 0;
+  return (long)n;
 }
 
 /*2
@@ -501,7 +495,6 @@ void nfPower (number a, int i, number * result, const coeffs r)
 #endif
   if (i==0)
   {
-    //*result=nfInit(1);
     *result = (number)0L;
   }
   else if (i==1)
@@ -510,8 +503,10 @@ void nfPower (number a, int i, number * result, const coeffs r)
   }
   else
   {
-    nfPower(a,i-1,result, r);
-    *result = nfMult(a,*result, r);
+    long rl;
+    if ((long)a == (long)r->m_nfCharQ) rl=(long)r->m_nfCharQ;
+    else rl=((long)a*(long)i) % (long)r->m_nfCharQ1;
+    *result = (number)rl;
   }
 #ifdef LDEBUG
   nfTest(*result, r);
@@ -686,7 +681,7 @@ void nfReadTable(const int c, const coeffs r)
     int k;
     while ( i < r->m_nfCharQ )
     {
-      fgets( buf, sizeof(buf), fp);
+      (void)fgets( buf, sizeof(buf), fp);
       //( strlen( buffer ) == (size_t)digs * 30, "illegal table" );
       bufptr = buf;
       k = 0;
@@ -797,10 +792,16 @@ nMapFunc nfSetMap(const coeffs src, const coeffs dst)
         return NULL;
     }
   }
-  if (nCoeff_is_Zp(src,dst->m_nfCharP))
+  if ((src->rep==n_rep_int) && nCoeff_is_Zp(src,dst->m_nfCharP))
   {
     return nfMapP;    /* Z/p -> GF(p,n) */
   }
+
+  if (src->rep==n_rep_gap_rat) /*Q, Z */
+  {
+    return nlModP; // FIXME? TODO? // extern number nlModP(number q, const coeffs Q, const coeffs Zp); // Map q \in QQ \to Zp // FIXME!
+  }
+
   return NULL;     /* default */
 }
 
@@ -827,10 +828,16 @@ static char* nfCoeffString(const coeffs r)
   return s;
 }
 
+static number nfRandom(siRandProc p,number ,number, const coeffs cf)
+{
+  return (number)(long)(p() %(cf->m_nfCharQ+1));
+}
+
 BOOLEAN nfInitChar(coeffs r,  void * parameter)
 {
   r->is_field=TRUE;
   r->is_domain=TRUE;
+  r->rep=n_rep_gf;
   //r->cfInitChar=npInitChar;
   r->cfKillChar=nfKillChar;
   r->nCoeffIsEqual=nfCoeffIsEqual;
@@ -859,7 +866,6 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   //r->cfImPart = ndReturn0;
 
   r->cfWriteLong = nfWriteLong;
-  r->cfInit_bigint = nlModP;
   r->cfRead = nfRead;
   //r->cfNormalize=ndNormalize;
   r->cfGreater = nfGreater;
@@ -878,6 +884,8 @@ BOOLEAN nfInitChar(coeffs r,  void * parameter)
   r->cfCoeffWrite=nfCoeffWrite;
 
   r->cfParDeg = nfParDeg;
+
+  r->cfRandom = nfRandom;
 
 #ifdef LDEBUG
   r->cfDBTest=nfDBTest;

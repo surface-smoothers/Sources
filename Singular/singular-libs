@@ -16,7 +16,7 @@ SLIB0 = absfact.lib ainvar.lib aksaka.lib alexpoly.lib algebra.lib \
 	hnoether.lib \
 	homolog.lib hyperel.lib integralbasis.lib inout.lib intprog.lib \
 	jacobson.lib \
-	kskernel.lib latex.lib linalg.lib lll.lib makedbm.lib \
+	kskernel.lib latex.lib linalg.lib makedbm.lib \
 	matrix.lib modstd.lib mondromy.lib monomialideal.lib \
 	mprimdec.lib mregular.lib \
 	noether.lib normal.lib normaliz.lib ntsolve.lib \
@@ -40,20 +40,21 @@ SLIB0 = absfact.lib ainvar.lib aksaka.lib alexpoly.lib algebra.lib \
 # svn propset svn:keywords "Id" yourlib.lib
 # for new libs
 
-SLIB1 = classifyceq.lib classifyci.lib classify_aeq.lib \
+SLIB1 = classifyceq.lib classifyci.lib classify_aeq.lib algemodstd.lib \
         dmodloc.lib divisors.lib \
         ffsolve.lib decomp.lib template.lib \
         findifs.lib finitediff.lib \
-        gitfan.lib \
+        gitfan.lib gradedModules.lib \
         locnormal.lib modnormal.lib modular.lib \
 	JMBTest.lib JMSConst.lib multigrading.lib\
 	numerAlg.lib numerDecom.lib \
         orbitparam.lib parallel.lib polymake.lib\
 	realizationMatroids.lib resources.lib ringgb.lib \
 	schreyer.lib symodstd.lib derham.lib polybori.lib ellipticcovers.lib \
-	schubert.lib tasks.lib tropical.lib hdepth.lib
+	schubert.lib tasks.lib tropical.lib hdepth.lib gradedModules.lib
 
-PLIBS = bfun.lib central.lib dmod.lib dmodapp.lib dmodvar.lib fpadim.lib \
+PLIBS = bimodules.lib bfun.lib central.lib dmod.lib dmodapp.lib dmodvar.lib\
+        fpadim.lib \
 	freegb.lib gkdim.lib involut.lib ncalg.lib ncdecomp.lib \
 	ncfactor.lib ncpreim.lib nctools.lib perron.lib qmatrix.lib \
         purityfiltration.lib nchomolog.lib ratgb.lib \

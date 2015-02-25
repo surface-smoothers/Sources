@@ -24,7 +24,6 @@
 
 #include <coeffs/coeffs.h>
 #include <coeffs/numbers.h>
-#include <coeffs/longrat.h>
 #include <coeffs/bigintmat.h>
 
 
@@ -41,7 +40,7 @@
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/oswrapper/timer.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <kernel/GBEngine/syz.h>
 
 //#include "weight.h"
@@ -56,6 +55,7 @@
 #include "ipshell.h"
 #include "blackbox.h"
 
+#include <Singular/number2.h>
 
 
 /*=================== proc =================*/
@@ -201,6 +201,12 @@ static BOOLEAN jjMINPOLY(leftv, leftv a)
       WerrorS("cannot set minpoly for these coeffients");
       return TRUE;
     }
+  }
+  if ((rVar(currRing->cf->extRing)!=1)
+  && !n_IsZero((number)a->Data(), currRing->cf) )
+  {
+    WerrorS("only univarite minpoly allowed");
+    return TRUE;
   }
 
   if ( currRing->idroot != NULL )
@@ -402,6 +408,58 @@ static BOOLEAN jiA_NUMBER(leftv res, leftv a, Subexpr)
   jiAssignAttr(res,a);
   return FALSE;
 }
+#ifdef SINGULAR_4_1
+static BOOLEAN jiA_NUMBER2(leftv res, leftv a, Subexpr e)
+{
+  number2 n=(number2)a->CopyD(CNUMBER_CMD);
+  if (e==NULL)
+  {
+    if (res->data!=NULL)
+    {
+      number2 nn=(number2)res->data;
+      n2Delete(nn);
+    }
+    res->data=(void *)n;
+    jiAssignAttr(res,a);
+  }
+  else
+  {
+    int i=e->start-1;
+    if (i<0)
+    {
+      Werror("index[%d] must be positive",i+1);
+      return TRUE;
+    }
+    bigintmat *iv=(bigintmat *)res->data;
+    if (e->next==NULL)
+    {
+      WerrorS("only one index given");
+      return TRUE;
+    }
+    else
+    {
+      int c=e->next->start;
+      if ((i>=iv->rows())||(c<1)||(c>iv->cols()))
+      {
+        Werror("wrong range [%d,%d] in cmatrix %s(%d,%d)",i+1,c,res->Name(),iv->rows(),iv->cols());
+        return TRUE;
+      }
+      else if (iv->basecoeffs()==n->cf)
+      {
+        n_Delete((number *)&BIMATELEM(*iv,i+1,c),iv->basecoeffs());
+        BIMATELEM(*iv,i+1,c) = n->n;
+      }
+      else
+      {
+        WerrorS("different base");
+        return TRUE;
+      }
+    }
+  }
+  jiAssignAttr(res,a);
+  return FALSE;
+}
+#endif
 static BOOLEAN jiA_BIGINT(leftv res, leftv a, Subexpr e)
 {
   number p=(number)a->CopyD(BIGINT_CMD);
@@ -483,6 +541,10 @@ static BOOLEAN jiA_POLY(leftv res, leftv a,Subexpr e)
       // for all ideal like data types: check indices
       if (j>MATCOLS(m))
       {
+        if (TEST_V_ALLWARN)
+        {
+          Warn("increase ideal %d -> %d in %s",MATCOLS(m),j,my_yylinebuf);
+        }
         pEnlargeSet(&(m->m),MATCOLS(m),j-MATCOLS(m));
         MATCOLS(m)=j;
       }
@@ -582,9 +644,7 @@ static BOOLEAN jiA_PROC(leftv res, leftv a, Subexpr)
   extern procinfo *iiInitSingularProcinfo(procinfo *pi, const char *libname,
                                           const char *procname, int line,
                                           long pos, BOOLEAN pstatic=FALSE);
-  extern void piCleanUp(procinfov pi);
-
-  if(res->data!=NULL) piCleanUp((procinfo *)res->data);
+  if(res->data!=NULL) piKill((procinfo *)res->data);
   if(a->Typ()==STRING_CMD)
   {
     res->data = (void *)omAlloc0Bin(procinfo_bin);
@@ -871,6 +931,15 @@ static BOOLEAN jiA_DEF(leftv res, leftv a, Subexpr e)
   res->data=(void *)0;
   return FALSE;
 }
+#ifdef SINGULAR_4_1
+static BOOLEAN jiA_CRING(leftv res, leftv a, Subexpr e)
+{
+  res->data=(void *)a->CopyD(CRING_CMD);
+  jiAssignAttr(res,a);
+  return FALSE;
+}
+#endif
+
 /*=================== table =================*/
 #define IPASSIGN
 #define D(A)     A
@@ -880,7 +949,7 @@ static BOOLEAN jiA_DEF(leftv res, leftv a, Subexpr e)
 /*2
 * assign a = b
 */
-static BOOLEAN jiAssign_1(leftv l, leftv r)
+static BOOLEAN jiAssign_1(leftv l, leftv r, BOOLEAN toplevel)
 {
   int rt=r->Typ();
   if (rt==0)
@@ -890,7 +959,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
   }
 
   int lt=l->Typ();
-  if (/*(*/ lt==0 /*)*/) /*&&(l->name!=NULL)*/
+  if (lt==0)
   {
     if (!errorreported) Werror("left side `%s` is undefined",l->Fullname());
     return TRUE;
@@ -904,7 +973,6 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     return FALSE;
   }
 
-  int i=0;
   if (lt==DEF_CMD)
   {
     if (TEST_V_ALLWARN
@@ -915,7 +983,8 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     && (iiCurrArgs==NULL) /* not in proc header */
     )
     {
-      Warn("use `%s` instead of `def`",Tok2Cmdname(rt));
+      Warn("use `%s` instead of `def` in %s:%d:%s",Tok2Cmdname(rt),
+            currentVoice->filename,yylineno,my_yylinebuf);
     }
     if (l->rtyp==IDHDL)
     {
@@ -939,8 +1008,16 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
       return FALSE;
   }
   leftv ld=l;
-  if ((l->rtyp==IDHDL)&&(lt!=QRING_CMD)&&(lt!=RING_CMD))
-    ld=(leftv)l->data;
+  if (l->rtyp==IDHDL)
+  {
+    if ((lt!=QRING_CMD)&&(lt!=RING_CMD))
+      ld=(leftv)l->data;
+  }
+  else if (toplevel)
+  {
+    WerrorS("error in assign: left side is not an l-value");
+    return TRUE;
+  }
   if (lt>MAX_TOK)
   {
     blackbox *bb=getBlackboxStuff(lt);
@@ -949,10 +1026,13 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
 #endif
     return (bb==NULL) || bb->blackbox_Assign(l,r);
   }
-  while (((dAssign[i].res!=lt)
-      || (dAssign[i].arg!=rt))
-    && (dAssign[i].res!=0)) i++;
-  if (dAssign[i].res!=0)
+  int start=0;
+  while ((dAssign[start].res!=lt)
+      && (dAssign[start].res!=0)) start++;
+  int i=start;
+  while ((dAssign[i].res==lt)
+      && (dAssign[i].arg!=rt)) i++;
+  if (dAssign[i].res==lt)
   {
     if (traceit&TRACE_ASSIGN) Print("assign %s=%s\n",Tok2Cmdname(lt),Tok2Cmdname(rt));
     BOOLEAN b;
@@ -965,14 +1045,14 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     return b;
   }
   // implicite type conversion ----------------------------------------------
-  if (dAssign[i].res==0)
+  if (dAssign[i].res!=lt)
   {
     int ri;
     leftv rn = (leftv)omAlloc0Bin(sleftv_bin);
     BOOLEAN failed=FALSE;
-    i=0;
-    while ((dAssign[i].res!=lt)
-      && (dAssign[i].res!=0)) i++;
+    i=start;
+    //while ((dAssign[i].res!=lt)
+    //  && (dAssign[i].res!=0)) i++;
     while (dAssign[i].res==lt)
     {
       if ((ri=iiTestConvert(rt,dAssign[i].arg))!=0)
@@ -1123,7 +1203,7 @@ static BOOLEAN jiA_INTVEC_L(leftv l,leftv r)
     t.data=(char *)(long)(*iv)[i];
     h=l->next;
     l->next=NULL;
-    nok=jiAssign_1(l,&t);
+    nok=jiAssign_1(l,&t,TRUE);
     l->next=h;
     if (nok) return TRUE;
     i++;
@@ -1157,7 +1237,7 @@ static BOOLEAN jiA_VECTOR_L(leftv l,leftv r)
     }
     h=l->next;
     l->next=NULL;
-    nok=jiAssign_1(l,&t);
+    nok=jiAssign_1(l,&t,TRUE);
     l->next=h;
     t.CleanUp();
     if (nok)
@@ -1395,7 +1475,7 @@ static BOOLEAN jiA_MATRIX_L(leftv l,leftv r)
       l->next=NULL;
       idhdl hh=NULL;
       if ((l->rtyp==IDHDL)&&(l->Typ()==DEF_CMD)) hh=(idhdl)l->data;
-      nok=jiAssign_1(l,&t);
+      nok=jiAssign_1(l,&t,TRUE);
       if (hh!=NULL) { ipMoveId(hh);hh=NULL;}
       l->next=h;
       if (nok)
@@ -1471,7 +1551,7 @@ static BOOLEAN jiA_STRING_L(leftv l,leftv r)
     t.data=ss;
     h=l->next;
     l->next=NULL;
-    nok=jiAssign_1(l,&t);
+    nok=jiAssign_1(l,&t,TRUE);
     if (nok)
     {
       break;
@@ -1508,6 +1588,10 @@ static BOOLEAN jiAssign_list(leftv l, leftv r)
   }
   if (i>li->nr)
   {
+    if (TEST_V_ALLWARN)
+    {
+      Warn("increase list %d -> %d in %s",li->nr,i,my_yylinebuf);
+    }
     li->m=(leftv)omreallocSize(li->m,(li->nr+1)*sizeof(sleftv),(i+1)*sizeof(sleftv));
     memset(&(li->m[li->nr+1]),0,(i-li->nr)*sizeof(sleftv));
     int j=li->nr+1;
@@ -1525,7 +1609,7 @@ static BOOLEAN jiAssign_list(leftv l, leftv r)
     sleftv tmp;
     memset(&tmp,0,sizeof(sleftv));
     tmp.rtyp=DEF_CMD;
-    b=iiAssign(&tmp,r);
+    b=iiAssign(&tmp,r,FALSE);
     ld->CleanUp();
     memcpy(ld,&tmp,sizeof(sleftv));
   }
@@ -1537,13 +1621,13 @@ static BOOLEAN jiAssign_list(leftv l, leftv r)
     memset(&tmp,0,sizeof(sleftv));
     tmp.rtyp=r->Typ();
     tmp.data=(char*)idrecDataInit(r->Typ());
-    b=iiAssign(&tmp,r);
+    b=iiAssign(&tmp,r,FALSE);
     ld->CleanUp();
     memcpy(ld,&tmp,sizeof(sleftv));
   }
   else
   {
-    b=iiAssign(ld,r);
+    b=iiAssign(ld,r,FALSE);
     if (l->e!=NULL) l->e->next=ld->e;
     ld->e=NULL;
   }
@@ -1572,7 +1656,7 @@ static BOOLEAN jiAssign_rec(leftv l, leftv r)
   r1->CleanUp();
   return b;
 }
-BOOLEAN iiAssign(leftv l, leftv r)
+BOOLEAN iiAssign(leftv l, leftv r, BOOLEAN toplevel)
 {
   if (errorreported) return TRUE;
   int ll=l->listLength();
@@ -1590,6 +1674,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
     atKillAll((idhdl)l->data);
     IDFLAG((idhdl)l->data)=0;
     l->attribute=NULL;
+    toplevel=FALSE;
   }
   else if (l->attribute!=NULL)
     atKillAll((idhdl)l);
@@ -1615,7 +1700,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
       }
       if(like_lists)
       {
-        if (traceit&TRACE_ASSIGN) PrintS("assign list[..]=...or similiar\n");
+        if (traceit&TRACE_ASSIGN) PrintS("assign list[..]=...or similar\n");
         if (like_lists==1)
         {
           // check blackbox/newtype type:
@@ -1651,7 +1736,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
 #endif
       return (bb==NULL) || bb->blackbox_Assign(l,r);
     }
-    // end of handling elems of list and similiar
+    // end of handling elems of list and similar
     rl=r->listLength();
     if (rl==1)
     {
@@ -1667,10 +1752,12 @@ BOOLEAN iiAssign(leftv l, leftv r)
       rt=r->Typ();
       /* a = ... */
       if ((lt!=MATRIX_CMD)
+      &&(lt!=BIGINTMAT_CMD)
+      &&(lt!=CMATRIX_CMD)
       &&(lt!=INTMAT_CMD)
       &&((lt==rt)||(lt!=LIST_CMD)))
       {
-        b=jiAssign_1(l,r);
+        b=jiAssign_1(l,r,toplevel);
         if (l->rtyp==IDHDL)
         {
           if ((lt==DEF_CMD)||(lt==LIST_CMD))
@@ -1686,6 +1773,8 @@ BOOLEAN iiAssign(leftv l, leftv r)
       }
       if (((lt!=LIST_CMD)
         &&((rt==MATRIX_CMD)
+          ||(rt==BIGINTMAT_CMD)
+          ||(rt==CMATRIX_CMD)
           ||(rt==INTMAT_CMD)
           ||(rt==INTVEC_CMD)
           ||(rt==MODUL_CMD)))
@@ -1693,7 +1782,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
         &&(rt==RESOLUTION_CMD))
       )
       {
-        b=jiAssign_1(l,r);
+        b=jiAssign_1(l,r,toplevel);
         if((l->rtyp==IDHDL)&&(l->data!=NULL))
         {
           if ((lt==DEF_CMD) || (lt==LIST_CMD))
@@ -1780,7 +1869,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
         break;
       }
       if ((hh->next==NULL)&&(hh->Typ()==IDEAL_CMD))
-        return jiAssign_1(l,hh); /* map-assign: map f=r,i; */
+        return jiAssign_1(l,hh,toplevel); /* map-assign: map f=r,i; */
       //no break, handle the rest like an ideal:
       map_assign=TRUE;
     }

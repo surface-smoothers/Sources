@@ -1,8 +1,10 @@
-ACLOCAL_AMFLAGS = -I ../m4
+ACLOCAL_AMFLAGS = -I../m4
 
 GIT_VERSION := $(shell $(top_srcdir)/git-version-gen $(top_srcdir)/.tarball-git-version)
 
 AM_CPPFLAGS = -I${top_srcdir} -I${top_builddir} -I${top_srcdir}/kernel -I${top_builddir}/kernel -I${top_srcdir}/libpolys -I${top_builddir}/libpolys $(FACTORY_INCLUDES)  $(GMP_CFLAGS) $(NTL_CFLAGS) $(FLINT_CFLAGS) -DGIT_VERSION='"$(GIT_VERSION)"'
+
+all-local: feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib gftables MOD ${abs_builddir}/LIB Singular ESingular TSingular
 
 SUBDIRS = dyn_modules
 
@@ -11,7 +13,7 @@ BUILTIN_FLAGS = ${BUILTIN_LIBS}
 
 ########################### libSingular* #########################
 
-libSingular_LTLIBRARIES = libSingular.la 
+libSingular_LTLIBRARIES = libSingular.la
 libSingulardir = $(libdir)
 
 libSingular_la_CPPFLAGS = ${AM_CPPFLAGS} -DLIBSINGULAR ${PTHREAD_CFLAGS}
@@ -47,13 +49,13 @@ SOURCES = \
    mod_lib.cc\
    links/ndbm.cc\
    newstruct.cc\
+   number2.cc\
    pcv.cc\
    links/pipeLink.cc\
    scanner.cc\
    sdb.cc\
    links/silink.cc\
    links/sing_dbm.cc\
-   sing_win.cc\
    links/slInit_Static.cc\
    links/ssiLink.cc\
    links/semaphore.c\
@@ -98,6 +100,7 @@ SingularHEADERS = \
    omSingularConfig.h \
    links/ndbm.h \
    newstruct.h \
+   number2.h \
    pcv.h \
    links/pipeLink.h \
    pyobject_setup.h \
@@ -105,7 +108,6 @@ SingularHEADERS = \
    sdb.h \
    links/silink.h \
    links/sing_dbm.h \
-   sing_win.h \
    links/slInit.h \
    links/ssiLink.h \
    links/simpleipc.h \
@@ -117,10 +119,10 @@ SingularHEADERS = \
    fevoices.h
 
 
-# -DMAKE_DISTRIBUTION 
+# -DMAKE_DISTRIBUTION
 
 # plural_cmd.inc
-nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc 
+nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc
 
 libSingular_la_LDFLAGS    =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION} ${PTHREAD_LDFLAGS}
 libSingular_la_LIBADD     =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} ${BUILTIN_FLAGS} ${top_builddir}/kernel/libkernel.la ${PTHREAD_LIBS}
@@ -151,11 +153,9 @@ EXTRA_PROGRAMS =  libparse Singulard
 
 # the "optional_programs" variable should be defined in the configure
 # script, and listed in an AC_SUBST macro
-optional_Singular_programs = 
+optional_Singular_programs =
 
 bin_PROGRAMS = Singular ESingular TSingular $(optional_Singular_programs)
-
-Singular ESingular TSingular $(optional_Singular_programs): ${abs_builddir}/LIB
 
 Singular_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
 
@@ -228,14 +228,11 @@ TESTS=test
 check_PROGRAMS=$(TESTS)
 
 test_SOURCES = test.cc
-test_LDADD = libSingular.la 
+test_LDADD = libSingular.la
 
 #########################################################
-
 # These files are built first
-BUILT_SOURCES = feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib plural_cmd.inc \
-                gftables MOD
-
+BUILT_SOURCES = feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib gftables MOD
 CLEANFILES = $(BUILT_SOURCES) $(EXTRA_PROGRAMS)
 
 clean-local:
@@ -252,11 +249,10 @@ feOptES.inc: feOptES$(EXEEXT)
 feOptTS.inc: feOptTS$(EXEEXT)
 	${builddir}/feOptTS$(EXEEXT)
 
-plural_cmd.inc iparith.inc: gentable1$(EXEEXT)
+iparith.inc: gentable1$(EXEEXT) table.h
 	${builddir}/gentable1$(EXEEXT)
 
 # # fake rule to fix parallel make http://www.gnu.org/s/hello/manual/automake/Multiple-Outputs.html
-# plural_cmd.inc: iparith.inc
 
 gftables: ${top_srcdir}/factory/gftables
 	ln -snf ${top_srcdir}/factory/gftables ${builddir}/gftables
@@ -266,8 +262,8 @@ ${abs_builddir}/LIB: ${srcdir}/LIB
 	  ln -snf ${abs_srcdir}/LIB ${abs_builddir}/; \
 	fi
 
-MOD: 
+MOD:
 	if [ -d "${top_builddir}/libpolys/polys/.libs" ]; then \
 	  ln -snf ${top_builddir}/libpolys/polys/.libs/ ${abs_builddir}/MOD; \
-	fi 	  
+	fi
 

@@ -20,6 +20,44 @@
 @end ifset
 
 @heading News for version @value{VERSION}
+New commands:
+@itemize
+@item align (@nref{align})
+@end itemize
+
+Change in ring handling:
+@itemize
+@item @code{typeof(} qring @code{)} returns @code{"ring"}
+@end itemize
+
+New libraries:
+@itemize
+@item algemodstd.lib (@nref{algemodstd_lib})
+@item brillnoether.lib (@nref{brillnoether_lib})
+@item hess.lib (@nref{hess_lib})
+@item gradedModules.lib (@nref{gradedModules_lib})
+@end itemize
+
+Changed libraries:
+@itemize
+@item Presolve::findvars (@nref{findvars}, @nref{variables})
+@item Ring::addvarsTo (@nref{addvarsTo})
+@item Ring::addNvarsTo (@nref{addNvarsTo})
+@item Ring::hasAlgExtensionCoefficient (@nref{hasAlgExtensionCoefficient})
+@item Schreyer::s_res (@nref{s_res})
+@item grobcov.lib (grobcovK) (@nref{grobcov_lib}) with new routines
+   AddCons (@nref{AddCons}), AddConsP (@nref{AddConsP}).
+@item normaliz.lib (for normaliz >=2.8) (@nref{normaliz_lib})
+@item renmaed groebnerFan to groebnerFanP in polymake.lib (@nref{polymake_lib})
+@end itemize
+
+@heading News for version 4-0-1
+
+Version 4-0-1 is a bug fix release.
+
+New feature: attribute @code{ring_cf} for @code{ring}.
+
+@heading News for version 4-0-0
 
 Version 4-0-0 is a milestone relase of Singular.
 The new release series 4 aims for an entirely modularized architecture
