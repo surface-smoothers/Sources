@@ -954,7 +954,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r, BOOLEAN toplevel)
   int rt=r->Typ();
   if (rt==0)
   {
-    if (!errorreported) Werror("`%s` is undefined",r->Fullname());
+    if (!errorreported) Werror("`%s` is undefined, line %d, \n %s ",r->Fullname(),  yylineno, my_yylinebuf);
     return TRUE;
   }
 
@@ -983,7 +983,8 @@ static BOOLEAN jiAssign_1(leftv l, leftv r, BOOLEAN toplevel)
     && (iiCurrArgs==NULL) /* not in proc header */
     )
     {
-      //Warn("use `%s` instead of `def` in %s:%d:%s",Tok2Cmdname(rt),currentVoice->filename,yylineno,my_yylinebuf);
+     // Warn("use `%s` instead of `def` in %s:%d:%s",Tok2Cmdname(rt),
+     //       currentVoice->filename,yylineno,my_yylinebuf);
     }
     if (l->rtyp==IDHDL)
     {
@@ -1118,7 +1119,7 @@ static BOOLEAN iiAssign_sys(leftv l, leftv r)
 
   if (rt==0)
   {
-    if (!errorreported) Werror("`%s` is undefined",r->Fullname());
+    if (!errorreported) Werror("`%s` is undefined, line %d, \n %s ",r->Fullname(),  currentVoice->filename, yylineno, my_yylinebuf);
     return TRUE;
   }
   int i=0;
@@ -1281,7 +1282,7 @@ static BOOLEAN jjA_L_LIST(leftv l, leftv r)
     if ((rt==0)||(rt==NONE)||(rt==DEF_CMD))
     {
       L->Clean();
-      Werror("`%s` is undefined",h->Fullname());
+      Werror("`%s` is undefined, line %d, \n %s",h->Fullname(),  yylineno, my_yylinebuf);
       //listall();
       goto err;
     }

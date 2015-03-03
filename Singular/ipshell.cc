@@ -464,7 +464,7 @@ void list_cmd(int typ, const char* what, const char *prefix,BOOLEAN iterate, BOO
       }
       else
       {
-        Werror("%s is undefined",what);
+        Werror("%s is undefined, in line %d, \n %s",what,  yylineno, my_yylinebuf);
         currPack=savePack;
         return;
       }
