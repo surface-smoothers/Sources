@@ -900,7 +900,7 @@ left_value:
           {
             if ($1.rtyp==0)
             {
-              Werror("`%s` is undefined",$1.Fullname());
+              Werror("`%s` is undefinedin line %d, \n %s ",$1.Fullname(), yylineno, my_yylinebuf);
               YYERROR;
             }
             else if (($1.rtyp==MODUL_CMD)
@@ -1475,7 +1475,7 @@ typecmd:
               {
                 if ($1.name!=NULL)
                 {
-                  Werror("`%s` is undefined",$1.name);
+                  Werror("`%s` is undefined in line %d, \n %s",$1.name,  yylineno, my_yylinebuf);
                   omFree((ADDRESS)$1.name);
                 }
                 YYERROR;
