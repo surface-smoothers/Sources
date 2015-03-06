@@ -231,6 +231,7 @@ void sigsegv_handler(int sig, sigcontext s)
                    (long)s.rip,
                    #endif
                    (long)s.cr2,siRandomStart);
+    exit(123);
   }
 #ifdef __OPTIMIZE__
   if(si_restart<3)
@@ -266,6 +267,7 @@ void sigsegv_handler(int sig, int code, struct sigcontext *scp, char *addr)
     fprintf(stderr,"Segment fault/Bus error occurred at %x (r:%d)\n"
                    "please inform the authors\n",
                    (int)addr,siRandomStart);
+    exit(123);
   }
 #ifdef __OPTIMIZE__
   if(si_restart<3)
@@ -298,6 +300,7 @@ void sigsegv_handler(int sig)
     fprintf(stderr,"Segment fault/Bus error occurred (r:%d)\n"
                    "please inform the authors\n",
                    siRandomStart);
+    exit(123);
   }
   #ifdef __OPTIMIZE__
   if(si_restart<3)

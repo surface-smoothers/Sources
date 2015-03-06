@@ -1229,7 +1229,7 @@ void * sleftv::Data()
       if ((index<1)||(index>IDELEMS(I)))
       {
         if (!errorreported)
-          Werror("wrong range[%d] in ideal/module %s(%d)",index,this->Name(),IDELEMS(I));
+          Werror("wrong range[%d] in ideal/module %s(%d), line %d, \n %s",index,this->Name(),IDELEMS(I),   yylineno, my_yylinebuf);
       }
       else
         r=(char *)I->m[index-1];

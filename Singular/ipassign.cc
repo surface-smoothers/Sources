@@ -543,7 +543,7 @@ static BOOLEAN jiA_POLY(leftv res, leftv a,Subexpr e)
       {
         if (TEST_V_ALLWARN)
         {
-          Warn("increase ideal %d -> %d in %s",MATCOLS(m),j,my_yylinebuf);
+          // Warn("increase ideal %d -> %d in %s",MATCOLS(m),j,my_yylinebuf);
         }
         pEnlargeSet(&(m->m),MATCOLS(m),j-MATCOLS(m));
         MATCOLS(m)=j;
@@ -954,7 +954,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r, BOOLEAN toplevel)
   int rt=r->Typ();
   if (rt==0)
   {
-    if (!errorreported) Werror("`%s` is undefined",r->Fullname());
+    if (!errorreported) Werror("`%s` is undefined, line %d, \n %s ",r->Fullname(),  yylineno, my_yylinebuf);
     return TRUE;
   }
 
@@ -983,8 +983,8 @@ static BOOLEAN jiAssign_1(leftv l, leftv r, BOOLEAN toplevel)
     && (iiCurrArgs==NULL) /* not in proc header */
     )
     {
-      Warn("use `%s` instead of `def` in %s:%d:%s",Tok2Cmdname(rt),
-            currentVoice->filename,yylineno,my_yylinebuf);
+     // Warn("use `%s` instead of `def` in %s:%d:%s",Tok2Cmdname(rt),
+     //       currentVoice->filename,yylineno,my_yylinebuf);
     }
     if (l->rtyp==IDHDL)
     {
@@ -1119,7 +1119,7 @@ static BOOLEAN iiAssign_sys(leftv l, leftv r)
 
   if (rt==0)
   {
-    if (!errorreported) Werror("`%s` is undefined",r->Fullname());
+    if (!errorreported) Werror("`%s` is undefined, line %d, \n %s ",r->Fullname(),  currentVoice->filename, yylineno, my_yylinebuf);
     return TRUE;
   }
   int i=0;
@@ -1282,7 +1282,7 @@ static BOOLEAN jjA_L_LIST(leftv l, leftv r)
     if ((rt==0)||(rt==NONE)||(rt==DEF_CMD))
     {
       L->Clean();
-      Werror("`%s` is undefined",h->Fullname());
+      Werror("`%s` is undefined, line %d, \n %s",h->Fullname(),  yylineno, my_yylinebuf);
       //listall();
       goto err;
     }
@@ -1590,7 +1590,7 @@ static BOOLEAN jiAssign_list(leftv l, leftv r)
   {
     if (TEST_V_ALLWARN)
     {
-      Warn("increase list %d -> %d in %s",li->nr,i,my_yylinebuf);
+      // Warn("increase list %d -> %d in %s",li->nr,i,my_yylinebuf);
     }
     li->m=(leftv)omreallocSize(li->m,(li->nr+1)*sizeof(sleftv),(i+1)*sizeof(sleftv));
     memset(&(li->m[li->nr+1]),0,(i-li->nr)*sizeof(sleftv));
