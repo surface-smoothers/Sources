@@ -6,7 +6,7 @@
 *           assignment of expressions and lists to objects or lists
 */
 
-#include <stdlib.h>f
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
