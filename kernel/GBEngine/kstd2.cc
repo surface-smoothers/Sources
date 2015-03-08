@@ -1446,7 +1446,8 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         // large enough
         if (!kStratChangeTailRing(strat))
         {
-          WerrorS("OVERFLOW...");
+          Print("OVERFLOW...");
+          exit(253);
           break;
         }
       }
@@ -1479,7 +1480,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
     if (strat->overflow)
     {
-        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+        if (!kStratChangeTailRing(strat)) { Print("OVERFLOW.."); exit(253); break;}
     }
 
     // reduction to non-zero new poly
@@ -1874,7 +1875,8 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
           // large enough
           if (!kStratChangeTailRing(strat))
           {
-            WerrorS("OVERFLOW...");
+            Print("OVERFLOW...");
+            exit(253);
             break;
           }
         }
@@ -1941,7 +1943,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 
     if (strat->overflow)
     {
-        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+        if (!kStratChangeTailRing(strat)) { Print("OVERFLOW.."); exit(253); break;}
     }
 
     // reduction to non-zero new poly
@@ -2646,7 +2648,8 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
         // large enough
         if (!kStratChangeTailRing(strat))
         {
-          WerrorS("OVERFLOW...");
+          Print("OVERFLOW...");
+          exit(253);
           break;
         }
       }
@@ -2683,7 +2686,7 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
 
     if (strat->overflow)
     {
-      if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+      if (!kStratChangeTailRing(strat)) { Print("OVERFLOW.."); exit(253); break;}
     }
 
     // reduction to non-zero new poly

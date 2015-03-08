@@ -886,7 +886,8 @@ int binom (int n,int r)
     result *= n-r+i;
     if (result<0)
     {
-      WarnS("overflow in binomials");
+      Print("overflow in binomials");
+      exit(253);
       return 0;
     }
     result /= i;
