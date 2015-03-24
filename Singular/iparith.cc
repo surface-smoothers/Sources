@@ -6042,7 +6042,7 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
   {
     if (v_typ==0)
     {
-      Werror("`%s` is undefined",v->Fullname());
+      Werror("`%s` is undefined 2",v->Fullname());
       return TRUE;
     }
     // try to convert to MATRIX:
@@ -7423,7 +7423,7 @@ BOOLEAN jjLIST_PL(leftv res, leftv v)
       if (rt==0)
       {
         L->Clean();
-        Werror("`%s` is undefined",h->Fullname());
+        Werror("`%s` is undefined 1",h->Fullname());
         return TRUE;
       }
       if ((rt==RING_CMD)||(rt==QRING_CMD))
@@ -8065,7 +8065,7 @@ static BOOLEAN iiExprArith2TabIntern(leftv res, leftv a, int op, leftv b,
         s=b->Fullname();
       }
       if (s!=NULL)
-        Werror("`%s` is not defined",s);
+        Werror("`%s` is not defined in %s, line %d, \n %s ",s, currentVoice->filename,  yylineno, my_yylinebuf );
       else
       {
         i=0; /*iiTabIndex(dArithTab2,JJTAB2LEN,op);*/
@@ -8281,7 +8281,7 @@ BOOLEAN iiExprArith1Tab(leftv res, leftv a, int op, struct sValCmd1* dA1, int at
     {
       if ((at==0) && (a->Fullname()!=sNoName))
       {
-        Werror("`%s` is not defined",a->Fullname());
+        Werror("`%s` is not defined in %s, line %d, \n %s ",a->Fullname(), currentVoice->filename, yylineno, my_yylinebuf);
       }
       else
       {
@@ -8474,7 +8474,7 @@ static BOOLEAN iiExprArith3TabIntern(leftv res, int op, leftv a, leftv b, leftv 
         s=c->Fullname();
       }
       if (s!=NULL)
-        Werror("`%s` is not defined",s);
+        Werror("`%s` is not defined in %s, line %d, \n %s ",s, currentVoice->filename,  yylineno, my_yylinebuf);
       else
       {
         i=0;
@@ -8690,7 +8690,7 @@ BOOLEAN iiExprArithM(leftv res, leftv a, int op)
     {
       if ((args>0) && (a->rtyp==0) && (a->Name()!=sNoName))
       {
-        Werror("`%s` is not defined",a->Fullname());
+        Werror("`%s` is not defined in line %d, \n %s ",a->Fullname(),  yylineno, my_yylinebuf);
       }
       else
       {

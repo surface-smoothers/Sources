@@ -1119,7 +1119,7 @@ static BOOLEAN iiAssign_sys(leftv l, leftv r)
 
   if (rt==0)
   {
-    if (!errorreported) Werror("`%s` is undefined, line %d, \n %s ",r->Fullname(),  currentVoice->filename, yylineno, my_yylinebuf);
+    if (!errorreported) Werror("`%s` is undefined in %s, line %d, \n %s ",r->Fullname(),  currentVoice->filename, yylineno, my_yylinebuf);
     return TRUE;
   }
   int i=0;
