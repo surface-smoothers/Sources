@@ -205,7 +205,6 @@ void Werror(const char *fmt, ...)
   WerrorS(s);
   omFreeSize(s,256);
   va_end(ap);
-  exit(123);
 }
 
 void WarnS(const char *s)

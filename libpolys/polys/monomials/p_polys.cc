@@ -350,7 +350,7 @@ void p_Setm_General(poly p, const ring r)
 
 #ifndef SING_NDEBUG
 #if MYTEST
-          Print("p_Setm_General: ro_isTemp ord: pos: %d, p: ", pos);  p_DebugPrint(p, r, r, 1);
+          Print("p_Setm_General: ro_isTemp ord: pos: %d, p: ", pos);  p_wrp(p, r);
 #endif
 #endif
           int c = p_GetComp(p, r);
@@ -387,7 +387,7 @@ void p_Setm_General(poly p, const ring r)
           }
 #if MYTEST
 //          if( p->exp[o->data.isTemp.start] > 0 )
-            PrintS("after Values: "); p_DebugPrint(p, r, r, 1);
+            PrintS("after Values: "); p_wrp(p, r);
 #endif
 #endif
           break;
@@ -398,7 +398,7 @@ void p_Setm_General(poly p, const ring r)
         {
 #ifndef SING_NDEBUG
 #if MYTEST
-          Print("p_Setm_General: ro_is ord: pos: %d, p: ", pos);  p_DebugPrint(p, r, r, 1);
+          Print("p_Setm_General: ro_is ord: pos: %d, p: ", pos);  p_wrp(p, r);
 #endif
 #endif
 
@@ -416,9 +416,9 @@ void p_Setm_General(poly p, const ring r)
           {
 #ifndef SING_NDEBUG
 #if MYTEST
-            Print("p_Setm_General: ro_is : in rSetm: pos: %d, c: %d >  limit: %d\n", c, pos, limit); // p_DebugPrint(p, r, r, 1);
+            Print("p_Setm_General: ro_is : in rSetm: pos: %d, c: %d >  limit: %d\n", c, pos, limit);
             PrintS("preComputed Values: ");
-            p_DebugPrint(p, r, r, 1);
+            p_wrp(p, r);
 #endif
 #endif
 //          if( c > limit ) // BUG???
@@ -446,7 +446,7 @@ void p_Setm_General(poly p, const ring r)
 #ifndef SING_NDEBUG
 #if MYTEST
             Print("Respective F[c - %d: %d] pp: ", limit, c);
-            p_DebugPrint(pp, r, r, 1);
+            p_wrp(pp, r);
 #endif
 #endif
 
@@ -491,7 +491,7 @@ void p_Setm_General(poly p, const ring r)
             }
             // TODO: how to check this for computed values???
 #if MYTEST
-            PrintS("Computed Values: "); p_DebugPrint(p, r, r, 1);
+            PrintS("Computed Values: "); p_wrp(p, r);
 #endif
 #endif
           } else
@@ -510,7 +510,7 @@ void p_Setm_General(poly p, const ring r)
 #ifndef SING_NDEBUG
 #if MYTEST
             Print("ELSE p_Setm_General: ro_is :: c: %d <= limit: %d, vo: %d, exp: %d\n", c, limit, vo, p->exp[vo]);
-            p_DebugPrint(p, r, r, 1);
+            p_wrp(p, r);
 #endif
 #endif
           }
@@ -3512,12 +3512,20 @@ void pEnlargeSet(poly* *p, int l, int increment)
 {
   poly* h;
 
-  h=(poly*)omReallocSize((poly*)*p,l*sizeof(poly),(l+increment)*sizeof(poly));
-  if (increment>0)
+  if (*p==NULL)
   {
-    //for (i=l; i<l+increment; i++)
-    //  h[i]=NULL;
-    memset(&(h[l]),0,increment*sizeof(poly));
+    if (increment==0) return;
+    h=(poly*)omAlloc0(increment*sizeof(poly));
+  }
+  else
+  {
+    h=(poly*)omReallocSize((poly*)*p,l*sizeof(poly),(l+increment)*sizeof(poly));
+    if (increment>0)
+    {
+      //for (i=l; i<l+increment; i++)
+      //  h[i]=NULL;
+      memset(&(h[l]),0,increment*sizeof(poly));
+    }
   }
   *p=h;
 }
@@ -3832,15 +3840,15 @@ poly n_PermNumber(const number z, const int *par_perm, const int , const ring sr
   {
     assume( !IS0(z) );
 
-    zz = NUM(z);
+    zz = NUM((fraction)z);
     p_Test (zz, srcExtRing);
 
     if( zz == NULL ) return NULL;
-    if( !DENIS1(z) )
+    if( !DENIS1((fraction)z) )
     {
-      if (p_IsConstant(DEN(z),srcExtRing))
+      if (p_IsConstant(DEN((fraction)z),srcExtRing))
       {
-        number n=pGetCoeff(DEN(z));
+        number n=pGetCoeff(DEN((fraction)z));
         zz=p_Div_nn(zz,n,srcExtRing);
         p_Normalize(zz,srcExtRing);
       }
@@ -3896,16 +3904,13 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
     p_Test(p, oldRing);
     PrintS("\np_PermPoly::p: "); p_Write(p, oldRing, oldRing); PrintLn();
 #endif
-
   const int OldpVariables = rVar(oldRing);
   poly result = NULL;
   poly result_last = NULL;
   poly aq = NULL; /* the map coefficient */
   poly qq; /* the mapped monomial */
-
   assume(dst != NULL);
   assume(dst->cf != NULL);
-
   while (p != NULL)
   {
     // map the coefficient
@@ -3913,40 +3918,27 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
     {
       qq = p_Init(dst);
       assume( nMap != NULL );
-
       number n = nMap(p_GetCoeff(p, oldRing), oldRing->cf, dst->cf);
-
       n_Test (n,dst->cf);
-
       if ( nCoeff_is_algExt(dst->cf) )
         n_Normalize(n, dst->cf);
-
       p_GetCoeff(qq, dst) = n;// Note: n can be a ZERO!!!
-      // coef may be zero:
-//      p_Test(qq, dst);
     }
     else
     {
       qq = p_One(dst);
-
 //      aq = naPermNumber(p_GetCoeff(p, oldRing), par_perm, OldPar, oldRing); // no dst???
 //      poly    n_PermNumber(const number z, const int *par_perm, const int P, const ring src, const ring dst)
       aq = n_PermNumber(p_GetCoeff(p, oldRing), par_perm, OldPar, oldRing, dst);
-
       p_Test(aq, dst);
-
       if ( nCoeff_is_algExt(dst->cf) )
         p_Normalize(aq,dst);
-
       if (aq == NULL)
         p_SetCoeff(qq, n_Init(0, dst->cf),dst); // Very dirty trick!!!
-
       p_Test(aq, dst);
     }
-
     if (rRing_has_Comp(dst))
        p_SetComp(qq, p_GetComp(p, oldRing), dst);
-
     if ( n_IsZero(pGetCoeff(qq), dst->cf) )
     {
       p_LmDelete(&qq,dst);
@@ -3972,10 +3964,8 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
             {
               assume( dst->cf->extRing == NULL );
               number ee = n_Param(1, dst);
-
               number eee;
               n_Power(ee, e, &eee, dst->cf); //nfDelete(ee,dst);
-
               ee = n_Mult(c, eee, dst->cf);
               //nfDelete(c,dst);nfDelete(eee,dst);
               pSetCoeff0(qq,ee);
@@ -3984,26 +3974,19 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
             {
               const int par = -perm[i];
               assume( par > 0 );
-
 //              WarnS("longalg missing 3");
 #if 1
               const coeffs C = dst->cf;
               assume( C != NULL );
-
               const ring R = C->extRing;
               assume( R != NULL );
-
               assume( par <= rVar(R) );
-
               poly pcn; // = (number)c
-
               assume( !n_IsZero(c, C) );
-
               if( nCoeff_is_algExt(C) )
                  pcn = (poly) c;
                else //            nCoeff_is_transExt(C)
-                 pcn = NUM(c);
-
+                 pcn = NUM((fraction)c);
               if (pNext(pcn) == NULL) // c->z
                 p_AddExp(pcn, -perm[i], e, R);
               else /* more difficult: we have really to multiply: */
@@ -4011,19 +3994,16 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
                 poly mmc = p_ISet(1, R);
                 p_SetExp(mmc, -perm[i], e, R);
                 p_Setm(mmc, R);
-
                 number nnc;
                 // convert back to a number: number nnc = mmc;
                 if( nCoeff_is_algExt(C) )
                    nnc = (number) mmc;
                 else //            nCoeff_is_transExt(C)
                   nnc = ntInit(mmc, C);
-
                 p_GetCoeff(qq, dst) = n_Mult((number)c, nnc, C);
                 n_Delete((number *)&c, C);
                 n_Delete((number *)&nnc, C);
               }
-
               mapped_to_par=1;
 #endif
             }
@@ -4066,11 +4046,8 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
 
       if (aq!=NULL)
          qq=p_Mult_q(aq,qq,dst);
-
       aq = qq;
-
       while (pNext(aq) != NULL) pIter(aq);
-
       if (result_last==NULL)
       {
         result=qq;
@@ -4087,7 +4064,6 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
       p_Delete(&aq,dst);
     }
   }
-
   result=p_SortAdd(result,dst);
 #else
   //  if (qq!=NULL)
@@ -4118,7 +4094,6 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
   //}
 #endif
   p_Test(result,dst);
-
 #if 0
   p_Test(result,dst);
   PrintS("\nresult: "); p_Write(result,dst,dst); PrintLn();
@@ -4520,8 +4495,8 @@ void p_Shift (poly * p,int i, const ring r)
  ***************************************************************/
 
 
-static inline unsigned long GetBitFields(long e,
-                                         unsigned int s, unsigned int n)
+static inline unsigned long GetBitFields(const long e,
+                                         const unsigned int s, const unsigned int n)
 {
 #define Sy_bit_L(x)     (((unsigned long)1L)<<(x))
   unsigned int i = 0;
@@ -4553,7 +4528,7 @@ static inline unsigned long GetBitFields(long e,
 // This way, we have:
 // exp1 / exp2 ==> (ev1 & ~ev2) == 0, i.e.,
 // if (ev1 & ~ev2) then exp1 does not divide exp2
-unsigned long p_GetShortExpVector(poly p, const ring r)
+unsigned long p_GetShortExpVector(const poly p, const ring r)
 {
   assume(p != NULL);
   if (p == NULL) return 0;
