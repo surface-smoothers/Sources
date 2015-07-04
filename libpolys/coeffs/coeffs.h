@@ -200,11 +200,11 @@ struct n_Procs_s
    number  (*cfImPart)(number a, const coeffs r);
 
    /// print a given number (long format)
-   void    (*cfWriteLong)(number &a, const coeffs r);
+   void    (*cfWriteLong)(number a, const coeffs r);
 
    /// print a given number in a shorter way, if possible
    /// e.g. in K(a): a2 instead of a^2
-   void    (*cfWriteShort)(number &a, const coeffs r);
+   void    (*cfWriteShort)(number a, const coeffs r);
 
    // it is legal, but not always useful to have cfRead(s, a, r)
    //   just return s again.
@@ -822,6 +822,9 @@ static FORCE_INLINE BOOLEAN nCoeff_is_Zp(const coeffs r, int p)
 
 static FORCE_INLINE BOOLEAN nCoeff_is_Q(const coeffs r)
 { assume(r != NULL); return getCoeffType(r)==n_Q && (r->is_field); }
+
+static FORCE_INLINE BOOLEAN nCoeff_is_Q_or_BI(const coeffs r)
+{ assume(r != NULL); return getCoeffType(r)==n_Q; }
 
 static FORCE_INLINE BOOLEAN nCoeff_is_numeric(const coeffs r) /* R, long R, long C */
 { assume(r != NULL);  return (getCoeffType(r)==n_R) || (getCoeffType(r)==n_long_R) || (getCoeffType(r)==n_long_C); }

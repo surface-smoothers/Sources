@@ -28,6 +28,7 @@ void WerrorS(const char *s)
      fwrite((char *)s,1,strlen((char *)s),stderr);
      fwrite("\n",1,1,stderr);
      fflush(stderr);
+     exit(123);
   }
   else
   {
