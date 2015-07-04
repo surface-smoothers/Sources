@@ -59,7 +59,7 @@ number  nrzLcm         (number a,number b, const coeffs r);
 number  nrzGcd         (number a,number b, const coeffs r);
 number  nrzExtGcd      (number a, number b, number *s, number *t, const coeffs r);
 nMapFunc nrzSetMap     (const coeffs src, const coeffs dst);
-void    nrzWrite       (number &a, const coeffs r);
+void    nrzWrite       (number a, const coeffs r);
 const char *  nrzRead  (const char *s, number *a, const coeffs r);
 char *  nrzName        (number n, const coeffs r);
 void    nrzCoeffWrite  (const coeffs r, BOOLEAN details);
@@ -338,7 +338,13 @@ number nrzMapQ(number from, const coeffs src, const coeffs /*dst*/)
 nMapFunc nrzSetMap(const coeffs src, const coeffs /*dst*/)
 {
   /* dst = currRing */
-  if (nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_ModN(src) || nCoeff_is_Ring_PtoM(src))
+  /* dst = nrn */
+  if ((src->rep==n_rep_gmp)
+  && (nCoeff_is_Ring_Z(src) || nCoeff_is_Ring_ModN(src) || nCoeff_is_Ring_PtoM(src)))
+  {
+    return ndCopyMap; //nrzCopyMap;
+  }
+  if ((src->rep==n_rep_gap_gmp) /*&& nCoeff_is_Ring_Z(src)*/)
   {
     return ndCopyMap; //nrzCopyMap;
   }
@@ -377,7 +383,7 @@ BOOLEAN nrzDBTest (number, const char *, const int, const coeffs)
 }
 #endif
 
-void nrzWrite (number &a, const coeffs)
+void nrzWrite (number a, const coeffs)
 {
   char *s,*z;
   if (a==NULL)
