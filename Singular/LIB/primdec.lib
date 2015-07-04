@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////
-version="version primdec.lib 4.0.1.2 Jan_2015 "; // $Id$
+version="version primdec.lib 4.0.2.0 Apr_2015 "; // $Id$
 category="Commutative Algebra";
 info="
 LIBRARY: primdec.lib   Primary Decomposition and Radical of Ideals
@@ -806,8 +806,7 @@ static proc splitCharp(list l)
         }
         if((size(sact)==1)&&(m==2))
         {
-          l[2*i]=l[2*i-1];
-          attrib(l[2*i],"isSB",1);
+          l[2*i]=std(l[2*i-1],sact[1]);
         }
         if((size(sact)==1)&&(m>2))
         {
@@ -1017,7 +1016,7 @@ EXAMPLE: example zero_decomp; shows an example
     primary=splitPrimary(primary,ser,@wr,act);
   }
 
-  if((voice>=7)&&(char(basering)<=181))
+  if((voice>=7)&&(char(basering)<=181)&&(@wr==1))
   {
     primary=splitCharp(primary);
   }
@@ -4266,10 +4265,7 @@ static proc algeRad(ideal i)
    execute(gnir);
    ideal K=imap(RH,ra);
    K=std(K);
-   if (size(K)>1)   
-   { 
-        K = K[2..size(K)];   
-   }
+   if (ncols(K)>1) { K=K[2..size(K)];}
    setring R;
    ideal ra=imap(RS,K);
 
@@ -6531,7 +6527,6 @@ EXAMPLE: example radical; shows an example
   ASSUME(0, not isQuotientRing(basering) ) ;
   dbprint(printlevel - voice, "Radical, version 2006.05.08");
   if(size(i) == 0){return(ideal(0));}
-
   if(attrib(basering,"global")!=1)
   {
 // algorithms only work in global case!
@@ -7912,7 +7907,7 @@ EXAMPLE: example newDecompStep; shows an example
   {
     list fac=factor(@j[1]);
     list gprimary;
-    poly generator;
+    poly generator=1;
     ideal gIntersection;
     for(@k=1;@k<=size(fac[1]);@k++)
     {
