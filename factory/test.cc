@@ -1,6 +1,7 @@
 #include <factory/factory.h>
 #ifdef SINGULAR
 #include <resources/feFopen.h>
+#include <resources/feResource.h>
 #endif
 #include "cf_assert.h"
 
@@ -78,10 +79,6 @@ int test2 (int p)
   return 1;
 }*/
 
-#ifdef SINGULAR
-extern void feInitResources(const char* argv0);
-#endif
-
 int main( int, char *argv[] )
 {
   int ret = 0;
@@ -122,14 +119,14 @@ int main( int, char *argv[] )
   t= test2 (3);
   if (t < 0)
     ret += t;
-  
+
   t= test2 (101);
   if (t < 0)
     ret += t;
-  
+
   t= test2 (43051);
   if (t < 0)
     ret += t;
-  
+
   return ret;
 }

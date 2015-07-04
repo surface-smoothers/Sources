@@ -98,7 +98,7 @@ void addLObject(LObject& h, kStrategy& strat)
 }
 
 
-ideal sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, kStrategy strat, const ring _currRing)
+ideal k_sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -138,7 +138,7 @@ ideal sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, k
   ideal tempF = id_KillSquares(F, m_iFirstAltVar, m_iLastAltVar, currRing);
   ideal tempQ = Q;
 
-  if(Q == currQuotient)
+  if(Q == currRing->qideal)
     tempQ = SCAQuotient(currRing);
 
   strat->z2homog = id_IsSCAHomogeneous(tempF, NULL, NULL, currRing); // wCx == wCy == NULL!
@@ -372,7 +372,7 @@ ideal sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, k
 ///////////////////////////////////////////////////////////////////////////////////////
 
 // Under development!!!
-ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec * /*hilb*/, kStrategy strat, const ring _currRing)
+ideal k_sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec * /*hilb*/, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -412,7 +412,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
   ideal tempQ = Q;
 
-  if(Q == currQuotient)
+  if(Q == currRing->qideal)
     tempQ = SCAQuotient(currRing);
 
   // Q or tempQ will not be used below :(((
@@ -469,7 +469,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
     withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #undef HAVE_TAIL_RING
 
@@ -545,7 +545,6 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
   while (strat->Ll >= 0)
   {
 #ifdef KDEBUG
-//     loop_count++;
     if (TEST_OPT_DEBUG) messageSets(strat);
 #endif
 
@@ -614,7 +613,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
       message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
               &olddeg,&reduc,strat, red_result);
 
-    // reduction of the element choosen from L
+    // reduction of the element chosen from L
     red_result = strat->red(&strat->P,strat);
 
 
@@ -742,7 +741,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
         h.PrepareRed(strat->use_buckets);
 
-        // reduction of the element choosen from L(?)
+        // reduction of the element chosen from L(?)
         red_result = strat->red(&h,strat);
 
         // reduction to non-zero new poly
@@ -798,7 +797,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 //    memset(&(strat->P), 0, sizeof(strat->P));
 #endif
 
-    assume(kTest_TS(strat)); // even of T is not used!
+    kTest_TS(strat); // even of T is not used!
 
 //     Print("\n$\n");
 
@@ -892,11 +891,10 @@ static BOOLEAN kMoraUseBucket(kStrategy)
 
 #ifdef HAVE_ASSUME
 static int sca_mora_count = 0;
-static int sca_mora_loop_count;
 #endif
 
 // ideal sca_mora (ideal F, ideal Q, intvec *w, intvec *, kStrategy strat)
-ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *, kStrategy strat, const ring _currRing)
+ideal k_sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -911,7 +909,7 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
   ideal tempQ = Q;
 
-  if(Q == currQuotient)
+  if(Q == currRing->qideal)
     tempQ = SCAQuotient(currRing);
 
   bool bIdHomog = id_IsSCAHomogeneous(tempF, NULL, NULL, currRing); // wCx == wCy == NULL!
@@ -926,7 +924,6 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
 #ifdef HAVE_ASSUME
   sca_mora_count++;
-  sca_mora_loop_count = 0;
 #endif
 
   strat->update = TRUE;
@@ -962,7 +959,7 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 #endif
   strat->use_buckets = kMoraUseBucket(strat);
 
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 
   int olddeg = 0;
@@ -1036,14 +1033,8 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
     }
   }
 
-
-
-
   while (strat->Ll >= 0)
   {
-#ifdef HAVE_ASSUME
-    sca_mora_loop_count++;
-#endif
     //test_int_std(strat->kIdeal);
 #ifdef KDEBUG
     if (TEST_OPT_DEBUG) messageSets(strat);
@@ -1196,7 +1187,7 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
       }
     }
 #endif
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
   // - complete reduction of the standard basis------------------------ -
   if (TEST_OPT_REDSB) completeReduce(strat);

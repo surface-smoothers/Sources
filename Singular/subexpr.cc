@@ -12,24 +12,22 @@
 #include <misc/intvec.h>
 #include <misc/options.h>
 
-
-#include <coeffs/ffields.h>
 #include <coeffs/numbers.h>
 #include <coeffs/bigintmat.h>
+
+#include <coeffs/ffields.h> // nfShowMipo // minpoly printing...
 
 #include <polys/monomials/maps.h>
 #include <polys/matpol.h>
 #include <polys/monomials/ring.h>
-#include <kernel/polys.h>
 
-#include <libpolys/coeffs/longrat.h>
 // #include <coeffs/longrat.h>
 
-#include <kernel/febase.h>
+#include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <kernel/GBEngine/kstd1.h>
-#include <kernel/timer.h>
 #include <kernel/GBEngine/syz.h>
+#include <kernel/oswrapper/timer.h>
 
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
@@ -40,6 +38,7 @@
 #include <Singular/attrib.h>
 #include <Singular/subexpr.h>
 #include <Singular/blackbox.h>
+#include <Singular/number2.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -108,6 +107,18 @@ void sleftv::Print(leftv store, int spaces)
 
     switch (t /*=Typ()*/)
       {
+#ifdef SINGULAR_4_1
+        case CRING_CMD:
+          crPrint((coeffs)d);
+          break;
+        case CNUMBER_CMD:
+          n2Print((number2)d);
+          break;
+        case CMATRIX_CMD: // like BIGINTMAT
+#endif
+        case BIGINTMAT_CMD:
+          ((bigintmat *)d)->pprint(80);
+          break;
         case UNKNOWN:
         case DEF_CMD:
           PrintNSpaces(spaces);
@@ -123,9 +134,6 @@ void sleftv::Print(leftv store, int spaces)
         case INTMAT_CMD:
           ((intvec *)d)->show(t,spaces);
           break;
-        case BIGINTMAT_CMD:
-          ((bigintmat *)d)->pprint(80);
-          break;
         case RING_CMD:
         case QRING_CMD:
         {
@@ -139,7 +147,7 @@ void sleftv::Print(leftv store, int spaces)
           break;
         case MODUL_CMD:
         case IDEAL_CMD:
-          if ((TEST_V_QRING)  &&(currQuotient!=NULL)
+          if ((TEST_V_QRING)  &&(currRing->qideal!=NULL)
           &&(!hasFlag(this,FLAG_QRING)))
           {
             jjNormalizeQRingId(this);
@@ -151,7 +159,7 @@ void sleftv::Print(leftv store, int spaces)
           break;
         case POLY_CMD:
         case VECTOR_CMD:
-          if ((TEST_V_QRING)  &&(currQuotient!=NULL)
+          if ((TEST_V_QRING)  &&(currRing->qideal!=NULL)
           &&(!hasFlag(this,FLAG_QRING)))
           {
             jjNormalizeQRingP(this);
@@ -195,15 +203,6 @@ void sleftv::Print(leftv store, int spaces)
            //   piProcinfo(pi, "ref"));
            break;
          }
-       case POINTER_CMD:
-         { package pack = (package)d;
-         PrintNSpaces(spaces);
-         PrintS("// PointerTest\n");
-         PrintNSpaces(spaces);
-         ::Print("// %s\n",IDID(pack->idroot));
-         //::Print(((char *)(pack->idroot)->data), spaces);
-         break;
-         }
        case LINK_CMD:
           {
             si_link l=(si_link)d;
@@ -223,6 +222,12 @@ void sleftv::Print(leftv store, int spaces)
           }
         case NUMBER_CMD:
         case BIGINT_CMD:
+          if (t==NUMBER_CMD)
+          {
+            number n=(number)d;
+            nNormalize(n);
+            d=n;
+          }
           s=String(d);
           if (s==NULL) return;
           PrintNSpaces(spaces);
@@ -283,7 +288,6 @@ void sleftv::Print(leftv store, int spaces)
     && (store!=this))
     {
       if((t/*Typ()*/!=LINK_CMD)
-      && (t/*Typ()*/!=POINTER_CMD)
       && (t/*Typ()*/!=PACKAGE_CMD)
       && (t/*Typ()*/!=DEF_CMD)
       )
@@ -319,7 +323,6 @@ void sleftv::CleanUp(ring r)
   {
     switch (rtyp)
     {
-      case POINTER_CMD:
       case PACKAGE_CMD:
       case IDHDL:
       case ANY_TYPE:
@@ -385,11 +388,22 @@ static inline void * s_internalCopy(const int t,  void *d)
 {
   switch (t)
   {
+#ifdef SINGULAR_4_1
+    case CRING_CMD:
+      {
+        coeffs cf=(coeffs)d;
+        cf->ref++;
+        return (void*)d;
+      }
+    case CNUMBER_CMD:
+      return (void*)n2Copy((number2)d);
+    case CMATRIX_CMD: // like BIGINTMAT
+#endif
+    case BIGINTMAT_CMD:
+      return (void*)bimCopy((bigintmat *)d);
     case INTVEC_CMD:
     case INTMAT_CMD:
       return (void *)ivCopy((intvec *)d);
-    case BIGINTMAT_CMD:
-      return (void*)bimCopy((bigintmat *)d);
     case MATRIX_CMD:
       return (void *)mp_Copy((matrix)d, currRing);
     case IDEAL_CMD:
@@ -397,8 +411,6 @@ static inline void * s_internalCopy(const int t,  void *d)
       return  (void *)idCopy((ideal)d);
     case STRING_CMD:
         return (void *)omStrDup((char *)d);
-    case POINTER_CMD:
-      return d;
     case PACKAGE_CMD:
       return  (void *)paCopy((package) d);
     case PROC_CMD:
@@ -454,16 +466,28 @@ void s_internalDelete(const int t,  void *d, const ring r)
   assume(d!=NULL);
   switch (t)
   {
+#ifdef SINGULAR_4_1
+    case CRING_CMD:
+      nKillChar((coeffs)d);
+      break;
+    case CNUMBER_CMD:
+      {
+        number2 n=(number2)d;
+        n2Delete(n);
+        break;
+      }
+    case CMATRIX_CMD: //like BIGINTMAT
+#endif
+    case BIGINTMAT_CMD:
+    {
+      bigintmat *v=(bigintmat*)d;
+      delete v;
+      break;
+    }
     case INTVEC_CMD:
     case INTMAT_CMD:
     {
       intvec *v=(intvec*)d;
-      delete v;
-      break;
-    }
-    case BIGINTMAT_CMD:
-    {
-      bigintmat *v=(bigintmat*)d;
       delete v;
       break;
     }
@@ -485,8 +509,6 @@ void s_internalDelete(const int t,  void *d, const ring r)
     case STRING_CMD:
       omFree(d);
       break;
-    //case POINTER_CMD:
-    //  return d;
     //case PACKAGE_CMD:
     //  return  (void *)paCopy((package) d);
     case PROC_CMD:
@@ -553,7 +575,6 @@ void s_internalDelete(const int t,  void *d, const ring r)
     case INT_CMD:
     case DEF_CMD:
     case ALIAS_CMD:
-    case POINTER_CMD:
     case PACKAGE_CMD:
     case IDHDL:
     case NONE:
@@ -596,7 +617,10 @@ void * slInternalCopy(leftv source, const int t, void *d, Subexpr e)
   {
       if ((e==NULL)
       || (source->rtyp==LIST_CMD)
-      || ((source->rtyp==IDHDL)&&(IDTYP((idhdl)source->data)==LIST_CMD)))
+      || ((source->rtyp==IDHDL)
+          &&((IDTYP((idhdl)source->data)==LIST_CMD)
+            || (IDTYP((idhdl)source->data)>MAX_TOK)))
+      || (source->rtyp>MAX_TOK))
         return (void *)omStrDup((char *)d);
       else if (e->next==NULL)
       {
@@ -744,6 +768,11 @@ char *  sleftv::String(void *d, BOOLEAN typed, int dim)
           }
           else
             return pString((poly)d);
+
+        #ifdef SINGULAR_4_1
+        case CNUMBER_CMD:
+          return n2String((number2)d,typed);
+        #endif
 
         case NUMBER_CMD:
           StringSetS((char*) (typed ? "number(" : ""));
@@ -961,10 +990,22 @@ int  sleftv::Typ()
   }
   int r=0;
   int t=rtyp;
-  if (t==IDHDL) t=IDTYP((idhdl)data);
-  else if (t==ALIAS_CMD) { idhdl h=(idhdl)IDDATA((idhdl)data); t=IDTYP(h); }
+  void *d=data;
+  if (t==IDHDL) t=IDTYP((idhdl)d);
+  else if (t==ALIAS_CMD)
+  { idhdl h=(idhdl)IDDATA((idhdl)data); t=IDTYP(h);d=IDDATA(h); }
   switch (t)
   {
+#ifdef SINGULAR_4_1
+    case CMATRIX_CMD:
+    {
+      bigintmat *b=(bigintmat*)d;
+      if ((currRing!=NULL)&&(currRing->cf==b->basecoeffs()))
+        return NUMBER_CMD;
+      else
+        return CNUMBER_CMD;
+    }
+#endif
     case INTVEC_CMD:
     case INTMAT_CMD:
       r=INT_CMD;
@@ -993,13 +1034,8 @@ int  sleftv::Typ()
       if ((t==LIST_CMD)||((b!=NULL)&&BB_LIKE_LIST(b)))
       {
         lists l;
-        if (rtyp==IDHDL) l=IDLIST((idhdl)data);
-        else if (rtyp==ALIAS_CMD)
-        {
-          idhdl h=(idhdl)data;
-          l=(lists)(((idhdl)h->data.ustring)->data.ustring);
-        }
-        else             l=(lists)data;
+        if (rtyp==IDHDL) l=IDLIST((idhdl)d);
+        else             l=(lists)d;
         if ((0<e->start)&&(e->start<=l->nr+1))
         {
           Subexpr tmp=l->m[e->start-1].e;
@@ -1054,6 +1090,10 @@ int  sleftv::LTyp()
   return Typ();
 }
 
+#ifdef SINGULAR_4_1
+static snumber2 iiNumber2Data[4];
+static int iiCmatrix_index=0;
+#endif
 void * sleftv::Data()
 {
   if ((rtyp!=IDHDL) && iiCheckRing(rtyp))
@@ -1094,8 +1134,6 @@ void * sleftv::Data()
       case VNOETHER:   return (void *) (currRing->ppNoether);
       case IDHDL:
         return IDDATA((idhdl)data);
-      case POINTER_CMD:
-        return IDDATA((idhdl)data);
       case COMMAND:
         //return NULL;
       default:
@@ -1128,7 +1166,7 @@ void * sleftv::Data()
       if ((index<1)||(index>iv->length()))
       {
         if (!errorreported)
-          Werror("wrong range[%d] in intvec(%d)",index,iv->length());
+          Werror("wrong range[%d] in intvec %s(%d)",index,this->Name(),iv->length());
       }
       else
         r=(char *)(long)((*iv)[index-1]);
@@ -1143,8 +1181,8 @@ void * sleftv::Data()
          ||(e->next->start>iv->cols()))
       {
         if (!errorreported)
-        Werror("wrong range[%d,%d] in intmat(%dx%d)",index,e->next->start,
-                                                     iv->rows(),iv->cols());
+        Werror("wrong range[%d,%d] in intmat %s(%dx%d)",index,e->next->start,
+                                           this->Name(),iv->rows(),iv->cols());
       }
       else
         r=(char *)(long)(IMATELEM((*iv),index,e->next->start));
@@ -1159,13 +1197,36 @@ void * sleftv::Data()
          ||(e->next->start>m->cols()))
       {
         if (!errorreported)
-        Werror("wrong range[%d,%d] in bigintmat(%dx%d)",index,e->next->start,
-                                                     m->rows(),m->cols());
+        Werror("wrong range[%d,%d] in bigintmat %s(%dx%d)",index,e->next->start,
+                                                     this->Name(),m->rows(),m->cols());
       }
       else
         r=(char *)(BIMATELEM((*m),index,e->next->start));
       break;
     }
+#ifdef SINGULAR_4_1
+    case CMATRIX_CMD:
+    {
+      bigintmat *m=(bigintmat *)d;
+      if ((index<1)
+         ||(index>m->rows())
+         ||(e->next->start<1)
+         ||(e->next->start>m->cols()))
+      {
+        if (!errorreported)
+        Werror("wrong range[%d,%d] in matrix %s(%dx%d)",index,e->next->start,
+                                                     this->Name(),m->rows(),m->cols());
+      }
+      else
+      {
+        iiNumber2Data[iiCmatrix_index].cf=m->basecoeffs();
+        iiNumber2Data[iiCmatrix_index].n=BIMATELEM((*m),index,e->next->start);
+        r=(char*)&iiNumber2Data[iiCmatrix_index];
+        iiCmatrix_index=(iiCmatrix_index+1) % 4;
+      }
+      break;
+    }
+#endif
     case IDEAL_CMD:
     case MODUL_CMD:
     case MAP_CMD:
@@ -1174,7 +1235,7 @@ void * sleftv::Data()
       if ((index<1)||(index>IDELEMS(I)))
       {
         if (!errorreported)
-          Werror("wrong range[%d] in ideal/module(%d)",index,IDELEMS(I));
+          Werror("wrong range[%d] in ideal/module %s(%d)",index,this->Name(),IDELEMS(I));
       }
       else
         r=(char *)I->m[index-1];
@@ -1230,8 +1291,9 @@ void * sleftv::Data()
          ||(e->next->start>MATCOLS((matrix)d)))
       {
         if (!errorreported)
-          Werror("wrong range[%d,%d] in intmat(%dx%d)",
+          Werror("wrong range[%d,%d] in matrix %s(%dx%d)",
                   index,e->next->start,
+                  this->Name(),
                   MATROWS((matrix)d),MATCOLS((matrix)d));
       }
       else
@@ -1277,10 +1339,10 @@ void * sleftv::Data()
           }
         }
         else //if (!errorreported)
-          Werror("wrong range[%d] in list(%d)",index,l->nr+1);
+          Werror("wrong range[%d] in list %s(%d)",index,this->Name(),l->nr+1);
       }
       else
-        Werror("cannot index type %s(%d)",Tok2Cmdname(t),t);
+        Werror("cannot index %s of type %s(%d)",this->Name(),Tok2Cmdname(t),t);
       break;
     }
   }
@@ -1371,9 +1433,10 @@ leftv sleftv::LHdl()
 
 BOOLEAN assumeStdFlag(leftv h)
 {
-  if ((h->e!=NULL)&&(h->LTyp()==LIST_CMD))
+  if (h->e!=NULL)
   {
-    return assumeStdFlag(h->LData());
+    leftv hh=h->LData();
+    if (h!=hh) return assumeStdFlag(h->LData());
   }
   if (!hasFlag(h,FLAG_STD))
   {
@@ -1588,15 +1651,15 @@ void syMake(leftv v,const char * id, idhdl packhdl)
           v->rtyp = POLY_CMD;
           v->name = id;
         }
-        if (TEST_V_ALLWARN /*&& (myynest>0)*/
-        && ((r_IsRingVar(id, currRing->names,currRing->N)>=0)
-          || ((n_NumberOfParameters(currRing->cf)>0)
-             &&(r_IsRingVar(id, (char**)n_ParameterNames(currRing->cf),
-                                n_NumberOfParameters(currRing->cf))>=0))))
-        {
-        // WARNING: do not use ring variable names in procedures
-          Warn("use of variable >>%s<< in a procedure in line %s",id,my_yylinebuf);
-        }
+        //if (TEST_V_ALLWARN /*&& (myynest>0)*/
+        //&& ((r_IsRingVar(id, currRing->names,currRing->N)>=0)
+        //  || ((n_NumberOfParameters(currRing->cf)>0)
+        //     &&(r_IsRingVar(id, (char**)n_ParameterNames(currRing->cf),
+        //                        n_NumberOfParameters(currRing->cf))>=0))))
+        //{
+        //// WARNING: do not use ring variable names in procedures
+        //  Warn("use of variable >>%s<< in a procedure in line %s",id,my_yylinebuf);
+        //}
         return;
       }
     }
@@ -1685,8 +1748,12 @@ int sleftv::Eval()
         if(!nok)
         {
           nok=iiMake_proc(h,req_packhdl,&d->arg2);
+          this->CleanUp(currRing);
           if (!nok)
+          {
             memcpy(this,&iiRETURNEXPR,sizeof(sleftv));
+            memset(&iiRETURNEXPR,0,sizeof(sleftv));
+          }
         }
       }
       else nok=TRUE;
@@ -1740,6 +1807,7 @@ int sleftv::Eval()
     }
     else
     {
+      sleftv tmp; tmp.Init();
       int toktype=iiTokType(d->op);
       if ((toktype==CMD_M)
       ||( toktype==ROOT_DECL_LIST)
@@ -1763,43 +1831,45 @@ int sleftv::Eval()
             d->arg3.Init();
           }
           if (d->argc==0)
-            nok=nok||iiExprArithM(this,NULL,d->op);
+            nok=nok||iiExprArithM(&tmp,NULL,d->op);
           else
-            nok=nok||iiExprArithM(this,&d->arg1,d->op);
+            nok=nok||iiExprArithM(&tmp,&d->arg1,d->op);
         }
         else
         {
           nok=d->arg1.Eval();
-          nok=nok||iiExprArithM(this,&d->arg1,d->op);
+          nok=nok||iiExprArithM(&tmp,&d->arg1,d->op);
         }
       }
       else if (d->argc==1)
       {
         nok=d->arg1.Eval();
-        nok=nok||iiExprArith1(this,&d->arg1,d->op);
+        nok=nok||iiExprArith1(&tmp,&d->arg1,d->op);
       }
       else if(d->argc==2)
       {
         nok=d->arg1.Eval();
         nok=nok||d->arg2.Eval();
-        nok=nok||iiExprArith2(this,&d->arg1,d->op,&d->arg2);
+        nok=nok||iiExprArith2(&tmp,&d->arg1,d->op,&d->arg2);
       }
       else if(d->argc==3)
       {
         nok=d->arg1.Eval();
         nok=nok||d->arg2.Eval();
         nok=nok||d->arg3.Eval();
-        nok=nok||iiExprArith3(this,d->op,&d->arg1,&d->arg2,&d->arg3);
+        nok=nok||iiExprArith3(&tmp,d->op,&d->arg1,&d->arg2,&d->arg3);
       }
       else if(d->argc!=0)
       {
         nok=d->arg1.Eval();
-        nok=nok||iiExprArithM(this,&d->arg1,d->op);
+        nok=nok||iiExprArithM(&tmp,&d->arg1,d->op);
       }
       else // d->argc == 0
       {
-        nok = iiExprArithM(this, NULL, d->op);
+        nok = iiExprArithM(&tmp, NULL, d->op);
       }
+      this->CleanUp();
+      memcpy(this,&tmp,sizeof(tmp));
     }
   }
   else if (((rtyp==0)||(rtyp==DEF_CMD))

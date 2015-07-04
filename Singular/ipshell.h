@@ -10,6 +10,7 @@
 //#include <kernel/structs.h>
 #include <kernel/ideals.h>
 #include <Singular/lists.h>
+#include <Singular/fevoices.h>
 
 struct _ssubexpr;
 typedef struct _ssubexpr *Subexpr;
@@ -20,6 +21,10 @@ BOOLEAN    spaddProc    ( leftv,leftv,leftv );
 BOOLEAN    spmulProc    ( leftv,leftv,leftv );
 BOOLEAN    semicProc   ( leftv,leftv,leftv );
 BOOLEAN    semicProc3   ( leftv,leftv,leftv,leftv );
+
+BOOLEAN iiAssignCR(leftv, leftv);
+
+BOOLEAN iiARROW (leftv, char*,char *);
 
 extern leftv iiCurrArgs;
 extern idhdl iiCurrProc;
@@ -33,6 +38,10 @@ extern ring   *iiLocalRing;
 //extern cmdnames cmds[];
 extern const char *lastreserved;
 extern const char *singular_date; /* tesths.cc, set by final compile */
+extern int myynest;
+extern int printlevel;
+extern int si_echo;
+
 
 extern BOOLEAN yyInRingConstruction; /* 1: during ring construction */
 
@@ -69,6 +78,7 @@ BOOLEAN iiLibCmd( char *newlib, BOOLEAN autoexport, BOOLEAN tellerror, BOOLEAN f
 */
 /// load lib/module given in v
 BOOLEAN jjLOAD(const char *s, BOOLEAN autoexport = FALSE);
+BOOLEAN jjLOAD_TRY(const char *s);
 BOOLEAN iiLocateLib(const char* lib, char* where);
 leftv   iiMap(map theMap, const char * what);
 void    iiMakeResolv(resolvente r, int length, int rlen, char * name, int typ0,
@@ -113,13 +123,6 @@ BOOLEAN iiExprArithM(leftv res, sleftv* a, int op);
 BOOLEAN iiApply(leftv res,leftv a, int op, leftv proc);
 
 typedef BOOLEAN (*proc1)(leftv,leftv);
-
-#ifdef __GNUC__
-#if (__GNUC__ < 3)
-#define INIT_BUG 1
-void    jjInitTab1();
-#endif
-#endif
 
 #ifdef GENTABLE
 typedef char * (*Proc1)(char *);
@@ -170,7 +173,7 @@ extern struct sValCmdM dArithM[];
 
 /* ================================================================== */
 /* Assigments : */
-BOOLEAN iiAssign(leftv left, leftv right);
+BOOLEAN iiAssign(leftv left, leftv right, BOOLEAN toplevel=TRUE);
 
 typedef BOOLEAN (*proci)(leftv,leftv,Subexpr);
 struct sValAssign_sys
@@ -218,7 +221,7 @@ ring rInit(sleftv* pn, sleftv* rv, sleftv* ord);
 idhdl  rDefault(const char *s);
 
 idhdl rSimpleFindHdl(ring r, idhdl root, idhdl n=NULL);
-idhdl rFindHdl(ring r, idhdl n, idhdl w);
+idhdl rFindHdl(ring r, idhdl n);
 void   rKill(idhdl h);
 void   rKill(ring r);
 lists scIndIndset(ideal S, BOOLEAN all, ideal Q);
@@ -247,5 +250,49 @@ void paPrint(const char *n,package p);
 
 
 BOOLEAN iiTestAssume(leftv a, leftv b);
+
+/* table inteface for iiAddCproc */
+/// apply an operation 'op' to an argument a
+/// return TRUE on failure
+BOOLEAN iiExprArith1Tab(leftv res,///< [out] pre-allocated result
+                        leftv a,  ///< [in]  argument
+                        int op,   ///< [in]  operation
+                        struct sValCmd1* dA1, ///< [in] table of possible proc
+                                                  ///< assumes dArith1[0].cmd==op
+                        int at,   ///< [in] a->Typ()
+                        struct sConvertTypes *dConvertTypes ///< [in] table of type conversions
+                        );
+/// apply an operation 'op' to arguments a and a->next
+/// return TRUE on failure
+BOOLEAN iiExprArith2Tab(leftv res,///< [out] pre-allocated result
+                        leftv a,  ///< [in]  2 arguments
+                        int op,   ///< [in]  operation
+                        struct sValCmd2* dA2,///< [in] table of possible proc
+                                   ///< assumes dA2[0].cmd==op
+                        int at,    ///< [in] a->Typ()
+                        struct sConvertTypes *dConvertTypes ///< [in] table of type conversions
+                        );
+/// apply an operation 'op' to arguments a, a->next and a->next->next
+/// return TRUE on failure
+BOOLEAN iiExprArith3Tab(leftv res, ///< [out] pre-allocated result
+                        leftv a,   ///< [in]  3 arguments
+                        int op,    ///< [in]  operation
+                        struct sValCmd3* dA3,///< [in] table of possible proc
+                                   ///< assumes dA3[0].cmd==op
+                        int at,    ///< [in] a->Typ()
+                        struct sConvertTypes *dConvertTypes ///< [in] table of type conversions
+                        );
+
+/// check a list of arguemys against a given field of types
+/// return TRUE if the types match
+/// return FALSE (and, if report) report an error via Werror otherwise
+BOOLEAN iiCheckTypes(leftv args,/// < [in] argument list (may be NULL)
+                      const short *type_list,///< [in] field of types
+                                             ///< len, t1,t2,...
+                      int report=0  /// ;in] report error?
+                      );
+
+BOOLEAN iiBranchTo(leftv r, leftv args);
+
 #endif
 

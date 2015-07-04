@@ -25,26 +25,23 @@ static void writemon(poly p, int ko, const ring r)
   assume(r != NULL);
   const coeffs C = r->cf;
   assume(C != NULL);
-  
+
   BOOLEAN wroteCoef=FALSE,writeGen=FALSE;
   const BOOLEAN bNotShortOut = (rShortOut(r) == FALSE);
 
-  if (pGetCoeff(p)!=NULL)
-    n_Normalize(pGetCoeff(p),C);
-
-  if (((p_GetComp(p,r) == (short)ko)
+  if (((p_GetComp(p,r) == ko)
     &&(p_LmIsConstantComp(p, r)))
   || ((!n_IsOne(pGetCoeff(p),C))
     && (!n_IsMOne(pGetCoeff(p),C))
   )
   )
   {
-    if( bNotShortOut ) 
+    if( bNotShortOut )
       n_WriteLong(pGetCoeff(p),C);
     else
       n_WriteShort(pGetCoeff(p),C);
-    
-    wroteCoef=(bNotShortOut) 
+
+    wroteCoef=(bNotShortOut)
     || (rParameter(r)!=NULL)
     || rField_is_R(r) || (rField_is_long_R(r)) || (rField_is_long_C(r));
     writeGen=TRUE;
@@ -53,11 +50,11 @@ static void writemon(poly p, int ko, const ring r)
   {
     if (n_GreaterZero(pGetCoeff(p),C))
     {
-      if( bNotShortOut ) 
+      if( bNotShortOut )
         n_WriteLong(pGetCoeff(p),C);
       else
         n_WriteShort(pGetCoeff(p),C);
-      
+
       wroteCoef=(bNotShortOut)
       || (rParameter(r)!=NULL)
       || rField_is_R(r) || (rField_is_long_R(r)) || (rField_is_long_C(r));
@@ -103,12 +100,12 @@ void p_String0Short(const poly p, ring lmRing, ring tailRing)
   // (changing naRing->ShortOut for a while) is due to Hans!
   // Just think of other ring using the VERY SAME naRing and possible
   // side-effects...
-  const BOOLEAN bLMShortOut = rShortOut(lmRing); 
-  const BOOLEAN bTAILShortOut = rShortOut(tailRing); 
+  const BOOLEAN bLMShortOut = rShortOut(lmRing);
+  const BOOLEAN bTAILShortOut = rShortOut(tailRing);
 
   lmRing->ShortOut = rCanShortOut(lmRing);
   tailRing->ShortOut = rCanShortOut(tailRing);
-  
+
   p_String0(p, lmRing, tailRing);
 
   lmRing->ShortOut = bLMShortOut;
@@ -122,8 +119,9 @@ void p_String0Long(const poly p, ring lmRing, ring tailRing)
   // (changing naRing->ShortOut for a while) is due to Hans!
   // Just think of other ring using the VERY SAME naRing and possible
   // side-effects...
-  const BOOLEAN bLMShortOut = rShortOut(lmRing); 
-  const BOOLEAN bTAILShortOut = rShortOut(tailRing); 
+  // but this is not a problem: i/o is not thread-safe anyway.
+  const BOOLEAN bLMShortOut = rShortOut(lmRing);
+  const BOOLEAN bTAILShortOut = rShortOut(tailRing);
 
   lmRing->ShortOut = FALSE;
   tailRing->ShortOut = FALSE;
@@ -142,6 +140,10 @@ void p_String0(poly p, ring lmRing, ring tailRing)
     StringAppendS("0");
     return;
   }
+  p_Normalize(p,lmRing);
+  if ((n_GetChar(lmRing->cf) == 0)
+  && (nCoeff_is_transExt(lmRing->cf)))
+    p_Normalize(p,lmRing); /* Manual/absfact.tst */
   if ((p_GetComp(p, lmRing) == 0) || (!lmRing->VectorOut))
   {
     writemon(p,0, lmRing);
@@ -242,7 +244,7 @@ void p_wrp(poly p, ring lmRing, ring tailRing)
   {
     r = pNext(pNext(p));
     pNext(pNext(p)) = NULL;
-    p_Write0(p, lmRing, tailRing);
+    p_Write0(p, tailRing);
     if (r!=NULL)
     {
       PrintS("+...");

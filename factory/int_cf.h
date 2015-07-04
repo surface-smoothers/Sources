@@ -1,5 +1,10 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
+/**
+ * @file int_cf.h
+ *
+ * Factory's internal CanonicalForm's
+**/
 #ifndef INCL_INT_CF_H
 #define INCL_INT_CF_H
 
@@ -20,9 +25,22 @@
 #include "cf_defs.h"
 #include "variable.h"
 
+#ifdef HAVE_OMALLOC
+#include <omalloc/omallocClass.h>
+#endif
+
 class CanonicalForm;
 
-class InternalCF {
+/**
+ * virtual class for internal CanonicalForm's
+ *
+ * InternalCF will become an InternalPoly, InternalInteger, InternalRational
+**/
+class InternalCF
+#ifdef HAVE_OMALLOC
+       : public omallocClass
+#endif
+{
 private:
     int refCount;
 protected:

@@ -48,7 +48,7 @@ BOOLEAN dPolyReportError(poly p, ring r, const char* fmt, ...)
   va_list ap;
   va_start(ap, fmt);
 
-  fprintf(stderr, "\n// ***dPolyError: ");
+  fprintf(stderr, "\n// ***dPolyReportError: ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n occured at\n");
   omPrintCurrentBackTraceMax(stderr, 8);
@@ -248,8 +248,9 @@ BOOLEAN _p_Test(poly p, ring r, int level)
     #endif
     // number/coef check
     _pPolyAssumeReturnMsg(p->coef != NULL || (n_GetChar(r->cf) >= 2), "NULL coef",p,r);
+
     #ifdef LDEBUG
-    _pPolyAssumeReturnMsg(r->cf->cfDBTest(p->coef,__FILE__,__LINE__,r->cf),"coeff err",p,r);
+    _pPolyAssumeReturnMsg(n_Test(p->coef,r->cf),"coeff err",p,r);
     #endif
     _pPolyAssumeReturnMsg(!n_IsZero(p->coef, r->cf), "Zero coef",p,r);
 

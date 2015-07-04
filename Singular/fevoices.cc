@@ -12,7 +12,10 @@
 #include <omalloc/omalloc.h>
 #include <misc/options.h>
 #include <reporter/reporter.h>
-#include <kernel/febase.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
+#include <Singular/subexpr.h>
+#include <Singular/ipshell.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,6 +34,7 @@
 
 
 char fe_promptstr[] ="  ";
+FILE *File_Profiling=NULL;
 
 // output/print buffer:
 #define INITIAL_PRINT_BUFFER 24*1024L
@@ -84,7 +88,7 @@ void VoiceBackTrack()
 }
 
 /*2
-* init a new voice similiar to the current
+* init a new voice similar to the current
 */
 void Voice::Next()
 {
@@ -454,6 +458,20 @@ static int fePrintEcho(char *anf, char */*b*/)
   {
     Print("{%d}",yylineno);
     mflush();
+  }
+  else if (traceit&TRACE_PROFILING)
+  {
+    if (File_Profiling==NULL)
+      File_Profiling=fopen("smon.out","a");
+    if (File_Profiling==NULL)
+      traceit &= (~TRACE_PROFILING);
+    else
+    {
+      if (currentVoice->filename==NULL)
+        fprintf(File_Profiling,"(none) %d\n",yylineno);
+      else
+        fprintf(File_Profiling,"%s %d\n",currentVoice->filename,yylineno);
+    }
   }
 #ifdef HAVE_SDB
   if ((blocknest==0)

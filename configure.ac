@@ -1,10 +1,10 @@
-AC_INIT([singular], [4.0.0], [singular@mathematik.uni-kl.de])
-AC_DEFINE([VERSION_DATE],["Dec 2013"],[release date])
+AC_INIT([singular], [4.0.2], [singular@mathematik.uni-kl.de])
+AC_DEFINE([VERSION_DATE],["Feb 2015"],[release date])
 
 _AC_SRCDIRS(["$ac_dir"])
 
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_AUX_DIR([build-aux])
 
 AC_CONFIG_SRCDIR([Singular/tesths.cc])
 
@@ -15,7 +15,7 @@ AX_PREFIX_CONFIG_H([singularconfig.h],[],[_config.h])
 dnl Apparently, this is required for using an AC_CHECK_HEADER within AS_IF(...), at least on Cygwin.
 AC_USE_SYSTEM_EXTENSIONS
 
-AM_MAINTAINER_MODE([enable])   
+AM_MAINTAINER_MODE([enable])
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects]) # -Wno-extra-portability -Werror silent-rules
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -41,8 +41,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h iostream.h sys/time.h sys/times.h asm/sigcontext.h)
 
-AC_CHECK_FUNCS(readlink getcwd getwd setenv putenv)
-
+AC_CHECK_FUNCS(readlink getcwd getwd setenv putenv qsort_r)
 
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN";
@@ -56,7 +55,38 @@ link_all_deplibs=yes
 link_all_deplibs_CXX=yes
 
 # Checks for libraries.
-AC_CHECK_LIB(pthread,pthread_create)
+
+# This test for -lpthread etc has to come before AX_PTHREAD,
+# because libtool tends to ignore -pthread in linking shared C++-libs
+# see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=25460
+# (happens with ubuntu 14.04)
+AC_SEARCH_LIBS(sem_wait,[rt pthreads pthread],[],[
+  AC_MSG_ERROR([sem_wait not found in rt,pthreads,pthread])
+])
+
+#AC_CHECK_LIB(pthread,pthread_create)
+AX_PTHREAD([], [
+  AC_MSG_ERROR([Pthread library not found. Please set PTHREAD_CFLAGS and PTHREAD_LIBS correctly for your setup])
+])
+
+AC_MSG_CHECKING([Found Pthread, PTHREAD_CC:])
+AC_MSG_RESULT(${PTHREAD_CC:-unset})
+AC_MSG_CHECKING([               PTHREAD_CFLAGS:])
+AC_MSG_RESULT(${PTHREAD_CFLAGS:-unset})
+AC_MSG_CHECKING([               PTHREAD_LIBS:])
+AC_MSG_RESULT(${PTHREAD_LIBS:-unset})
+
+# Set the correct PTHREAD flags and, if needed, change the compiler to one that is pthread-enabled.
+CC="$PTHREAD_CC"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
+
+AC_SUBST(PTHREAD_CFLAGS)
+AC_SUBST(PTHREAD_LDFLAGS)
+AC_SUBST(PTHREAD_LIBS)
+AC_SUBST(CC)
+
+
 AC_CHECK_LIB(rt,clock_gettime)
 
 LB_CHECK_GMP(4.0,,AC_MSG_ERROR([Unable to find GMP on your machine: please use --with-gmp=PATH_TO_DIR_CONTAINING_LIB_AND_INCLUDE (see also ./configure --help if you do not understand what we are talking about)]))
@@ -65,7 +95,7 @@ LB_CHECK_FLINT(2.3,,AC_MSG_WARN([Unable to find FLINT (which is strongly recomme
 
 AC_CONFIG_GOOGLE_PERFTOOLS()
 
-## AX_PYTHON_DEFAULT()
+AX_PYTHON_DEFAULT()
 AX_PYTHON_WITH_VERSION([2.4])
 
 LB_CHECK_MATHICGB
@@ -99,6 +129,8 @@ SING_CHECK_GFANLIB
 SING_CHECK_POLYMAKE
 
 SING_CHECK_PLURAL
+
+SING_BUILTIN_MODULES
 
 ### the following is needed due to the use of om_sing_opt_show_mem in misc_ip.cc...
 #ac_configure_args="$ac_configure_args --with-external-config_h=../Singular/omSingularConfig.h"
@@ -184,7 +216,8 @@ AC_SUBST(DOC_DIR)
 SING_SHOW_FLAGS([Compiler/linker flags: ])
 
 
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([dox/Doxyfile])])
+## AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([dox/Doxyfile])])
+
 AC_CONFIG_FILES([dox/Makefile])
 
 AC_CONFIG_SUBDIRS([resources])
@@ -207,14 +240,19 @@ AC_CONFIG_FILES([kernel/spectrum/Makefile])
 AC_CONFIG_FILES([kernel/linear_algebra/Makefile])
 AC_CONFIG_FILES([kernel/maps/Makefile])
 AC_CONFIG_FILES([kernel/GBEngine/Makefile])
+AC_CONFIG_FILES([kernel/oswrapper/Makefile])
 
 AC_CONFIG_SUBDIRS([gfanlib])
 
-AC_CONFIG_FILES([dyn_modules/Makefile])
-AC_CONFIG_FILES([dyn_modules/bigintm/Makefile])
-AC_CONFIG_FILES([dyn_modules/syzextra/Makefile])
-AC_CONFIG_FILES([dyn_modules/callgfanlib/Makefile])
-AC_CONFIG_FILES([dyn_modules/callpolymake/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/bigintm/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/Order/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/syzextra/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/gfanlib/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/polymake/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/pyobject/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/singmathic/Makefile])
+AC_CONFIG_FILES([Singular/dyn_modules/staticdemo/Makefile])
 
 AC_CONFIG_FILES([Singular/Makefile])
 
@@ -224,9 +262,8 @@ AC_CONFIG_FILES([libsingular-config Singular.pc])
 
 AC_CONFIG_FILES([emacs/Makefile])
 
-AC_CONFIG_FILES([debian/Makefile])
-AC_CONFIG_FILES([redhat/Makefile])
-AC_CONFIG_FILES([redhat/singular.spec])
 AC_CONFIG_FILES([desktop/Makefile desktop/Singular.desktop desktop/Singular-manual.desktop])
+
+AC_CONFIG_FILES([singular.spec])
 
 AC_OUTPUT

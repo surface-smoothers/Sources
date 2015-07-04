@@ -41,7 +41,6 @@
 
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 
 #include "fglm.h"
@@ -1029,7 +1028,7 @@ fglmDdata::gaussreduce( fglmVector & v, fglmVector & p, number & pdenom )
             }
             nDelete( & gcd );
             gcd= p.gcd();
-            temp= n_Gcd( pdenom, gcd, currRing->cf );
+            temp= n_SubringGcd( pdenom, gcd, currRing->cf );
             nDelete( &gcd );
             gcd= temp;
             if ( ! nIsZero( gcd ) && ! nIsOne( gcd ) )

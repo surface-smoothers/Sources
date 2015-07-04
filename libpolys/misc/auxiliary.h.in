@@ -53,8 +53,6 @@
 #undef DISABLE_GMP_CPP
 #endif
 
-#ifdef HAVE_FACTORY
-
 #ifndef SINGULAR
 #undef SINGULAR
 #endif
@@ -63,13 +61,29 @@
 #undef NOSTREAMIO
 #endif
 
-#endif
-// #ifdef HAVE_FACTORY
-
+/* the following cunstruct is to make it painless to add -DHAVE_NUMSTATS to CPPFLAGS for configure */
+#ifndef HAVE_NUMSTATS
+/* #define HAVE_NUMSTATS */
+#undef HAVE_NUMSTATS
+#endif /* HAVE_NUMSTATS */
 // ----------------  end of parts/extensions
 
 // ---------------- Singular standard types etc.
-// BOOLEAN
+/* SI_INTEGER_VARIANT: 1: from longrat.cc
+ *                     2: GMP
+ *                     3: rintegers.cc */
+#define SI_INTEGER_VARIANT 2
+
+/* SI_BIGINT_VARIANT: 1: from longrat.cc
+ *                    2: given by SI_INTEGER_VARIANT */
+#define SI_BIGINT_VARIANT 1
+
+/* preparation for versio 4.1.0: */
+#ifndef SINGULAR_4_1
+/* #define SINGULAR_4_1 */
+#undef SINGULAR_4_1
+#endif /* SINGULAR_4_1 */
+
 #ifndef SIZEOF_LONG
 
 #include <misc/mylimits.h>

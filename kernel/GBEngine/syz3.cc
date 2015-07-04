@@ -5,29 +5,29 @@
 * ABSTRACT: resolutions
 */
 
-
-
-
 #include <kernel/mod2.h>
+#include <omalloc/omalloc.h>
+
 #include <misc/mylimits.h>
 #include <misc/options.h>
-#include <omalloc/omalloc.h>
-#include <kernel/polys.h>
-#include <kernel/febase.h>
-#include <kernel/GBEngine/kstd1.h>
-#include <kernel/GBEngine/kutil.h>
-#include <kernel/GBEngine/stairc.h>
-//#include "cntrlc.h"
 #include <misc/intvec.h>
+
 #include <coeffs/numbers.h>
-#include <kernel/ideals.h>
-#include <misc/intvec.h>
+
 #include <polys/monomials/ring.h>
-#include <kernel/GBEngine/syz.h>
 #include <polys/kbuckets.h>
 #include <polys/prCopy.h>
-#include <kernel/timer.h>
 #include <polys/matpol.h>
+
+#include <kernel/combinatorics/stairc.h>
+#include <kernel/combinatorics/hilb.h>
+
+#include <kernel/GBEngine/kstd1.h>
+#include <kernel/GBEngine/kutil.h>
+#include <kernel/GBEngine/syz.h>
+
+#include <kernel/ideals.h>
+#include <kernel/polys.h>
 
 //#define SHOW_PROT
 //#define SHOW_RED
@@ -745,7 +745,7 @@ static void redOnePair(SSet resPairs,int itso,int l, ideal syzygies,
       pSetCoeff(tt,nDiv(pGetCoeff(tso.p1),coefgcd));
       tso.syz = pMult_mm(tso.syz,tt);
       pDelete(&tt);
-      coefgcd = nNeg(coefgcd);
+      coefgcd = nInpNeg(coefgcd);
       assume (old_repr->m[tso.ind2]!=NULL);
       p = pCopy(old_repr->m[tso.ind2]);
       tt = pDivide(tso.lcm,tso.p2);
@@ -1268,7 +1268,7 @@ static void redOnePairHIndex(SSet resPairs,int itso, int crit_comp,
       pSetCoeff(tt,nDiv(pGetCoeff(tso.p1),coefgcd));
       tso.syz = pMult_mm(tso.syz,tt);
       pDelete(&tt);
-      coefgcd = nNeg(coefgcd);
+      coefgcd = nInpNeg(coefgcd);
       assume (add_repr->m[tso.ind2]!=NULL);
       p = pCopy(add_repr->m[tso.ind2]);
       tt = pDivide(tso.lcm,tso.p2);
@@ -1464,7 +1464,7 @@ static void procedeNextGenerators(ideal temp_generators,ideal /*temp_repr*/,
                 crit_comp);
       if (next_p!=NULL)
       {
-        if (pGetComp(next_p)<=(unsigned)crit_comp)
+        if (pGetComp(next_p)<=crit_comp)
         {
           pDelete(&next_p);
           //if (TEST_OPT_PROT) Print("u(%d)",index);
@@ -1787,11 +1787,7 @@ syStrategy syKosz(ideal arg,int * length)
     temp = idCopy(arg);
   if (rk_arg==0)
   {
-    for (j=0;j<IDELEMS(temp);j++)
-    {
-      if (temp->m[j]!=NULL)
-        p_Shift(&temp->m[j],1,currRing);
-    }
+    id_Shift(temp,1,currRing);
   }
   idSkipZeroes(temp);
 #ifdef WITH_SORT
@@ -1853,7 +1849,7 @@ syStrategy syKosz(ideal arg,int * length)
   {
     if (temp->m[i]!=NULL)
     {
-      new_generators->m[0] = kNF(syzstr->res[0],currQuotient,temp->m[i]);
+      new_generators->m[0] = kNF(syzstr->res[0],currRing->qideal,temp->m[i]);
       if (!nIsOne(pGetCoeff(new_generators->m[0])))
         pNorm(new_generators->m[0]);
       next_deg = p_FDeg(new_generators->m[0],currRing);
@@ -1889,7 +1885,7 @@ syStrategy syKosz(ideal arg,int * length)
           ideal initial=id_Head(syzstr->res[0],currRing);
           int len=0,reg=0;
           intvec *w=NULL;
-          ring dp_C_ring = rAssure_dp_C(currRing); rChangeCurrRing(dp_C_ring);	
+          ring dp_C_ring = rAssure_dp_C(currRing); rChangeCurrRing(dp_C_ring);
           initial = idrMoveR_NoSort(initial, syzstr->syRing, dp_C_ring);
           resolvente res = sySchreyerResolvente(initial,-1,&len,TRUE, TRUE);
           intvec * dummy = syBetti(res,len,&reg, w);
@@ -2002,7 +1998,7 @@ syStrategy syKosz(ideal arg,int * length)
           {
             PrintS("Da ist was faul!!!\n");
             Print("Aber: Regularitaet %d, Grad %ld\n",
-		   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
+                   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
           }
         }
       }

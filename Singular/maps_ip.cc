@@ -21,10 +21,9 @@
 #include <polys/prCopy.h>
 #include <polys/ext_fields/transext.h>
 
-//#include <libpolys/polys/ext_fields/longtrans.h>
+//#include <polys/ext_fields/longtrans.h>
 // #include <kernel/longalg.h>
 
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 
 #include "maps_ip.h"
@@ -43,7 +42,6 @@
 #ifdef FAST_MAP
 #include <polys/monomials/maps.h>
 #endif
-
 
 /*2
 * maps the expression w to res,
@@ -74,27 +72,20 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
     case NUMBER_CMD:
       if (P!=0)
       {
-//        WerrorS("Sorry 'napPermNumber' was lost in the refactoring process (due to Frank): needs to be fixed");
-//        return TRUE;
-#if 1
 // poly n_PermNumber(const number z, const int *par_perm, const int OldPar, const ring src, const ring dst);
         res->data= (void *) n_PermNumber((number)data, par_perm, P, preimage_r, currRing);
-#endif
         res->rtyp=POLY_CMD;
-        if (nCoeff_is_Extension(currRing->cf))
+        if (nCoeff_is_algExt(currRing->cf))
           res->data=(void *)p_MinPolyNormalize((poly)res->data, currRing);
         pTest((poly) res->data);
       }
       else
       {
         assume( nMap != NULL );
-
         number a = nMap((number)data, preimage_r->cf, currRing->cf);
-
-
         if (nCoeff_is_Extension(currRing->cf))
         {
-          n_Normalize(a, currRing->cf); // ???
+          n_Normalize(a, currRing->cf);
 /*
           number a = (number)res->data;
           number one = nInit(1);
@@ -116,7 +107,7 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
       if ((what==FETCH_CMD)&& (preimage_r->cf==currRing->cf))
         res->data=(void *)prCopyR( (poly)data, preimage_r, currRing);
       else
-	if ( (what==IMAP_CMD) || /*(*/ (what==FETCH_CMD) /*)*/) /* && (nMap!=nCopy)*/
+        if ( (what==IMAP_CMD) || /*(*/ (what==FETCH_CMD) /*)*/) /* && (nMap!=nCopy)*/
         res->data=(void *)p_PermPoly((poly)data,perm,preimage_r,currRing, nMap,par_perm,P);
       else /*if (what==MAP_CMD)*/
       {
@@ -153,8 +144,7 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
           pTest(m->m[i]);
         }
       }
-      else
-	if ( (what==IMAP_CMD) || /*(*/ (what==FETCH_CMD) /*)*/) /* && (nMap!=nCopy)*/
+      else if ((what==IMAP_CMD) || (what==FETCH_CMD))
       {
         for (i=R*C-1;i>=0;i--)
         {
@@ -163,8 +153,9 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
           pTest(m->m[i]);
         }
       }
-      else /* if(what==MAP_CMD) */
+      else /* (what==MAP_CMD) */
       {
+        assume(what==MAP_CMD);
         matrix s=mpNew(N,maMaxDeg_Ma((ideal)data,preimage_r));
         for (i=R*C-1;i>=0;i--)
         {
@@ -173,7 +164,7 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
         }
         idDelete((ideal *)&s);
       }
-      if (nCoeff_is_Extension(currRing->cf))
+      if (nCoeff_is_algExt(currRing->cf))
       {
         for (i=R*C-1;i>=0;i--)
         {
@@ -236,12 +227,9 @@ BOOLEAN maApplyFetch(int what,map theMap,leftv res, leftv w, ring preimage_r,
 */
 poly pSubstPar(poly p, int par, poly image)
 {
-  assume( nCoeff_is_transExt(currRing->cf) ); // nCoeff_is_Extension???
   const ring R = currRing->cf->extRing;
-
   ideal theMapI = idInit(rPar(currRing),1);
   nMapFunc nMap = n_SetMap(R->cf, currRing->cf);
-
   int i;
   for(i = rPar(currRing);i>0;i--)
   {
@@ -261,54 +249,92 @@ poly pSubstPar(poly p, int par, poly image)
   poly res=NULL;
 
   p_Normalize(p,currRing);
-  while (p!=NULL)
+  if (currRing->cf->rep==n_rep_rat_fct )
   {
-    memset(v,0,sizeof(sleftv));
-
-    number d = n_GetDenom(p_GetCoeff(p, currRing), currRing);
-    assume( p_Test((poly)NUM(d), R) );
-
-    if ( n_IsOne (d, currRing->cf) )
+    while (p!=NULL)
     {
-      n_Delete(&d, currRing); d = NULL;
+      memset(v,0,sizeof(sleftv));
+
+      number d = n_GetDenom(p_GetCoeff(p, currRing), currRing);
+      p_Test((poly)NUM((fraction)d), R);
+
+      if ( n_IsOne (d, currRing->cf) )
+      {
+        n_Delete(&d, currRing); d = NULL;
+      }
+      else if (!p_IsConstant((poly)NUM((fraction)d), R))
+      {
+        WarnS("ignoring denominators of coefficients...");
+        n_Delete(&d, currRing); d = NULL;
+      }
+
+      number num = n_GetNumerator(p_GetCoeff(p, currRing), currRing);
+      memset(&tmpW,0,sizeof(sleftv));
+      tmpW.rtyp = POLY_CMD;
+      p_Test((poly)NUM((fraction)num), R);
+
+      tmpW.data = NUM ((fraction)num); // a copy of this poly will be used
+
+      p_Normalize(NUM((fraction)num),R);
+      if (maApplyFetch(MAP_CMD,theMap,v,&tmpW,R,NULL,NULL,0,nMap))
+      {
+        WerrorS("map failed");
+        v->data=NULL;
+      }
+      n_Delete(&num, currRing);
+      //TODO check for memory leaks
+      poly pp = pHead(p);
+      //PrintS("map:");pWrite(pp);
+      if( d != NULL )
+      {
+        pSetCoeff(pp, n_Invers(d, currRing->cf));
+        n_Delete(&d, currRing); // d = NULL;
+      }
+      else
+        pSetCoeff(pp, nInit(1));
+
+      //PrintS("->");pWrite((poly)(v->data));
+      poly ppp = pMult((poly)(v->data),pp);
+      //PrintS("->");pWrite(ppp);
+      res=pAdd(res,ppp);
+      pIter(p);
     }
-    else if (!p_IsConstant((poly)NUM(d), R))
+  }
+  else if (currRing->cf->rep==n_rep_poly )
+  {
+    while (p!=NULL)
     {
-      WarnS("ignoring denominators of coefficients...");
-      n_Delete(&d, currRing); d = NULL;
+      memset(v,0,sizeof(sleftv));
+
+      number num = n_GetNumerator(p_GetCoeff(p, currRing), currRing);
+      memset(&tmpW,0,sizeof(sleftv));
+      tmpW.rtyp = POLY_CMD;
+      p_Test((poly)num, R);
+
+
+      p_Normalize((poly)num,R);
+      if (num==NULL) num=(number)R->qideal->m[0];
+      tmpW.data = num; // a copy of this poly will be used
+      if (maApplyFetch(MAP_CMD,theMap,v,&tmpW,R,NULL,NULL,0,nMap))
+      {
+        WerrorS("map failed");
+        v->data=NULL;
+      }
+      if (num!=(number)R->qideal->m[0]) n_Delete(&num, currRing);
+      //TODO check for memory leaks
+      poly pp = pHead(p);
+      //PrintS("map:");pWrite(pp);
+      pSetCoeff(pp,n_Init(1,currRing));
+      //PrintS("cf->");pWrite((poly)(v->data));
+      poly ppp = pMult((poly)(v->data),pp);
+      //PrintS("->");pWrite(ppp);
+      res=pAdd(res,ppp);
+      pIter(p);
     }
-
-    number num = n_GetNumerator(p_GetCoeff(p, currRing), currRing);
-    assume( p_Test((poly)NUM(num), R) );
-
-    memset(&tmpW,0,sizeof(sleftv));
-    tmpW.rtyp = POLY_CMD;
-    tmpW.data = NUM (num); // a copy of this poly will be used
-
-    p_Normalize(NUM(num),R);
-    if (maApplyFetch(MAP_CMD,theMap,v,&tmpW,R,NULL,NULL,0,nMap))
-    {
-      WerrorS("map failed");
-      v->data=NULL;
-    }
-    n_Delete(&num, currRing);
-
-    //TODO check for memory leaks
-    poly pp = pHead(p);
-    //PrintS("map:");pWrite(pp);
-    if( d != NULL )
-    {
-      pSetCoeff(pp, n_Invers(d, currRing->cf));
-      n_Delete(&d, currRing); // d = NULL;
-    }
-    else
-      pSetCoeff(pp, nInit(1));
-
-    //PrintS("->");pWrite((poly)(v->data));
-    poly ppp = pMult((poly)(v->data),pp);
-    //PrintS("->");pWrite(ppp);
-    res=pAdd(res,ppp);
-    pIter(p);
+  }
+  else
+  {
+    WerrorS("cannot apply subst for these coeffcients");
   }
   idDelete((ideal *)(&theMap));
   omFreeBin((ADDRESS)v, sleftv_bin);
@@ -356,7 +382,12 @@ poly pSubstPoly(poly p, int var, poly image)
   {
     ideal src_id=idInit(1,1);
     src_id->m[0]=p;
+
+    char *tmp = theMap->preimage;
+    theMap->preimagei=(char*)1L; // map gets 1 as its rank (as an ideal)
     ideal res_id=fast_map(src_id,currRing,(ideal)theMap,currRing);
+    theMap->preimage=tmp; // map gets its preimage back
+
     res=res_id->m[0];
     res_id->m[0]=NULL; idDelete(&res_id);
     src_id->m[0]=NULL; idDelete(&src_id);

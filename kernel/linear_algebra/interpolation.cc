@@ -2,9 +2,6 @@
 *  Computer Algebra System SINGULAR     *
 ****************************************/
 
-
-
-
 #include <kernel/mod2.h>
 
 #include <factory/factory.h>
@@ -12,12 +9,11 @@
 #include <misc/options.h>
 #include <misc/intvec.h>
 
-#include <coeffs/longrat.h>
+#include <coeffs/longrat.h> // snumber ...
 
 #include <polys/monomials/ring.h>
 
 #include <kernel/polys.h>
-#include <kernel/febase.h>
 #include <kernel/ideals.h>
 
 #include "interpolation.h"
@@ -1512,7 +1508,7 @@ ideal interpolation(const std::vector<ideal>& L, intvec *v)
      WerrorS("list and intvec must have the same length!");
      return NULL;
   }
-  assume( n_points > 0 ); 
+  assume( n_points > 0 );
   variables=currRing->N;
   only_modp=rField_is_Zp(currRing);
   if (only_modp) myp=rChar(currRing);
@@ -1566,7 +1562,7 @@ ideal interpolation(const std::vector<ideal>& L, intvec *v)
           else n=nInit(0);
           if (only_modp)
           {
-            n=nNeg(n);
+            n=nInpNeg(n);
             n=nDiv(n,m);
             modp_points[i][pcvar]=(int)((long)n);
           }
@@ -1754,7 +1750,7 @@ ideal interpolation(const std::vector<ideal>& L, intvec *v)
 #endif
              mpz_init_set(n->z,temp->polycoef[a]);
              n->s=3;
-             nlNormalize(n, currRing->cf);
+             n_Normalize(n, currRing->cf);
              p=pNSet(n); //a monomial
              for (j=0;j<variables;j++) pSetExp(p,j+1,temp->polyexp[a][j]);
              pSetm(p); // after all pSetExp

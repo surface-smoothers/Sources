@@ -72,14 +72,14 @@ struct fractionObject
 typedef struct fractionObject * fraction;
 
 
-#define NUM(f) (((fraction)f)->numerator)
-#define DEN(f) (((fraction)f)->denominator)
+#define NUM(f) ((f)->numerator)
+#define DEN(f) ((f)->denominator)
 
 /* some useful accessors for fractions: */
-#define IS0(f) (f == NULL) 
+#define IS0(f) (f == NULL)
 /**< TRUE iff n represents 0 in K(t_1, .., t_s) */
 
-#define DENIS1(f) (DEN(f) == NULL) 
+#define DENIS1(f) (DEN(f) == NULL)
 /**< TRUE iff den. represents 1 */
 
 
@@ -100,7 +100,7 @@ BOOLEAN  ntInitChar(coeffs cf, void* infoStruct);
 number ntDiff(number a, number d, const coeffs cf);
 
 /* Private hidden interface
-BOOLEAN  ntGreaterZero(number a, const coeffs cf); 
+BOOLEAN  ntGreaterZero(number a, const coeffs cf);
 BOOLEAN  ntGreater(number a, number b, const coeffs cf);
 BOOLEAN  ntEqual(number a, number b, const coeffs cf);
 BOOLEAN  ntIsOne(number a, const coeffs cf);
@@ -126,12 +126,11 @@ number   ntLcm(number a, number b, const coeffs cf);
 int      ntSize(number a, const coeffs cf);
 void     ntDelete(number * a, const coeffs cf);
 void     ntCoeffWrite(const coeffs cf, BOOLEAN details);
-number   ntIntDiv(number a, number b, const coeffs cf);
 const char * ntRead(const char *s, number *a, const coeffs cf);
 static BOOLEAN ntCoeffIsEqual(const coeffs cf, n_coeffType n, void * param);
 */
 
-/// if m == var(i)/1 => return i, 
+/// if m == var(i)/1 => return i,
 int ntIsParam(number, const coeffs);
 
 #endif

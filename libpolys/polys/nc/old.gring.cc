@@ -29,7 +29,7 @@
 #include "gb_hack.h"
 
 #include <polys/monomials/ring.h>
-   
+
 #include <coeffs/numbers.h>
 #include <polys/coeffrings.h>
 
@@ -62,6 +62,19 @@
 // #include <polys/ratgring.h>
 // #endif
 
+static poly NF_Proc_Dummy(ideal, ideal, poly, int, int, const ring _currRing)
+{ WerrorS("nc_NF not defined"); return NULL; }
+static ideal BBA_Proc_Dummy (const ideal, const ideal, const intvec *, const intvec *, kStrategy strat, const ring)
+{ WerrorS("nc_NF not defined"); return NULL; }
+
+// the following funtion poiters are quasi-static:
+// they will be set in siInit and never changes afterwards:
+NF_Proc nc_NF=NF_Proc_Dummy;
+BBA_Proc gnc_gr_bba=BBA_Proc_Dummy;
+BBA_Proc gnc_gr_mora=BBA_Proc_Dummy;
+BBA_Proc sca_bba=BBA_Proc_Dummy;
+BBA_Proc sca_mora=BBA_Proc_Dummy;
+BBA_Proc sca_gr_bba=BBA_Proc_Dummy;
 
 /* copy : */
 poly nc_p_CopyGet(poly a, const ring r);
@@ -70,7 +83,7 @@ poly nc_p_CopyPut(poly a, const ring r);
 poly nc_p_Bracket_qq(poly p, const poly q, const ring r);
 
 // only SCA can be used by default, formulas are off by default
-int  iNCExtensions = SCAMASK | NOFORMULAMASK; 
+int  iNCExtensions = SCAMASK | NOFORMULAMASK;
 
 int& getNCExtensions()
 {
@@ -472,7 +485,7 @@ poly gnc_mm_Mult_nn(int *F0, int *G0, const ring r)
   // pExpVectorCopy(F,F0);
   memcpy(G, G0,(rN+1)*sizeof(int));
   //  pExpVectorCopy(G,G0);
-  F[0]=0; 
+  F[0]=0;
   G[0]=0;
 
   iF=rN;
@@ -1409,7 +1422,7 @@ poly gnc_ReduceSpolyOld(const poly p1, poly p2/*,poly spNoether*/, const ring r)
   number C  =  p_GetCoeff(N,  r);
   number cF =  p_GetCoeff(p2, r);
   /* GCD stuff */
-  number cG = n_Gcd(C, cF, r);
+  number cG = n_SubringGcd(C, cF, r->cf);
   if ( !n_IsOne(cG,r) )
   {
     cF = n_Div(cF, cG, r); n_Normalize(cF, r);
@@ -1428,7 +1441,7 @@ poly gnc_ReduceSpolyOld(const poly p1, poly p2/*,poly spNoether*/, const ring r)
   p_Test(N,r);
   if (!n_IsMOne(cF,r))
   {
-    cF = n_Neg(cF,r);
+    cF = n_InpNeg(cF,r);
     N  = p_Mult_nn(N, cF, r);
     p_Test(N,r);
   }
@@ -1470,7 +1483,7 @@ poly gnc_ReduceSpolyNew(const poly p1, poly p2, const ring r)
   number cF = p_GetCoeff(p2, r);
 
   /* GCD stuff */
-  number cG = n_Gcd(C, cF, r);
+  number cG = n_SubringGcd(C, cF, r->cf);
 
   if (!n_IsOne(cG, r))
   {
@@ -1497,7 +1510,7 @@ poly gnc_ReduceSpolyNew(const poly p1, poly p2, const ring r)
 
   if (!n_IsMOne(cF,r)) // ???
   {
-    cF = n_Neg(cF,r);
+    cF = n_InpNeg(cF,r);
     N  = p_Mult_nn(N, cF, r);
     p_Test(N,r);
   }
@@ -1556,7 +1569,7 @@ poly gnc_CreateSpolyOld(poly p1, poly p2/*,poly spNoether*/, const ring r)
   poly M2    = nc_mm_Mult_p(m2,p_Head(p2,r),r);
   number C2  = p_GetCoeff(M2,r);
   /* GCD stuff */
-  number C = n_Gcd(C1,C2,r);
+  number C = n_SubringGcd(C1,C2,r->cf);
   if (!n_IsOne(C,r))
   {
     C1=n_Div(C1,C, r);n_Normalize(C1,r);
@@ -1576,7 +1589,7 @@ poly gnc_CreateSpolyOld(poly p1, poly p2/*,poly spNoether*/, const ring r)
   }
   else
   {
-    C1=n_Neg(C1,r);
+    C1=n_InpNeg(C1,r);
     M2=p_Mult_nn(M2,C1,r);
     M2=p_Add_q(M1,M2,r);
     p_SetCoeff(m2,C1,r);
@@ -1624,14 +1637,6 @@ poly gnc_CreateSpolyNew(poly p1, poly p2/*,poly spNoether*/, const ring r)
 #endif
     return(NULL);
   }
-
-#ifdef PDEBUG
-  if (lCompP1!=lCompP2)
-  {
-    WarnS("gnc_CreateSpolyNew: vector & poly in SPoly!");
-  }
-#endif
-
 
 //   if ((r->GetNC()->type==nc_lie) && pHasNotCF(p1,p2)) /* prod crit */
 //   {
@@ -1746,7 +1751,7 @@ poly gnc_CreateSpolyNew(poly p1, poly p2/*,poly spNoether*/, const ring r)
   number C2  = p_GetCoeff(M2,r);      // C2 = lc(M2)
 
   /* GCD stuff */
-  number C = n_Gcd(C1, C2, r);                     // C = gcd(C1, C2)
+  number C = n_SubringGcd(C1, C2, r->cf);           // C = gcd(C1, C2)
 
   if (!n_IsOne(C, r))                              // if C != 1
   {
@@ -1761,7 +1766,7 @@ poly gnc_CreateSpolyNew(poly p1, poly p2/*,poly spNoether*/, const ring r)
 
   n_Delete(&C,r); // destroy the number C
 
-  C1=n_Neg(C1,r);
+  C1=n_InpNeg(C1,r);
 
 //   number MinusOne=n_Init(-1,r);
 //   if (n_Equal(C1,MinusOne,r))                   // lc(M1) / gcd( lc(M1), lc(M2)) == -1 ????
@@ -1912,7 +1917,7 @@ void gnc_ReduceSpolyTail(poly p1, poly q, poly q2, poly spNoether, const ring r)
   number MinusOne=n_Init(-1,r);
   if (!n_Equal(cQ,MinusOne,r))
   {
-    cQ=nNeg(cQ);
+    cQ=nInpNeg(cQ);
     M=p_Mult_nn(M,cQ,r);
   }
   Q=p_Add_q(Q,M,r);
@@ -1991,7 +1996,7 @@ void gnc_kBucketPolyRedOld(kBucket_pt b, poly p, number *c)
   number nn;
   if (!n_IsMOne(n, r))
   {
-    nn=n_Neg(n_Invers(n, r), r);
+    nn=n_InpNeg(n_Invers(n, r), r);
     n= n_Mult(nn,p_GetCoeff(kBucketGetLm(b), r), r);
     n_Delete(&nn, r);
     pp=p_Mult_nn(pp,n,r);
@@ -2058,7 +2063,7 @@ void gnc_kBucketPolyRedNew(kBucket_pt b, poly p, number *c)
   if (!n_IsMOne(n, r) ) // does this improve performance??!? also see below... // TODO: check later on.
   // if n == -1 => nn = 1 and -1/n
   {
-    number nn=n_Neg(n_Invers(n, r), r);
+    number nn=n_InpNeg(n_Invers(n, r), r);
     number t = n_Mult(nn,p_GetCoeff(pLmB, r), r);
     n_Delete(&nn, r);
     pp = p_Mult_nn(pp,t,r);
@@ -2173,7 +2178,7 @@ inline void nc_PolyPolyRedOld(poly &b, poly p, number *c, const ring r)
   number nn;
   if (!n_IsMOne(n, r))
   {
-    nn=n_Neg(n_Invers(n, r), r);
+    nn=n_InpNeg(n_Invers(n, r), r);
     n =n_Mult(nn,p_GetCoeff(b, r), r);
     n_Delete(&nn, r);
     pp=p_Mult_nn(pp,n,r);
@@ -2271,7 +2276,7 @@ inline void nc_PolyPolyRedNew(poly &b, poly p, number *c, const ring r)
 
   if (!n_IsMOne(n, r)) // TODO: as above.
   {
-    nn=n_Neg(n_Invers(n, r), r);
+    nn=n_InpNeg(n_Invers(n, r), r);
     number t = n_Mult(nn, p_GetCoeff(b, r), r);
     n_Delete(&nn, r);
     pp=p_Mult_nn(pp, t, r);
@@ -2588,7 +2593,7 @@ poly nc_p_CopyGet(poly a, const ring r)
 #ifndef PDEBUG
   p_Test(a, r);
 #endif
-   
+
 //  if (r != currRing)
 //  {
 //#ifdef PDEBUF
@@ -2780,7 +2785,7 @@ BOOLEAN nc_CallPlural(matrix CCC, matrix DDD,
 //  if( save != curr )
 //    rChangeCurrRing(curr);
 
-   
+
 #if OUTPUT
   if( CCC != NULL )
   {
@@ -2871,6 +2876,13 @@ BOOLEAN nc_CallPlural(matrix CCC, matrix DDD,
   // all data in 'curr'!
   if (CN != NULL)       /* create matrix C = CN * Id */
   {
+    if (!p_IsConstant(CN,curr))
+    {
+      Werror("Incorrect input : non-constants are not allowed as coefficients (first argument)");
+      return TRUE;
+    }
+    assume(p_IsConstant(CN,curr));
+
     nN = p_GetCoeff(CN, curr);
     if (n_IsZero(nN, curr))
     {
@@ -2918,7 +2930,16 @@ BOOLEAN nc_CallPlural(matrix CCC, matrix DDD,
         if (MATELEM(CC,i,j) == NULL)
           qN = NULL;
         else
+	{
+	  if (!p_IsConstant(MATELEM(CC,i,j),curr))
+          {
+            Werror("Incorrect input : non-constants are not allowed as coefficients (first argument at [%d, %d])", i, j);
+            return TRUE;
+          }
+	  assume(p_IsConstant(MATELEM(CC,i,j),curr));
           qN = p_GetCoeff(MATELEM(CC,i,j),curr);
+	}
+
 
         if ( qN == NULL )   /* check the consistency: Cij!=0 */
         // find also illegal pN
@@ -3048,7 +3069,7 @@ BOOLEAN nc_CallPlural(matrix CCC, matrix DDD,
   {
 #ifndef SING_NDEBUG
     WarnS("Changing the NC-structure of an existing NC-ring!!!");
-#endif    
+#endif
     nc_rKill(r);
   }
 
@@ -3159,14 +3180,14 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
     } else
        assume( FALSE );
   }
-  r->GetNC()->COM=COM;  
+  r->GetNC()->COM=COM;
 
   nc_p_ProcsSet(r, r->p_Procs);
 
   if(bSetupQuotient) // Test me!!!
     nc_SetupQuotient(r, NULL, false); // no copy!
 
-  
+
 //  if (save != currRing)
 //    rChangeCurrRing(save);
 
@@ -3384,7 +3405,7 @@ BOOLEAN rIsLikeOpposite(ring rBase, ring rCandidate)
 
 //////  if (nMap != nCopy) diagnose = FALSE;
   if (nMap == NULL) diagnose = FALSE;
-  
+
 
   /* same number of variables */
   if (rBase->N != rCandidate->N) diagnose = FALSE;
@@ -3409,7 +3430,7 @@ poly pOppose(ring Rop, poly p, const ring dst)
   if (  Rop == dst )  return(p_Copy(p, dst));
   /* check Rop == rOpposite(currRing) */
 
-  
+
   if ( !rIsLikeOpposite(dst, Rop) )
   {
     WarnS("an opposite ring should be used");
@@ -3422,7 +3443,7 @@ poly pOppose(ring Rop, poly p, const ring dst)
   /* since we know that basefields coinside! */
 
   // coinside???
-  
+
   int *perm=(int *)omAlloc0((Rop->N+1)*sizeof(int));
   if (!p_IsConstantPoly(p, Rop))
   {

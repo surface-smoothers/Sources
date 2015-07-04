@@ -14,10 +14,9 @@
 #include <misc/options.h>
 #include <omalloc/omalloc.h>
 #include <kernel/polys.h>
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/kutil.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <misc/intvec.h>
 #include <coeffs/numbers.h>
 #include <kernel/ideals.h>
@@ -332,9 +331,9 @@ static void syMinStep1(resolvente res, int length)
           while (k<IDELEMS(res[index]))
           {
             p = res[index]->m[k];
-            while ((p!=NULL) && ((!pLmIsConstantComp(p)) || (pGetComp(p)!=(unsigned)j)))
+            while ((p!=NULL) && ((!pLmIsConstantComp(p)) || (pGetComp(p)!=j)))
               pIter(p);
-            if ((p!=NULL) && (pLmIsConstantComp(p)) && (pGetComp(p)==(unsigned)j)) break;
+            if ((p!=NULL) && (pLmIsConstantComp(p)) && (pGetComp(p)==j)) break;
             k++;
           }
           if (k>=IDELEMS(res[index]))
@@ -364,7 +363,7 @@ void syMinimizeResolvente(resolvente res, int length, int first)
   intvec *dummy;
 
   if (syzIndex<1) syzIndex=1;
-  if ((syzIndex==1) && (idHomModule(res[0],currQuotient,&dummy)) && (!rIsPluralRing(currRing)))
+  if ((syzIndex==1) && (idHomModule(res[0],currRing->qideal,&dummy)) && (!rIsPluralRing(currRing)))
   {
     syMinStep1(res,length);
     delete dummy;
@@ -438,10 +437,10 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
 /*--- creating weights for the module components ---------------*/
   if ((weights!=NULL) && (*weights!=NULL)&& ((*weights)[0]!=NULL))
   {
-    if (!idTestHomModule(res[0],currQuotient,(*weights)[0]))
+    if (!idTestHomModule(res[0],currRing->qideal,(*weights)[0]))
     {
       WarnS("wrong weights given(1):"); (*weights)[0]->show();PrintLn();
-      idHomModule(res[0],currQuotient,&w);
+      idHomModule(res[0],currRing->qideal,&w);
       w->show();PrintLn();
       *weights=NULL;
     }
@@ -449,7 +448,7 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
 
   if ((weights==NULL) || (*weights==NULL) || ((*weights)[0]==NULL))
   {
-    hom=(tHomog)idHomModule(res[0],currQuotient,&w);
+    hom=(tHomog)idHomModule(res[0],currRing->qideal,&w);
     if (hom==isHomog)
     {
       *weights = (intvec**)omAlloc0((*length)*sizeof(intvec*));
@@ -492,7 +491,7 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
   }
 
 /*--- the main loop --------------------------------------*/
-  while ((!idIs0(res[syzIndex])) &&
+  while ((res[syzIndex]!=NULL) && (!idIs0(res[syzIndex])) &&
          ((maxlength==-1) || (syzIndex<=maxlength)))
    // (syzIndex<maxlength+(int)minim)))
 /*--- compute one step more for minimizing-----------------*/
@@ -523,14 +522,14 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
     if(! TEST_OPT_NO_SYZ_MINIM )
     if (minim || (syzIndex!=0))
     {
-      temp = kInterRedOld(res[syzIndex],currQuotient);
+      temp = kInterRedOld(res[syzIndex],currRing->qideal);
       idDelete(&res[syzIndex]);
       idSkipZeroes(temp);
       res[syzIndex] = temp;
     }
     temp = NULL;
 /*--- computing the syzygy modules --------------------------------*/
-    if ((currQuotient==NULL)&&(syzIndex==0)&& (!TEST_OPT_DEGBOUND))
+    if ((currRing->qideal==NULL)&&(syzIndex==0)&& (!TEST_OPT_DEGBOUND))
     {
       res[/*syzIndex+*/1] = idSyzygies(res[0/*syzIndex*/],hom,&w,FALSE,setRegularity,&Kstd1_deg);
       if ((!TEST_OPT_NOTREGULARITY) && (Kstd1_deg>0)
@@ -558,7 +557,7 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
       }
     }
 /*---creating the iterated weights for module components ---------*/
-    if ((hom == isHomog) && (!idIs0(res[syzIndex])))
+    if ((hom == isHomog) && (res[syzIndex]!=NULL) && (!idIs0(res[syzIndex])))
     {
 //Print("die %d Modulegewichte sind:\n",w1->length());
 //w1->show();
@@ -602,12 +601,9 @@ resolvente syResolvente(ideal arg, int maxlength, int * length,
 
   for (i=1; i<=syzIndex; i++)
   {
-    if (! idIs0(res[i]))
+    if ((res[i]!=NULL) && ! idIs0(res[i]))
     {
-      for (j=0; j<IDELEMS(res[i]); j++)
-      {
-        p_Shift(&res[i]->m[j], -rGetMaxSyzComp(i, currRing),currRing);
-      }
+      id_Shift(res[i],-rGetMaxSyzComp(i, currRing),currRing);
     }
   }
 /*--- going back to the original ring -------------------------*/
@@ -629,7 +625,6 @@ syStrategy syResolution(ideal arg, int maxlength,intvec * w, BOOLEAN minim)
 
 #ifdef HAVE_PLURAL
 
-  const ideal idSaveCurrQuotient = currQuotient;
   const ideal idSaveCurrRingQuotient = currRing->qideal;
 
   if( rIsSCA(currRing) )
@@ -642,8 +637,7 @@ syStrategy syResolution(ideal arg, int maxlength,intvec * w, BOOLEAN minim)
 
     if( ncExtensions(TESTSYZSCAMASK) )
     {
-      currQuotient = SCAQuotient(currRing);
-      currRing->qideal = currQuotient;
+      currRing->qideal = SCAQuotient(currRing);
     }
 
     const unsigned int m_iFirstAltVar = scaFirstAltVar(currRing);
@@ -655,10 +649,10 @@ syStrategy syResolution(ideal arg, int maxlength,intvec * w, BOOLEAN minim)
 
   syStrategy result=(syStrategy)omAlloc0(sizeof(ssyStrategy));
 
-  if ((w!=NULL) && (!idTestHomModule(arg,currQuotient,w))) // is this right in SCA case???
+  if ((w!=NULL) && (!idTestHomModule(arg,currRing->qideal,w))) // is this right in SCA case???
   {
     WarnS("wrong weights given(2):");w->show();PrintLn();
-    idHomModule(arg,currQuotient,&w);
+    idHomModule(arg,currRing->qideal,&w);
     w->show();PrintLn();
     w=NULL;
   }
@@ -694,7 +688,6 @@ syStrategy syResolution(ideal arg, int maxlength,intvec * w, BOOLEAN minim)
 
     if( ncExtensions(TESTSYZSCAMASK) )
     {
-      currQuotient     = idSaveCurrQuotient;
       currRing->qideal = idSaveCurrRingQuotient;
     }
 
@@ -828,16 +821,16 @@ intvec * syBetti(resolvente res,int length, int * regularity,
   intvec *w=NULL;
   if (weights!=NULL)
   {
-    if (!idTestHomModule(res[0],currQuotient,weights))
+    if (!idTestHomModule(res[0],currRing->qideal,weights))
     {
       WarnS("wrong weights given(3):");weights->show();PrintLn();
-      idHomModule(res[0],currQuotient,&w);
+      idHomModule(res[0],currRing->qideal,&w);
       if (w!=NULL) { w->show();PrintLn();}
       weights=NULL;
     }
   }
 #if 0
-  if (idHomModule(res[0],currQuotient,&w)!=isHomog)
+  if (idHomModule(res[0],currRing->qideal,&w)!=isHomog)
   {
     Warn("betti-command: Input is not homogeneous!");
     weights=NULL;
@@ -870,7 +863,7 @@ intvec * syBetti(resolvente res,int length, int * regularity,
     {
       if (res[i]->m[j]!=NULL)
       {
-        if ((pGetComp(res[i]->m[j])>(unsigned)l)
+        if ((pGetComp(res[i]->m[j])>l)
         || ((i>1) && (res[i-1]->m[pGetComp(res[i]->m[j])-1]==NULL)))
         {
           WerrorS("input not a resolvent");

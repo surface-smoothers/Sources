@@ -20,12 +20,13 @@
 
 #if !defined(GENERATE_OPTION_INDEX) && !defined(ESINGULAR) && !defined(TSINGULAR)
 #include <misc/options.h>
+#include <misc/sirandom.h>
 #endif
 
 #include "fehelp.h"
 
 
-const char SHORT_OPTS_STRING[] = "bdhqstvxec:r:u:";
+const char SHORT_OPTS_STRING[] = "bdhpqstvxec:r:u:";
 
 //////////////////////////////////////////////////////////////
 //
@@ -137,8 +138,9 @@ feOptIndex feGetOptIndex(int optc)
 //         "error-string" on error
 #if !defined(ESINGULAR) && !defined(TSINGULAR)
 #include <omalloc/omalloc.h>
-#include <kernel/febase.h>
-#include <kernel/timer.h>
+#include <resources/feResource.h>
+#include <kernel/oswrapper/feread.h>
+#include <kernel/oswrapper/timer.h>
 
 #include "ipshell.h"
 #include "tok.h"
@@ -210,6 +212,10 @@ static const char* feOptAction(feOptIndex opt)
         feOptHelp(feArgv0);
         return NULL;
 
+      case FE_OPT_PROFILE:
+         traceit=1024;
+         return NULL;
+
       case FE_OPT_QUIET:
         if (feOptSpec[FE_OPT_QUIET].value)
           si_opt_2 &= ~(Sy_bit(0)|Sy_bit(V_LOAD_LIB));
@@ -235,11 +241,11 @@ static const char* feOptAction(feOptIndex opt)
 
       case FE_OPT_VERSION:
         {
-	char *s=versionString();
+        char *s=versionString();
         printf("%s",s);
-	omFree(s);
+        omFree(s);
         return NULL;
-	}
+        }
 
       case FE_OPT_ECHO:
         si_echo = (int) ((long)(feOptSpec[FE_OPT_ECHO].value));
@@ -249,7 +255,7 @@ static const char* feOptAction(feOptIndex opt)
 
       case FE_OPT_RANDOM:
         siRandomStart = (unsigned int) ((unsigned long)
-			                  (feOptSpec[FE_OPT_RANDOM].value));
+                                          (feOptSpec[FE_OPT_RANDOM].value));
         siSeed=siRandomStart;
         factoryseed(siRandomStart);
         return NULL;
@@ -300,6 +306,12 @@ static const char* feOptAction(feOptIndex opt)
         return NULL;
       }
 
+      case FE_OPT_DUMP_VERSIONTUPLE:
+      {
+        feOptDumpVersionTuple();
+        return NULL;
+      }
+
       default:
         return NULL;
   }
@@ -345,11 +357,13 @@ void feOptHelp(const char* name)
 {
   int i = 0;
   char tmp[20];
-#ifdef ESINGULAR
-  printf("ESingular: A Program that starts-up Singular within emacs, for\n");
+#if defined(ESINGULAR)
+  printf("ESingular starts up Singular within emacs;\n");
+#elif defined(TSINGULAR)
+  printf("TSingular starts up Singular within a terminal window;\n");
 #endif
-  printf("Singular version %s -- a CAS for polynomial computations. Usage:\n", VERSION);
-  printf("   %s [options] [file1 [file2 ...]]\n", name);
+  printf("Singular is a Computer Algebra System (CAS) for Polynomial Computations.\n");
+  printf("Usage: %s [options] [file1 [file2 ...]]\n", name);
   printf("Options:\n");
 
   while (feOptSpec[i].name != 0)
@@ -367,17 +381,17 @@ void feOptHelp(const char* name)
         else
           sprintf(tmp, "%s=%s", feOptSpec[i].name, feOptSpec[i].arg_name);
 
-        printf(" %c%c --%-19s %s\n",
-               (feOptSpec[i].val != 0 ? '-' : ' '),
-               (feOptSpec[i].val != 0 ? feOptSpec[i].val : ' '),
+        printf(" %c%c --%-20s %s\n",
+               (feOptSpec[i].val != LONG_OPTION_RETURN ? '-' : ' '),
+               (feOptSpec[i].val != LONG_OPTION_RETURN ? feOptSpec[i].val : ' '),
                tmp,
                feOptSpec[i].help);
       }
       else
       {
-        printf(" %c%c --%-19s %s\n",
-               (feOptSpec[i].val != 0 ? '-' : ' '),
-               (feOptSpec[i].val != 0 ? feOptSpec[i].val : ' '),
+        printf(" %c%c --%-20s %s\n",
+               (feOptSpec[i].val != LONG_OPTION_RETURN ? '-' : ' '),
+               (feOptSpec[i].val != LONG_OPTION_RETURN ? feOptSpec[i].val : ' '),
                feOptSpec[i].name,
                feOptSpec[i].help);
       }
@@ -390,6 +404,9 @@ void feOptHelp(const char* name)
   printf("Singular manual (available as on-line info or html manual).\n");
 }
 
-
+void feOptDumpVersionTuple(void)
+{
+  printf("%s\n",VERSION);
+}
 
 #endif // GENERATE_OPTION_INDEX

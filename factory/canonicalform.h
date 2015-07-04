@@ -1,5 +1,10 @@
 /* emacs edit mode for this file is -*- C++ -*- */
 
+/**
+ * @file canonicalform.h
+ *
+ * Header for factory's main class CanonicalForm
+**/
 #ifndef INCL_CANONICALFORM_H
 #define INCL_CANONICALFORM_H
 
@@ -27,6 +32,9 @@
 #include <factory/templates/ftmpl_afactor.h>
 #include <factory/templates/ftmpl_factor.h>
 #include <factory/templates/ftmpl_matrix.h>
+#ifdef HAVE_OMALLOC
+#include <omalloc/omallocClass.h>
+#endif
 
 /*BEGINPUBLIC*/
 
@@ -56,8 +64,18 @@ inline int is_imm ( const InternalCF * const ptr )
 }
 
 
-//{{{ class CanonicalForm
+/**
+ * factory's main class
+ *
+ * a CanonicalForm can represent a polynomial over or a constant in F_p,
+ * F_p(alpha), GF (F_p[t]/(Conway polynomial)), Z, or Q
+ *
+ * @sa int_poly.h, variable.h, ffops.h, gfops.h, imm.h, int_int.h, int_rat.h
+**/
 class CanonicalForm
+#ifdef HAVE_OMALLOC
+       : public omallocClass
+#endif
 {
 private:
     InternalCF *value;
@@ -176,7 +194,6 @@ public:
 
     friend class CFIterator;
 };
-//}}}
 
 CF_INLINE CanonicalForm
 operator + ( const CanonicalForm&, const CanonicalForm& );
@@ -220,8 +237,6 @@ CanonicalForm gcd ( const CanonicalForm&, const CanonicalForm& );
 
 CanonicalForm gcd_poly ( const CanonicalForm & f, const CanonicalForm & g );
 
-CanonicalForm extgcd ( const CanonicalForm&, const CanonicalForm&, CanonicalForm&, CanonicalForm& );
-
 CanonicalForm lcm ( const CanonicalForm&, const CanonicalForm& );
 
 CanonicalForm pp ( const CanonicalForm& );
@@ -259,6 +274,10 @@ int size ( const CanonicalForm & f, const Variable & v );
 int size ( const CanonicalForm & f );
 
 CanonicalForm reduce ( const CanonicalForm& f, const CanonicalForm & M);
+
+bool hasFirstAlgVar( const CanonicalForm & f, Variable & a);
+
+CanonicalForm leftShift (const CanonicalForm& F, int n);
 //}}}
 
 //{{{ inline functions corresponding to CanonicalForm methods
@@ -366,6 +385,13 @@ typedef List<CanonicalForm> CFList;
 typedef ListIterator<CanonicalForm> CFListIterator;
 typedef Array<CanonicalForm> CFArray;
 typedef Matrix<CanonicalForm> CFMatrix;
+typedef List<CFList> ListCFList;
+typedef ListIterator<CFList> ListCFListIterator ;
+typedef List<int> IntList;
+typedef ListIterator<int> IntListIterator;
+typedef List<Variable> Varlist;
+typedef ListIterator<Variable> VarlistIterator;
+typedef Array<int> Intarray;
 //}}}
 
 /*ENDPUBLIC*/

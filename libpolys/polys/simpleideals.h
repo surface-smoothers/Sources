@@ -10,6 +10,11 @@
 #include <polys/monomials/ring.h>
 #include <polys/matpol.h>
 
+/// The following sip_sideal structure has many different uses
+/// thoughout Singular. Basic use-cases for it are:
+/// * ideal/module: nrows = 1, ncols >=0 and rank:1 for ideals, rank>=0 for modules
+/// * matrix: nrows, ncols >=0, rank == nrows! see mp_* procedures 
+/// NOTE: the m member point to memory chunk of size (ncols*nrows*sizeof(poly)) or is NULL
 struct sip_sideal
 {
   poly*  m;
@@ -22,6 +27,12 @@ struct sip_sideal
   #define MATELEM(mat,i,j) ((mat)->m)[MATCOLS((mat)) * ((i)-1) + (j)-1]
 
 };
+/* the settings of rank, nrows, ncols, m ,   entries:
+ * for IDEAL_CMD:     1    1    n    size n   poly              (n>=0)
+ * for MODUL_CMD:     r    1    n    size n   vector of rank<=r (n>=0, r>=0)
+ * for MATRIX_CMD     r    r    c    size r*c poly              (r>=0, c>=0)
+ * for MAP_CMD:    char*   1    n    size n   poly              (n>=0)
+ */
 
 struct sip_smap
 {
@@ -30,6 +41,8 @@ struct sip_smap
   int nrows;
   int ncols;
 };
+
+//typedef struct sip_smap *         map;
 
 struct sideal_list;
 typedef struct sideal_list *      ideal_list;
@@ -45,7 +58,7 @@ struct sideal_list
 
 extern omBin sip_sideal_bin;
 
-/*- creates an ideal -*/
+/// creates an ideal / module
 ideal idInit (int size, int rank=1);
 
 /*- deletes an ideal -*/
@@ -62,12 +75,12 @@ void    id_Normalize(ideal id, const ring r);
 int id_MinDegW(ideal M,intvec *w, const ring r);
 
 #ifdef PDEBUG
-void id_DBTest(ideal h1, int level, const char *f,const int l, const ring r);
-#define id_Test(A, r) id_DBTest(A, PDEBUG, __FILE__,__LINE__, r)
-// #define id_Print(id, r) id_Show(id, r)
+void id_DBTest(ideal h1, int level, const char *f,const int l, const ring lR, const ring tR );
+#define id_TestTail(A, lR, tR) id_DBTest(A, PDEBUG, __FILE__,__LINE__, lR, tR)
+#define id_Test(A, lR) id_DBTest(A, PDEBUG, __FILE__,__LINE__, lR, lR)
 #else
-#define id_Test(A, r)  do {} while (0)
-// #define id_Print(A, r) do {} while (0)
+#define id_TestTail(A, lR, tR)  do {} while (0)
+#define id_Test(A, lR) do {} while (0)
 #endif
 
 ideal id_Copy (ideal h1,const ring r);
@@ -84,8 +97,7 @@ BOOLEAN idIs0 (ideal h);
 long id_RankFreeModule(ideal m, ring lmRing, ring tailRing);
 static inline long id_RankFreeModule(ideal m, ring r)
 {return id_RankFreeModule(m, r, r);}
-// returns TRUE, if idRankFreeModule(m) > 0
-BOOLEAN id_IsModule(ideal m, ring r);
+
 ideal   id_FreeModule (int i, const ring r);
 int     idElem(const ideal F);
 int id_PosConstant(ideal id, const ring r);
@@ -130,7 +142,11 @@ int     idGetNumberOfChoise(int t, int d, int begin, int end, int * choise);
 
 #ifdef PDEBUG
 void idShow(const ideal id, const ring lmRing, const ring tailRing, const int debugPrint = 0);
+#define id_Print(id, lR, tR) idShow(id, lR, tR)
+#else
+#define id_Print(A, lR, tR) do {} while (0)
 #endif
+
 
 
 /// insert h2 into h1 depending on the two boolean parameters:
@@ -147,4 +163,6 @@ intvec * id_QHomWeight(ideal id, const ring r);
 
 
 ideal id_ChineseRemainder(ideal *xx, number *q, int rl, const ring r);
+
+void id_Shift(ideal M, int s, const ring r);
 #endif

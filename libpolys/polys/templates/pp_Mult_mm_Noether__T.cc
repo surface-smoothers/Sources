@@ -35,7 +35,7 @@ LINKAGE poly pp_Mult_mm_Noether__T(poly p, const poly m, const poly spNoether, i
   DECLARE_LENGTH(const unsigned long length = ri->ExpL_Size);
   DECLARE_ORDSGN(const long* ordsgn = ri->ordsgn);
   const unsigned long* m_e = m->exp;
-  pAssume(!n_IsZero__T(ln,ri));
+  pAssume(!n_IsZero__T(ln,ri->cf));
   pAssume1(p_GetComp(m, ri) == 0 || p_MaxComp(p, ri) == 0);
   int l = 0;
 
@@ -52,24 +52,24 @@ LINKAGE poly pp_Mult_mm_Noether__T(poly p, const poly m, const poly spNoether, i
     break;
 
     Continue:
-     
-    n = n_Mult__T(ln, pGetCoeff(p), ri);
-     
+
+    n = n_Mult__T(ln, pGetCoeff(p), ri->cf);
+
     #ifdef HAVE_RINGS
-    if(n_IsZero__T(n, ri))
+    if(n_IsZero__T(n, ri->cf))
     {
-      n_Delete__T(&n, ri); 
-      p_FreeBinAddr(r, ri);       
-    } else     
+      n_Delete__T(&n, ri->cf);
+      p_FreeBinAddr(r, ri);
+    } else
     #endif
-    { 
+    {
       l++;
       q = pNext(q) = r;
       pSetCoeff0(q, n);
     }
-     
-    pIter(p);       
-    
+
+    pIter(p);
+
   } while (p != NULL);
 
   if (ll < 0)

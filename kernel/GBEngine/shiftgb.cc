@@ -11,7 +11,6 @@
 #include <kernel/mod2.h>
 
 #ifdef HAVE_SHIFTBBA
-#include <kernel/febase.h>
 #include <polys/monomials/ring.h>
 #include <kernel/polys.h>
 #include <coeffs/numbers.h>
@@ -30,10 +29,9 @@
 #include <misc/intvec.h>
 #include <kernel/structs.h>
 #include <kernel/GBEngine/kInline.h>
-#include <kernel/GBEngine/stairc.h>
+#include <kernel/combinatorics/stairc.h>
 #include <polys/weight.h>
 #include <misc/intvec.h>
-#include <kernel/timer.h>
 #include <kernel/GBEngine/shiftgb.h>
 #include <polys/nc/sca.h>
 
@@ -172,6 +170,7 @@ poly pLPshift(poly p, int sh, int uptodeg, int lV)
     pIter(pp);
   }
   /* delete pp? */
+  p_Delete(&p,currRing);
   /* int version: returns TRUE if it was successful */
   return(q);
 }

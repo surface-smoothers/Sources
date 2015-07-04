@@ -17,8 +17,9 @@
 
 #include <factory/factory.h>
 
-#include <kernel/febase.h>
-#include <kernel/timer.h>
+#include <kernel/oswrapper/feread.h>
+#include <Singular/fevoices.h>
+#include <kernel/oswrapper/timer.h>
 
 // #ifdef HAVE_FANS
 // #include <callgfanlib/bbcone.h>
@@ -114,6 +115,13 @@ int main(          /* main entry to Singular */
       exit(1);
     }
     if (optc == 'h') exit(0);
+    switch(option_index)
+    {
+      case FE_OPT_DUMP_VERSIONTUPLE:
+        exit(0);
+        break;
+      default: ;
+    }
   }
 
   /* say hello */
@@ -130,7 +138,7 @@ int main(          /* main entry to Singular */
 "                                                           0<\n"
 " by: W. Decker, G.-M. Greuel, G. Pfister, H. Schoenemann     \\   %s\n"
 "FB Mathematik der Universitaet, D-67653 Kaiserslautern        \\\n"
-, PACKAGE_VERSION, VERSION_DATE);
+, VERSION, VERSION_DATE);
   if (feOptValue(FE_OPT_NO_SHELL)) Warn("running in restricted mode:"
     " shell invocation and links are disallowed");
   }

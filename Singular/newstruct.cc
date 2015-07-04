@@ -165,7 +165,7 @@ void * newstruct_Copy(blackbox*, void *d)
 }
 
 // Used by newstruct_Assign for overloaded '='
-BOOLEAN newstruct_equal(int op, leftv l, leftv r)
+BOOLEAN newstruct_Assign_user(int op, leftv l, leftv r)
 {
   blackbox *ll=getBlackboxStuff(op);
   assume(ll->data != NULL);
@@ -221,71 +221,26 @@ void lClean_newstruct(lists l)
   omFreeBin((ADDRESS)l,slists_bin);
 }
 
-BOOLEAN newstruct_Assign(leftv l, leftv r)
+static BOOLEAN newstruct_Assign_same(leftv l, leftv r)
 {
-  if (r->Typ()>MAX_TOK)
+  assume(l->Typ() == r->Typ());
+  if (l->Data()!=NULL)
   {
-    blackbox *rr=getBlackboxStuff(r->Typ());
-    if (l->Typ()!=r->Typ())
-    {
-      newstruct_desc rrn=(newstruct_desc)rr->data;
-
-      if (!rrn)
-      {
-        Werror("custom type %s(%d) cannot be assigned to newstruct %s(%d)",
-               Tok2Cmdname(r->Typ()), r->Typ(), Tok2Cmdname(l->Typ()), l->Typ());
-        return TRUE;
-      }
-
-      newstruct_desc rrp=rrn->parent;
-      while ((rrp!=NULL)&&(rrp->id!=l->Typ())) rrp=rrp->parent;
-      if (rrp!=NULL)
-      {
-        if (l->rtyp==IDHDL)
-        {
-          IDTYP((idhdl)l->data)=r->Typ();
-        }
-        else
-        {
-          l->rtyp=r->Typ();
-        }
-      }
-      else                      // unrelated types - look for custom conversion
-      {
-        sleftv tmp;
-        BOOLEAN newstruct_Op1(int, leftv, leftv);  // forward declaration
-        if (! newstruct_Op1(l->Typ(), &tmp, r))  return newstruct_Assign(l, &tmp);
-      }
-    }
-    if (l->Typ()==r->Typ())
-    {
-      if (l->Data()!=NULL)
-      {
-        lists n1=(lists)l->Data();
-        lClean_newstruct(n1);
-      }
-      lists n2=(lists)r->Data();
-      n2=lCopy_newstruct(n2);
-      if (l->rtyp==IDHDL)
-      {
-        IDDATA((idhdl)l->data)=(char *)n2;
-      }
-      else
-      {
-        l->data=(void *)n2;
-      }
-      return FALSE;
-    }
+    lists n1=(lists)l->Data();
+    lClean_newstruct(n1);
+  }
+  lists n2=(lists)r->Data();
+  n2=lCopy_newstruct(n2);
+  r->CleanUp();
+  if (l->rtyp==IDHDL)
+  {
+    IDDATA((idhdl)l->data)=(char *)n2;
   }
   else
   {
-    assume(l->Typ() > MAX_TOK);
-    sleftv tmp;
-    if(!newstruct_equal(l->Typ(), &tmp, r)) return newstruct_Assign(l, &tmp);
+    l->data=(void *)n2;
   }
-  Werror("assign %s(%d) = %s(%d)",
-        Tok2Cmdname(l->Typ()),l->Typ(),Tok2Cmdname(r->Typ()),r->Typ());
-  return TRUE;
+  return FALSE;
 }
 
 BOOLEAN newstruct_Op1(int op, leftv res, leftv arg)
@@ -320,7 +275,62 @@ BOOLEAN newstruct_Op1(int op, leftv res, leftv arg)
   return blackboxDefaultOp1(op,res,arg);
 }
 
+BOOLEAN newstruct_Assign(leftv l, leftv r)
+{
+  assume(l->Typ() > MAX_TOK);
+  if (l->Typ()==r->Typ())
+  {
+    return newstruct_Assign_same(l,r);
+  }
+  if (r->Typ()>MAX_TOK)
+  {
+    blackbox *rr=getBlackboxStuff(r->Typ());
+    if (l->Typ()!=r->Typ())
+    {
+      newstruct_desc rrn=(newstruct_desc)rr->data;
 
+      if (rrn==NULL) // this is not a newstruct
+      {
+        Werror("custom type %s(%d) cannot be assigned to newstruct %s(%d)",
+               Tok2Cmdname(r->Typ()), r->Typ(), Tok2Cmdname(l->Typ()), l->Typ());
+        return TRUE;
+      }
+
+      // try to find a parent newstruct:
+      newstruct_desc rrp=rrn->parent;
+      while ((rrp!=NULL)&&(rrp->id!=l->Typ())) rrp=rrp->parent;
+      if (rrp!=NULL)
+      {
+        if (l->rtyp==IDHDL)
+        {
+          IDTYP((idhdl)l->data)=r->Typ();
+        }
+        else
+        {
+          l->rtyp=r->Typ();
+        }
+      }
+      else                      // unrelated types - look for custom conversion
+      {
+        sleftv tmp;
+        if (! newstruct_Op1(l->Typ(), &tmp, r))  return newstruct_Assign(l, &tmp);
+        if(!newstruct_Assign_user(l->Typ(), &tmp, r)) return newstruct_Assign(l, &tmp);
+      }
+    }
+    if (l->Typ()==r->Typ())
+    {
+      return  newstruct_Assign_same(l,r);
+    }
+  }
+  else
+  {
+    sleftv tmp;
+    if(!newstruct_Assign_user(l->Typ(), &tmp, r)) return newstruct_Assign(l, &tmp);
+  }
+  Werror("assign %s(%d) = %s(%d)",
+        Tok2Cmdname(l->Typ()),l->Typ(),Tok2Cmdname(r->Typ()),r->Typ());
+  return TRUE;
+}
 
 BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
 {
@@ -360,9 +370,12 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
             res->rtyp=RING_CMD;
             res->data=al->m[nm->pos-1].data;
             r=(ring)res->data;
-            if (r==NULL) { res->data=(void *)currRing; r=currRing; }
-            if (r!=NULL) r->ref++;
-            else Werror("ring of this member is not set and no basering found");
+            if (r==NULL)
+            {
+              res->data=(void *)currRing; r=currRing;
+              if (r!=NULL) r->ref++;
+              else Werror("ring of this member is not set and no basering found");
+            }
             return r==NULL;
           }
           else if (RingDependend(nm->typ)
@@ -387,6 +400,14 @@ BOOLEAN newstruct_Op2(int op, leftv res, leftv a1, leftv a2)
               {
                 Werror("different ring %lx(data) - %lx(basering)",
                   (long unsigned)(al->m[nm->pos-1].data),(long unsigned)currRing);
+                Werror("name of basering: %s",IDID(currRingHdl));
+                rWrite(currRing,TRUE);PrintLn();
+                idhdl hh=rFindHdl((ring)(al->m[nm->pos-1].data),NULL);
+                const char *nn="??";
+                if (hh!=NULL) nn=IDID(hh);
+                Werror("(possible) name of ring of data: %s",nn);
+                rWrite((ring)(al->m[nm->pos-1].data),TRUE);PrintLn();
+
                 return TRUE;
               }
             }
@@ -501,7 +522,7 @@ BOOLEAN newstruct_OpM(int op, leftv res, leftv args)
       return FALSE;
     }
   }
-  return blackbox_default_OpM(op,res,args);
+  return blackboxDefaultOpM(op,res,args);
 }
 
 void newstruct_destroy(blackbox */*b*/, void *d)
@@ -536,9 +557,18 @@ BOOLEAN newstruct_CheckAssign(blackbox */*b*/, leftv L, leftv R)
   int rt=R->Typ();
   if ((lt!=DEF_CMD)&&(lt!=rt))
   {
-    Werror("can not assign %s(%d) to member of type %s(%d)",
-            Tok2Cmdname(rt),rt,
-            Tok2Cmdname(lt),lt);
+    const char *rt1=Tok2Cmdname(rt);
+    const char *lt1=Tok2Cmdname(lt);
+    if ((rt>0) && (lt>0)
+    && ((strcmp(rt1,Tok2Cmdname(0))==0)||(strcmp(lt1,Tok2Cmdname(0))==0)))
+    {
+      Werror("can not assign %s(%d) to member of type %s(%d)",
+            rt1,rt,lt1,lt);
+    }
+    else
+    {
+      Werror("can not assign %s to member of type %s",rt1,lt1);
+    }
     return TRUE;
   }
   return FALSE;
@@ -673,7 +703,7 @@ void newstruct_setup(const char *n, newstruct_desc d )
   b->blackbox_Assign=newstruct_Assign;
   b->blackbox_Op1=newstruct_Op1;
   b->blackbox_Op2=newstruct_Op2;
-  //b->blackbox_Op3=blackbox_default_Op3;
+  //b->blackbox_Op3=blackboxDefaultOp3;
   b->blackbox_OpM=newstruct_OpM;
   b->blackbox_CheckAssign=newstruct_CheckAssign;
   b->blackbox_serialize=newstruct_serialize;
@@ -699,9 +729,9 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
   loop
   {
     // read type:
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     *p='\0';
     IsCmd(start,t);
     if (t==0)
@@ -718,16 +748,16 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
     elem=(newstruct_member)omAlloc0(sizeof(*elem));
     // read name:
     p++;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     start=p;
-    while (isalpha(*p)) p++;
+    while (isalnum(*p)) p++;
     c=*p;
     *p='\0';
     elem->typ=t;
     elem->pos=res->size;
-    if (*start=='\0') /*empty name*/
+    if ((*start=='\0') /*empty name*/||(isdigit(*start)))
     {
-      WerrorS("empty name for element");
+      WerrorS("illegal/empty name for element");
       goto error_in_newstruct_def;
     }
     elem->name=omStrDup(start);
@@ -738,7 +768,7 @@ static newstruct_desc scanNewstructFromString(const char *s, newstruct_desc res)
 
     // next ?
     *p=c;
-    while (*p==' ') p++;
+    while ((*p!='\0') && (*p<=' ')) p++;
     if (*p!=',')
     {
       if (*p!='\0')
@@ -833,23 +863,81 @@ BOOLEAN newstruct_set_proc(const char *bbname,const char *func, int args,procinf
   idhdl save_ring=currRingHdl;
   currRingHdl=(idhdl)1; // fake ring detection
 
-  if(!IsCmd(func,p->t))
+  int tt;
+  if(!(tt=IsCmd(func,p->t)))
   {
-    int t=0;
-    if (func[1]=='\0') p->t=func[0];
-    else if((t=iiOpsTwoChar(func))!=0)
+    int t;
+    if((t=iiOpsTwoChar(func))!=0)
     {
       p->t=t;
+      tt=CMD_2; /* ..,::, ==, <=, <>, >= !=i and +,-,*,/,%,.... */
+      if ((t==PLUSPLUS)
+      ||(t==MINUSMINUS)
+      ||(t=='='))
+        tt=CMD_1; /* ++,--,= */
+      else if (t=='(') /* proc call */
+        tt=CMD_M;
+      else if (t=='-') /* unary and binary - */
+        tt=CMD_12;
     }
     else
     {
+      desc->procs=p->next;
+      omFreeSize(p,sizeof(*p));
       Werror(">>%s<< is not a kernel command",func);
       currRingHdl = save_ring;
       return TRUE;
     }
   }
+  switch(tt)
+  {
+    // type conversions:
+    case BIGINTMAT_CMD:
+    case MATRIX_CMD:
+    case INTMAT_CMD:
+    case RING_CMD:
+    case RING_DECL:
+    case RING_DECL_LIST:
+    case ROOT_DECL:
+    case ROOT_DECL_LIST:
+    // operations:
+    case CMD_1:
+      if(args!=1) { Warn("args must be 1 in %s",my_yylinebuf);args=1;}
+      break;
+    case CMD_2:
+      if(args!=2) { Warn("args must be 2 in %s",my_yylinebuf);args=2;}
+      break;
+    case CMD_3:
+      if(args!=3) { Warn("args must be 3 in %s",my_yylinebuf);args=3;}
+      break;
+    case CMD_12:
+      if((args!=1)&&(args!=2)) { Werror("args must in 1 or 2 in %s",my_yylinebuf);}
+      break;
+    case CMD_13:
+      if((args!=1)&&(args!=3)) { Werror("args must in 1 or 3 in %s",my_yylinebuf);}
+      break;
+    case CMD_23:
+      if((args<2)||(args>3)) { Werror("args must in 2..3 in %s",my_yylinebuf);}
+      break;
+    case CMD_123:
+      if((args<1)||(args>3)) { Werror("args must in 1..3 in %s",my_yylinebuf);}
+      break;
+    case CMD_M:
+      if(args!=4) { Warn("args must be 4 in %s",my_yylinebuf);args=4;}
+      break;
+    default:
+      Werror("unknown token type %d in %s",tt,my_yylinebuf);
+      break;
+  }
+  currRingHdl = save_ring;
+  if (errorreported)
+  {
+    desc->procs=p->next;
+    omFreeSize(p,sizeof(*p));
+    return TRUE;
+  }
   p->args=args;
   p->p=pr; pr->ref++;
-  currRingHdl = save_ring;
+  pr->is_static=0;
   return FALSE;
 }

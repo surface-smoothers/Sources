@@ -1823,9 +1823,12 @@ when necessary
 during standard bases computations or by an explicit reduction using
 the command @code{reduce(f, std(0))} (@pxref{reduce}).
 
+Operations based on standard bases (e.g. @code{std},@code{groebner}, etc., @code{reduce}) and functions which require a standard basis (e.g. @code{dim},@code{hilb}, etc.) operated with the residue classes; all others on the polynomial objects.
+
 @strong{Example:}
 @smallexample
 @c example
+  // defintion and usage:
   ring r=32003,(x,y),dp;
   poly f=x3+yx2+3y+4;
   qring q=std(maxideal(2));
@@ -1833,6 +1836,15 @@ the command @code{reduce(f, std(0))} (@pxref{reduce}).
   poly g=fetch(r, f);
   g;
   reduce(g,std(0));
+  // polynomial and residue class:
+  ring R=0,(x,y),dp;
+  qring Q=std(y);
+  poly p1=x;
+  poly p2=x+y;
+  // comparing polynomial objects:
+  p1==p2;
+  // comparing residue classes:
+  reduce(p1,std(0))==reduce(p2,std(0));
 @c example
 @end smallexample
 
@@ -1877,7 +1889,7 @@ In a ring declaration, @sc{Singular} offers the following orderings:
 lexicographical ordering
 
 @item @code{rp}
-reverse lexicographical ordering, i.e. a lexicographical ordering from the right 
+reverse lexicographical ordering, i.e. a lexicographical ordering from the right
 with 1 < x_1 < ... <x_n
 (should not be used as it reverses the "natural" x_1 > ... > x_n,
 reorder the variables instead)
@@ -2004,7 +2016,9 @@ coefficient rings were implemented in @sc{Singular} 3.0.5 and at the moment
 only limited functionality is available.
 
 @subheading p-adic numbers
-@cindex p-adic numbers, l-adic numbers, projective limes
+@cindex p-adic numbers
+@cindex l-adic numbers
+@cindex projective limes
 
 The p-adic integers @math{Z_p} are the projective limit of the finite
 rings @math{Z/p^n} for @code{n} to infinity. Therefore, computations in this ring
@@ -4063,6 +4077,7 @@ and then @key{RETURN} .
 * Break points::
 * Printing of data::
 * libparse::
+* option(warn)::
 @end menu
 
 @c ---------------------------------------
@@ -4072,12 +4087,14 @@ and then @key{RETURN} .
 
 @table @code
 @item @strong{Syntax:}
-@code{ASSUME (} int_expression @code{,} expression @code{)}
+@code{ASSUME (} int_constant @code{,} expression @code{)}
 @item @strong{Purpose:}
-Tests the expression for correctness if the int_expression is smaller
+Tests the expression for correctness if the int_constant is smaller
 as a variable @code{assumeLevel}. If no such variable exist the int expression
-is compared against 0. It is possible to define an individual @code{assumeLevel} for each library.
+is compared against 0. It is possible to define an individual @code{assumeLevel} for each library and/or procedure
 If the expression is evaluated and not true (i.e. does not evaluate to @code{int(0)} an error is raised.
+@item @strong{Note:} @code{ASSUME} shall be used for documentation and debugging,
+production code of a library must never define @code{assumeLevel}.
 @item @strong{Example:}
 @smallexample
 @c example error
@@ -4227,7 +4244,7 @@ See @ref{dbprint}; @ref{voice}.
 @end ifnothtml
 
 @c ---------------------------------------
-@node libparse,,Printing of data,Debugging tools
+@node libparse,option(warn),Printing of data,Debugging tools
 @subsection libparse
 @cindex libparse
 
@@ -4311,6 +4328,31 @@ LIB "sample.lib";
 @expansion{}    ? Cannot load library,... aborting.
 @expansion{}    ? error occurred in STDIN line 1: `LIB "sample.lib";`
 @end smallexample
+@c ---------------------------------------
+@node option(warn),,libparse,Debugging tools
+@subsection option(warn)
+@cindex  option(warn)
+@cindex  warn, option
+
+
+If this option is set some constructs which @strong{may} lead to bug
+will result in a warning. While there are legitimate uses for them and they
+are @strong{not errors} is is worth thinking about it.
+
+@itemize
+@item
+change of options during a procedure call: is this side effect intended?
+@item
+use of @code{def}: avoids type checking, but usefull if a procedure handles
+several types at once
+@item
+@code{ASSUME} outside of procedures: while a failed @code{ASSUME} aborts
+the current procedures and return to the top level - what should it do at top level?
+@end itemize
+@c ref
+See
+@ref{option}.
+@c ref
 @c ---------------------------------------
 @node Dynamic loading, , Debugging tools, General concepts
 @section Dynamic loading

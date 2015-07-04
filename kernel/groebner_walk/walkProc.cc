@@ -11,7 +11,6 @@
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 #include <polys/monomials/ring.h>
-#include <kernel/febase.h>
 #include <polys/monomials/maps.h>
 #include <omalloc/omalloc.h>
 #include <kernel/GBEngine/kstd1.h>
@@ -118,7 +117,7 @@ walkConsistency( ring sring, ring dring, int * vperm )
     for ( k= npar-1; (k >= 0) && (state == WalkOk); k-- )
         if ( pperm[k] >= 0 )
         {
-            WerrorS( "paramater names do not agree" );
+            WerrorS( "parameter names do not agree" );
             state= WalkIncompatibleRings;
         }
 

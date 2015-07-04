@@ -15,7 +15,6 @@
 
 #include <polys/matpol.h>
 
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 
@@ -63,7 +62,7 @@ static BOOLEAN ipPrint_INTMAT(leftv u)
 */
 static void ipPrint_MA0(matrix m, const char *name)
 {
-  if (MATCOLS(m)>0)
+  if ((MATCOLS(m)>0)&&(MATROWS(m)>0))
   {
     char **s=(char **)omAlloc(MATCOLS(m)*MATROWS(m)*sizeof(char*));
     char *ss;
@@ -181,6 +180,7 @@ static void ipPrint_MA0(matrix m, const char *name)
     omFreeSize((ADDRESS)s,MATCOLS(m)*MATROWS(m)*sizeof(char*));
     omFreeSize((ADDRESS)l,MATCOLS(m)*sizeof(int));
   }
+  else Print("%d x %d zero matrix\n",MATROWS(m),MATCOLS(m));
 }
 
 /*2
@@ -199,10 +199,33 @@ static BOOLEAN ipPrint_MA(leftv u)
 static BOOLEAN ipPrint_RING(leftv u)
 {
   ring r=(ring)u->Data();
+  PrintS("polynomial ring, over a ");
+  if (rField_is_Ring(r))
+  {
+    if (rField_is_Domain(r)) PrintS("domain");
+    else                     PrintS("ring (with zero-divisors)");
+  }
+  else PrintS("field");
+  if (r->OrdSgn==1) PrintS(", global"); else PrintS(", local/mixed");
+  PrintS(" ordering\n");
   rWrite(r, TRUE);
   return FALSE;
 }
 
+#ifdef SINGULAR_4_1
+static BOOLEAN ipPrint_CRING(leftv u)
+{
+  coeffs r=(coeffs)u->Data();
+  if (nCoeff_is_Ring(r))
+  {
+    if (nCoeff_is_Domain(r)) PrintS("domain: ");
+    else                     PrintS("ring (with zero-divisors): ");
+  }
+  else PrintS("field: ");
+  PrintS(nCoeffName(r));
+  return FALSE;
+}
+#endif
 /*2
 * print for: vector
 */
@@ -275,6 +298,12 @@ BOOLEAN jjPRINT(leftv res, leftv u)
       case QRING_CMD:
         bo=ipPrint_RING(u);
         break;
+
+      #ifdef SINGULAR_4_1
+      case CRING_CMD:
+        bo=ipPrint_CRING(u);
+        break;
+      #endif
 
       default:
         u->Print();

@@ -77,7 +77,6 @@ long sba_interreduction_operations;
 #include <omalloc/omalloc.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/khstd.h>
 #include <polys/kbuckets.h>
@@ -99,22 +98,23 @@ long sba_interreduction_operations;
 
 // return -1 if no divisor is found
 //        number of first divisor, otherwise
-int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
-                        const int tl, const LObject* L, const int start)
+int kFindDivisibleByInT(const kStrategy strat, const LObject* L, const int start)
 {
   unsigned long not_sev = ~L->sev;
   int j = start;
-  poly p=L->p;
-  ring r=currRing;
-  L->GetLm(p, r);
 
-  pAssume(~not_sev == p_GetShortExpVector(p, r));
-
-  if (r == currRing)
+  const TSet T=strat->T;
+  const unsigned long* sevT=strat->sevT;
+  if (L->p!=NULL)
   {
+    const ring r=currRing;
+    const poly p=L->p;
+     
+    pAssume(~not_sev == p_GetShortExpVector(p, r));
+
     loop
     {
-      if (j > tl) return -1;
+      if (j > strat->tl) return -1;
 #if defined(PDEBUG) || defined(PDIV_DEBUG)
       if (p_LmShortDivisibleBy(T[j].p, sevT[j],
                                p, not_sev, r))
@@ -129,9 +129,11 @@ int kFindDivisibleByInT(const TSet &T, const unsigned long* sevT,
   }
   else
   {
+    const poly p=L->t_p;
+    const ring r=strat->tailRing;
     loop
     {
-      if (j > tl) return -1;
+      if (j > strat->tl) return -1;
 #if defined(PDEBUG) || defined(PDIV_DEBUG)
       if (p_LmShortDivisibleBy(T[j].t_p, sevT[j],
                                p, not_sev, r))
@@ -216,19 +218,19 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
 
   poly p = input_p;
   poly zeroPoly = NULL;
-  NATNUMBER a = (NATNUMBER) pGetCoeff(p);
+  unsigned long a = (unsigned long) pGetCoeff(p);
 
   int k_ind2 = 0;
   int a_ind2 = ind2(a);
 
-  // NATNUMBER k = 1;
+  // unsigned long k = 1;
   // of interest is only k_ind2, special routine for improvement ... TODO OLIVER
   for (int i = 1; i <= leadRing->N; i++)
   {
     k_ind2 = k_ind2 + ind_fact_2(p_GetExp(p, i, leadRing));
   }
 
-  a = (NATNUMBER) pGetCoeff(p);
+  a = (unsigned long) pGetCoeff(p);
 
   number tmp1;
   poly tmp2, tmp3;
@@ -251,7 +253,7 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
         s_exp = s_exp - 2;
       }
       p_SetExp(lead_mult, i, p_GetExp(p, i,leadRing) - s_exp, tailRing);
-      for (NATNUMBER j = 1; j <= s_exp; j++)
+      for (int j = 1; j <= s_exp; j++)
       {
         tmp1 = nInit(j);
         tmp2 = p_ISet(1, tailRing);
@@ -280,13 +282,13 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
     pNext(tmp2) = zeroPoly;
     return tmp2;
   }
-/*  NATNUMBER alpha_k = twoPow(leadRing->ch - k_ind2);
+/*  unsigned long alpha_k = twoPow(leadRing->ch - k_ind2);
   if (1 == 0 && alpha_k <= a)
   {  // Temporarly disabled, reducing coefficients not compatible with std TODO Oliver
     zeroPoly = p_ISet((a / alpha_k)*alpha_k, tailRing);
     for (int i = 1; i <= leadRing->N; i++)
     {
-      for (NATNUMBER j = 1; j <= p_GetExp(p, i, leadRing); j++)
+      for (unsigned long j = 1; j <= p_GetExp(p, i, leadRing); j++)
       {
         tmp1 = nInit(j);
         tmp2 = p_ISet(1, tailRing);
@@ -298,12 +300,12 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing)
         }
         else
         {
-          tmp3 = p_ISet((NATNUMBER) tmp1, tailRing);
+          tmp3 = p_ISet((unsigned long) tmp1, tailRing);
           zeroPoly = p_Mult_q(zeroPoly, p_Add_q(tmp2, tmp3, tailRing), tailRing);
         }
       }
     }
-    tmp2 = p_ISet((NATNUMBER) pGetCoeff(zeroPoly), leadRing);
+    tmp2 = p_ISet((unsigned long) pGetCoeff(zeroPoly), leadRing);
     for (int i = 1; i <= leadRing->N; i++)
     {
       pSetExp(tmp2, i, p_GetExp(zeroPoly, i, tailRing));
@@ -341,7 +343,7 @@ int redRing (LObject* h,kStrategy strat)
   h->SetShortExpVector();
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat, h);
     if (j < 0) return 1;
     ksReducePoly(h, &(strat->T[j]), NULL, NULL, strat); // with debug output
 
@@ -377,9 +379,9 @@ int redRing (LObject* h,kStrategy strat)
     }
     if (d != reddeg)
     {
-      if (d >= strat->tailRing->bitmask)
+      if (d >= (long)strat->tailRing->bitmask)
       {
-        if (h->pTotalDeg() >= strat->tailRing->bitmask)
+        if (h->pTotalDeg() >= (long)strat->tailRing->bitmask)
         {
           strat->overflow=TRUE;
           //Print("OVERFLOW in redRing d=%ld, max=%ld\n",d,strat->tailRing->bitmask);
@@ -423,7 +425,7 @@ int redHomog (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat, h);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -595,7 +597,7 @@ int redSig (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h, start);
+    j = kFindDivisibleByInT(strat, h, start);
     if (j < 0)
     {
       return 1;
@@ -765,7 +767,7 @@ poly redtailSba (LObject* L, int pos, kStrategy strat, BOOLEAN withT, BOOLEAN no
       if (withT)
       {
         int j;
-        j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln);
+        j = kFindDivisibleByInT(strat, &Ln);
         if (j < 0) break;
         With = &(strat->T[j]);
       }
@@ -834,7 +836,7 @@ poly redtailSba (LObject* L, int pos, kStrategy strat, BOOLEAN withT, BOOLEAN no
 
   //if (TEST_OPT_PROT) { PrintS("N"); mflush(); }
   //L->Normalize(); // HANNES: should have a test
-  assume(kTest_L(L));
+  kTest_L(L);
   return L->GetLmCurrRing();
 }
 
@@ -858,7 +860,7 @@ int redLazy (LObject* h,kStrategy strat)
   not_sev = ~ h->sev;
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat, h);
     if (j < 0) return 1;
 
     li = strat->T[j].pLength;
@@ -976,9 +978,9 @@ int redLazy (LObject* h,kStrategy strat)
     }
     else if (d != reddeg)
     {
-      if (d>=strat->tailRing->bitmask)
+      if (d>=(long)strat->tailRing->bitmask)
       {
-        if (h->pTotalDeg() >= strat->tailRing->bitmask)
+        if (h->pTotalDeg() >= (long)strat->tailRing->bitmask)
         {
           strat->overflow=TRUE;
           //Print("OVERFLOW in redLazy d=%ld, max=%ld\n",d,strat->tailRing->bitmask);
@@ -1022,7 +1024,7 @@ int redHoney (LObject* h, kStrategy strat)
   h->PrepareRed(strat->use_buckets);
   loop
   {
-    j=kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j=kFindDivisibleByInT(strat, h);
     if (j < 0) return 1;
 
     ei = strat->T[j].ecart;
@@ -1122,6 +1124,25 @@ int redHoney (LObject* h, kStrategy strat)
       #endif
       return 0;
     }
+    if (TEST_OPT_IDLIFT)
+    {
+      if (h->p!=NULL)
+      {
+        if(p_GetComp(h->p,currRing)>strat->syzComp)
+	{
+	  h->Delete();
+	  return 0;
+	}
+      }
+      else if (h->t_p!=NULL)
+      {
+        if(p_GetComp(h->t_p,strat->tailRing)>strat->syzComp)
+	{
+	  h->Delete();
+	  return 0;
+	}
+      }
+    }
     h->SetShortExpVector();
     not_sev = ~ h->sev;
     h_d = h->SetpFDeg();
@@ -1160,9 +1181,9 @@ int redHoney (LObject* h, kStrategy strat)
     }
     else if (d > reddeg)
     {
-      if (d>=strat->tailRing->bitmask)
+      if (d>=(long)strat->tailRing->bitmask)
       {
-        if (h->pTotalDeg()+h->ecart >= strat->tailRing->bitmask)
+        if (h->pTotalDeg()+h->ecart >= (long)strat->tailRing->bitmask)
         {
           strat->overflow=TRUE;
           //Print("OVERFLOW in redHoney d=%ld, max=%ld\n",d,strat->tailRing->bitmask);
@@ -1331,17 +1352,10 @@ poly redNF (poly h,int &max_ind,int nonorm,kStrategy strat)
   }
 }
 
-#ifdef KDEBUG
-static int bba_count = 0;
-#endif /* KDEBUG */
 void kDebugPrint(kStrategy strat);
 
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
-#ifdef KDEBUG
-  bba_count++;
-  int loop_count = 0;
-#endif /* KDEBUG */
   int   red_result = 1;
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
@@ -1362,13 +1376,12 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   if (!TEST_OPT_NOT_BUCKETS)
     strat->use_buckets = 1;
 #endif
-
   // redtailBBa against T for inhomogenous input
   if (!TEST_OPT_OLDSTD)
     withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef KDEBUG
 #if MYTEST
@@ -1401,7 +1414,6 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   while (strat->Ll >= 0)
   {
     #ifdef KDEBUG
-      loop_count++;
       if (TEST_OPT_DEBUG) messageSets(strat);
     #endif
     if (strat->Ll== 0) strat->interpt=TRUE;
@@ -1474,14 +1486,14 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
-      /* reduction of the element choosen from L */
+      /* reduction of the element chosen from L */
       red_result = strat->red(&strat->P,strat);
       if (errorreported)  break;
     }
 
     if (strat->overflow)
     {
-        if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
+      if (!kStratChangeTailRing(strat)) { Werror("OVERFLOW.."); break;}
     }
 
     // reduction to non-zero new poly
@@ -1578,6 +1590,25 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         }
 #endif
       }
+      if (strat->s_poly!=NULL)
+      {
+        if (strat->s_poly(strat))
+        {
+          // we are called AFTER enterS, i.e. if we change P
+          // we have it also to S/T
+          // and add pairs
+          int pos=posInS(strat,strat->sl,strat->P.p,strat->P.ecart);
+          enterT(strat->P, strat);
+          #ifdef HAVE_RINGS
+          if (rField_is_Ring(currRing))
+            superenterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
+          else
+          #endif
+            enterpairs(strat->P.p,strat->sl,strat->P.ecart,pos,strat, strat->tl);
+          strat->enterS(strat->P, pos, strat, strat->tl);
+        }
+      }
+
       if (hilb!=NULL) khCheck(Q,w,hilb,hilbeledeg,hilbcount,strat);
 //      Print("[%d]",hilbeledeg);
       if (strat->P.lcm!=NULL)
@@ -1595,7 +1626,7 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
 #if MYTEST
@@ -1610,19 +1641,19 @@ ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     if(!rField_is_Ring(currRing))
     #endif
     {
-        int k=1;
-        int j;
-        while(k<=strat->sl)
+      int k=1;
+      int j;
+      while(k<=strat->sl)
+      {
+        j=0;
+        loop
         {
-          j=0;
-          loop
-          {
-            if (j>=k) break;
-            clearS(strat->S[j],strat->sevS[j],&k,&j,strat);
-            j++;
-          }
-          k++;
+          if (j>=k) break;
+          clearS(strat->S[j],strat->sevS[j],&k,&j,strat);
+          j++;
         }
+        k++;
+      }
     }
   }
 
@@ -1727,10 +1758,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   printf("ordSgn = %d\n",currRing->OrdSgn);
   printf("\n");
 #endif
-#ifdef KDEBUG
-  bba_count++;
-  int loop_count = 0;
-#endif /* KDEBUG */
   int   srmax,lrmax, red_result = 1;
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
@@ -1760,7 +1787,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   //   withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef KDEBUG
 #if MYTEST
@@ -1794,7 +1821,6 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
   {
     if (strat->Ll > lrmax) lrmax =strat->Ll;/*stat.*/
     #ifdef KDEBUG
-      loop_count++;
       if (TEST_OPT_DEBUG) messageSets(strat);
     #endif
     if (strat->Ll== 0) strat->interpt=TRUE;
@@ -1803,7 +1829,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
         && ((strat->honey && (strat->L[strat->Ll].ecart+currRing->pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
             || ((!strat->honey) && (currRing->pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))))
     {
-      
+
        //stops computation if
        // 24 IN test and the degree +ecart of L[strat->Ll] is bigger then
        //a predefined number Kstd1_deg
@@ -1837,7 +1863,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
     /* picks the last element from the lazyset L */
     strat->P = strat->L[strat->Ll];
     strat->Ll--;
-    /* reduction of the element choosen from L */
+    /* reduction of the element chosen from L */
 
     if (!strat->rewCrit2(strat->P.sig, ~strat->P.sevSig, strat->P.GetLmCurrRing(), strat, strat->P.checked+1)) {
       //#if 1
@@ -2247,7 +2273,7 @@ ideal sba (ideal F0, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif /* KDEBUG */
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
 #if MYTEST
@@ -2429,7 +2455,7 @@ poly kNF2 (ideal F,ideal Q,poly q,kStrategy strat, int lazyReduce)
   //  for (i=strat->sl;i>=0;i--)
   //    pNorm(strat->S[i]);
   //}
-  assume(kTest(strat));
+  kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   if (BVERBOSE(23)) kDebugPrint(strat);
   int max_ind;
@@ -2678,7 +2704,7 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
       Print("Poly before red: ");
       pWrite(strat->P.p);
 #endif
-      /* complete reduction of the element choosen from L */
+      /* complete reduction of the element chosen from L */
       red_result = strat->red2(&strat->P,strat);
       if (errorreported)  break;
     }
@@ -2869,10 +2895,6 @@ void f5c (kStrategy strat, int& olddeg, int& minimcnt, int& hilbeledeg,
 
 ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int uptodeg, int lV)
 {
-#ifdef KDEBUG
-  bba_count++;
-  int loop_count = 0;
-#endif
   int   red_result = 1;
   int   olddeg,reduc;
   int hilbeledeg=1,hilbcount=0,minimcnt=0;
@@ -2900,7 +2922,7 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
   //    withT = ! strat->homog;
 
   // strat->posInT = posInT_pLength;
-  assume(kTest_TS(strat));
+  kTest_TS(strat);
 
 #ifdef HAVE_TAIL_RING
   kStratInitChangeTailRing(strat);
@@ -2910,7 +2932,6 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
   while (strat->Ll >= 0)
   {
 #ifdef KDEBUG
-    loop_count++;
     if (TEST_OPT_DEBUG) messageSets(strat);
 #endif
     if (strat->Ll== 0) strat->interpt=TRUE;
@@ -3013,7 +3034,7 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
         message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
                 &olddeg,&reduc,strat, red_result);
 
-      /* reduction of the element choosen from L */
+      /* reduction of the element chosen from L */
       red_result = strat->red(&strat->P,strat);
     }
 
@@ -3138,7 +3159,7 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
 #ifdef KDEBUG
     memset(&(strat->P), 0, sizeof(strat->P));
 #endif
-    assume(kTest_TS(strat));
+    kTest_TS(strat);
   }
 #ifdef KDEBUG
   if (TEST_OPT_DEBUG) messageSets(strat);
@@ -3160,13 +3181,13 @@ ideal bbaShift(ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat, int upto
 //       }
       LObject Ln (strat->S[k],currRing, strat->tailRing);
       Ln.SetShortExpVector();
-      j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln, j+1);
+      j = kFindDivisibleByInT(strat, &Ln, j+1);
       if (j<0) {  k++; j=-1;}
       else
       {
         if ( pLmCmp(strat->S[k],strat->T[j].p) == 0)
         {
-          j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, &Ln, j+1);
+          j = kFindDivisibleByInT(strat, &Ln, j+1);
           if (j<0) {  k++; j=-1;}
           else
           {
@@ -3263,7 +3284,7 @@ int redFirstShift (LObject* h,kStrategy strat)
   h->SetShortExpVector();
   loop
   {
-    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tl, h);
+    j = kFindDivisibleByInT(strat, h);
     if (j < 0)
     {
       h->SetDegStuffReturnLDeg(strat->LDegLast);
@@ -3352,9 +3373,10 @@ int redFirstShift (LObject* h,kStrategy strat)
         at = strat->posInL(strat->L,strat->Ll,h,strat);
         if (at <= strat->Ll)
         {
-          int dummy=strat->sl;
+          //int dummy=strat->sl;
           /*          if (kFindDivisibleByInS(strat,&dummy, h) < 0) */
-          if (kFindDivisibleByInT(strat->T,strat->sevT, dummy, h) < 0)
+          //if (kFindDivisibleByInT(strat->T,strat->sevT, dummy, h) < 0)
+          if (kFindDivisibleByInT(strat, h) < 0)
             return 1;
           enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
 #ifdef KDEBUG

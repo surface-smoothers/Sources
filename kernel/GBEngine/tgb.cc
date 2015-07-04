@@ -24,8 +24,8 @@
 #include <polys/nc/nc.h>
 #include <polys/nc/sca.h>
 #include <polys/prCopy.h>
-#include <libpolys/coeffs/longrat.h>
-#include <coeffs/modulop.h>
+
+#include <coeffs/longrat.h> // nlQlogSize
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,6 +39,22 @@ static const int delay_factor = 3;
 #define ADD_LATER_SIZE 500
 #if 1
 static omBin lm_bin = NULL;
+static int add_to_reductors(slimgb_alg* c, poly h, int len, int ecart, BOOLEAN simplified=FALSE);
+static void multi_reduction(red_object* los, int & losl, slimgb_alg* c);
+static void multi_reduce_step(find_erg & erg, red_object* r, slimgb_alg* c);
+static BOOLEAN extended_product_criterion(poly p1, poly gcd1, poly p2, poly gcd2, slimgb_alg* c);
+static poly gcd_of_terms(poly p, ring r);
+static int tgb_pair_better_gen(const void* ap,const void* bp);
+static BOOLEAN pair_better(sorted_pair_node* a,sorted_pair_node* b, slimgb_alg* c=NULL);
+static BOOLEAN state_is(calc_state state, const int & i, const int & j, slimgb_alg* c);
+static void super_clean_top_of_pair_list(slimgb_alg* c);
+static int simple_posInS (kStrategy strat, poly p,int len, wlen_type wlen);
+static int* make_connections(int from, int to, poly bound, slimgb_alg* c);
+static BOOLEAN has_t_rep(const int & arg_i, const int & arg_j, slimgb_alg* state);
+static void shorten_tails(slimgb_alg* c, poly monom);
+static poly redNF2 (poly h,slimgb_alg* c , int &len, number&  m,int n=0);
+static poly redNFTail (poly h,const int sl,kStrategy strat, int len);
+static int bucket_guess(kBucket* bucket);
 
 static void simplify_poly (poly p, ring r)
 {
@@ -475,7 +491,7 @@ wlen_type pELength (poly p, slimgb_alg * c, ring /*r*/)
   return s;
 }
 
-wlen_type kEBucketLength (kBucket * b, poly lm, int /*sugar*/, slimgb_alg * ca)
+wlen_type kEBucketLength (kBucket * b, poly lm, slimgb_alg * ca)
 {
   wlen_type s = 0;
   if(lm == NULL)
@@ -611,7 +627,7 @@ wlen_type red_object::guess_quality (slimgb_alg * c)
       }
 #endif
       //FIXME:not quadratic
-      wlen_type erg = kEBucketLength (this->bucket, this->p, this->sugar, c);
+      wlen_type erg = kEBucketLength (this->bucket, this->p, c);
       //erg*=cs;//for quadratic
       erg *= cs;
       if(TEST_V_COEFSTRAT)
@@ -625,7 +641,7 @@ wlen_type red_object::guess_quality (slimgb_alg * c)
   {
     if(c->eliminationProblem)
       //if (false)
-      s = kEBucketLength (this->bucket, this->p, this->sugar, c);
+      s = kEBucketLength (this->bucket, this->p, c);
     else
       s = bucket_guess (bucket);
   }
@@ -2857,10 +2873,6 @@ static void go_on (slimgb_alg * c)
     buf[j].sev = pGetShortExpVector (p[j]);
     buf[j].bucket = kBucketCreate (currRing);
     p_Test (p[j], c->r);
-    if(c->eliminationProblem)
-    {
-      buf[j].sugar = c->pTotaldegree_full (p[j]);
-    }
     int len = pLength (p[j]);
     kBucketInit (buf[j].bucket, buf[j].p, len);
     buf[j].initial_quality = buf[j].guess_quality (c);
@@ -4339,10 +4351,6 @@ multi_reduction_lls_trick (red_object * los, int /*losl*/, slimgb_alg * c,
     int j = erg.reduce_by;
     int old_length = c->strat->lenS[j]; // in view of S
     los[bp].p = p;
-    if(c->eliminationProblem)
-    {
-      los[bp].sugar = c->pTotaldegree_full (p);
-    }
     kBucketInit (los[bp].bucket, p, old_length);
     wlen_type qal = pQuality (clear_into, c, new_length);
     int pos_in_c = -1;
@@ -4508,8 +4516,6 @@ multi_reduction_find (red_object * los, int losl, slimgb_alg * c, int startf,
   {
     assume ((i == losl - 1) || (pLmCmp (los[i].p, los[i + 1].p) <= 0));
     assume (is_valid_ro (los[i]));
-    assume ((!(c->eliminationProblem))
-            || (los[i].sugar >= c->pTotaldegree (los[i].p)));
     j = kFindDivisibleByInS_easy (strat, los[i]);
     if(j >= 0)
     {
@@ -4900,10 +4906,6 @@ void simple_reducer::reduce (red_object * r, int l, int u)
   for(i = l; i <= u; i++)
   {
     this->do_reduce (r[i]);
-    if(c->eliminationProblem)
-    {
-      r[i].sugar = si_max (r[i].sugar, reducer_deg);
-    }
   }
   for(i = l; i <= u; i++)
   {
@@ -4955,10 +4957,6 @@ void multi_reduce_step (find_erg & erg, red_object * r, slimgb_alg * c)
       //p_Content(red, c->r);
     }
     pNormalize (red);
-    if(c->eliminationProblem)
-    {
-      r[rn].sugar = c->pTotaldegree_full (red);
-    }
 
     if((!(erg.fromS)) && (TEST_V_UPTORADICAL))
     {

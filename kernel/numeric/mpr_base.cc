@@ -19,6 +19,7 @@
 #include <misc/mylimits.h>
 #include <misc/options.h>
 #include <misc/intvec.h>
+#include <misc/sirandom.h>
 
 #include <coeffs/numbers.h>
 #include <coeffs/mpr_global.h>
@@ -28,7 +29,6 @@
 
 #include <polys/clapsing.h>
 
-#include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
 
@@ -37,8 +37,6 @@
 
 #include <math.h>
 //<-
-
-extern void nPrint(number n);  // for debugging output
 
 //%s
 //-----------------------------------------------------------------------------
@@ -1459,7 +1457,7 @@ int resMatrixSparse::createMatrix( pointSet *E )
       if ( epos == 0 )
       {
         // this can happen, if the shift vektor or the lift funktions
-        // are not generically choosen.
+        // are not generically chosen.
         Werror("resMatrixSparse::createMatrix: Found exponent not in E, id %d, set [%d, %d]!",
                i,(*E)[i]->rc.set,(*E)[i]->rc.pnt);
         return i;
@@ -2705,7 +2703,7 @@ uResultant::uResultant( const ideal _gls, const resMatType _rmt, BOOLEAN extIdea
     resMat= new resMatrixDense( gls );
     break;
   default:
-    WerrorS("uResultant::uResultant: Unknown resultant matrix type choosen!");
+    WerrorS("uResultant::uResultant: Unknown chosen resultant matrix type!");
   }
 }
 
@@ -2736,7 +2734,7 @@ ideal uResultant::extendIdeal( const ideal igls, poly linPoly, const resMatType 
     }
     break;
   default:
-    WerrorS("uResultant::extendIdeal: Unknown resultant matrix type choosen!");
+    WerrorS("uResultant::extendIdeal: Unknown chosen resultant matrix type!");
   }
 
   return( newGls );

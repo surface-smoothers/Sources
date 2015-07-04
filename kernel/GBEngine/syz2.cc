@@ -5,10 +5,6 @@
 * ABSTRACT: resolutions
 */
 
-
-
-
-
 #include <kernel/mod2.h>
 
 #include <omalloc/omalloc.h>
@@ -25,15 +21,15 @@
 #include <polys/kbuckets.h>
 #include <polys/prCopy.h>
 
-#include <kernel/polys.h>
+#include <kernel/combinatorics/stairc.h>
+#include <kernel/combinatorics/hilb.h>
 
-#include <kernel/febase.h>
 #include <kernel/GBEngine/kstd1.h>
 #include <kernel/GBEngine/kutil.h>
-#include <kernel/GBEngine/stairc.h>
-
 #include <kernel/GBEngine/syz.h>
+
 #include <kernel/ideals.h>
+#include <kernel/polys.h>
 
 
 
@@ -116,7 +112,7 @@ static void syCreateNewPairs_Hilb(syStrategy syzstr, int index,
       for (i=0; i<r1;i++)
       {
         if (((syzstr->resPairs[index])[i].p!=NULL) &&
-            (pGetComp((syzstr->resPairs[index])[i].p)==(unsigned)tc))
+            (pGetComp((syzstr->resPairs[index])[i].p)==tc))
         {
 #ifdef USE_CHAINCRIT
           tcp = cp;
@@ -236,13 +232,13 @@ Print("gefunden in Mod %d: ",index); poly_write((syzstr->resPairs[index])[ti].lc
           tso.p = NULL;
           tso.length = -1;
           number coefgcd =
-            n_Gcd(pGetCoeff(tso.p1),pGetCoeff(tso.p2),currRing->cf);
+            n_SubringGcd(pGetCoeff(tso.p1),pGetCoeff(tso.p2),currRing->cf);
           tso.syz = pCopy((syzstr->resPairs[index])[i].syz);
           poly tt = pDivide(tso.lcm,tso.p1);
           pSetCoeff(tt,nDiv(pGetCoeff(tso.p1),coefgcd));
           tso.syz = pMult_mm(tso.syz,tt);
           pLmDelete(&tt);
-          coefgcd = nNeg(coefgcd);
+          coefgcd = nInpNeg(coefgcd);
           pp = pCopy((syzstr->resPairs[index])[r1].syz);
           tt = pDivide(tso.lcm,tso.p2);
           pSetCoeff(tt,nDiv(pGetCoeff(tso.p2),coefgcd));
@@ -917,7 +913,7 @@ static void syReOrdResult_Hilb(syStrategy syzstr,int maxindex,int maxdeg)
   (*syzstr->betti)[0] = 1;
   for (i=1;i<=syzstr->length;i++)
   {
-    if (!idIs0(syzstr->orderedRes[i]))
+    if ((syzstr->orderedRes[i]!=NULL) && !idIs0(syzstr->orderedRes[i]))
     {
       toreor = syzstr->orderedRes[i];
       k = IDELEMS(toreor);

@@ -4,11 +4,9 @@
 
 #include <kernel/mod2.h>
 
-#include "mod2.h"
 #include <polys/monomials/ring.h>
 #include <kernel/fast_mult.h>
 #include <polys/kbuckets.h>
-#include <kernel/febase.h>
 
 typedef poly fastmultrec(poly f, poly g, ring r);
 static const int pass_option=1;
@@ -464,6 +462,8 @@ static poly p_MonMultCMB(poly p, poly q, ring r)
   p_ExpVectorSum(res,p, q,r);
   return res;
 }
+// unused
+#if 0
 static poly p_MonPowerMB(poly p, int exp, ring r)
 {
   int i;
@@ -483,6 +483,7 @@ static poly p_MonPowerMB(poly p, int exp, ring r)
   p_Setm(p,r);
   return p;
 }
+#endif
 static void buildTermAndAdd(int /*n*/,number* /*facult*/,poly* /*f_terms*/,int* exp,int f_len,kBucket_pt /*erg_bucket*/,ring r, number coef, poly & zw, poly /*tmp*/, poly** term_pot){
 
   int i;
@@ -547,7 +548,8 @@ static void MC_iterate(poly f, int n, ring r, int f_len,number* facult, int* exp
         n_Delete(&old,r->cf);
         number i_number=n_Init(i,r->cf);
         old=new_coef;
-        new_coef=n_IntDiv(new_coef,i_number,r->cf);
+        new_coef=n_Div(new_coef,i_number,r->cf);
+        n_Normalize(new_coef,r->cf);
         n_Delete(&old,r->cf);
         n_Delete(&i_number,r->cf);
       }
@@ -592,7 +594,7 @@ poly pFastPowerMC(poly f, int n, ring r)
   if (n<=1)
     Werror("not implemented for so small n, recursion fails");//should be length(f)
    if (pLength(f)<=1)
-    Werror("not implemented for so small lenght of f, recursion fails");
+    Werror("not implemented for so small length of f, recursion fails");
   //  number null_number=n_Init(0,r);
   number* facult=(number*) omAlloc((n+1)*sizeof(number));
   facult[0]=n_Init(1,r->cf);

@@ -26,7 +26,6 @@
 #include <polys/matpol.h>
 
 
-#include <kernel/febase.h>
 #include <kernel/structs.h>
 #include <kernel/polys.h>
 #include <kernel/ideals.h>
@@ -55,16 +54,6 @@ TIMING_DEFINE_PRINT(mpr_solver)
 
 //<-
 
-//-> nPrint(number n)
-void nPrint(number n)
-{
-  poly o=pOne();
-  pSetCoeff(o, nCopy(n) );
-  pWrite0( o );
-  pDelete( &o );
-}
-//<-
-
 //------------------------------------------------------------------------------
 
 //-> void mprPrintError( mprState state )
@@ -73,7 +62,7 @@ void mprPrintError( mprState state, const char * name )
   switch (state)
   {
   case mprWrongRType:
-    WerrorS("Unknown resultant matrix type choosen!");
+    WerrorS("Unknown chosen resultant matrix type!");
     break;
   case mprHasOne:
     Werror("One element of the ideal %s is constant!",name);

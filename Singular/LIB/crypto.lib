@@ -1,9 +1,10 @@
 //////////////////////////////////////////////////////////////////////////////
-version="version crypto.lib 4.0.0.0 Jun_2013 "; // $Id$
+version="version crypto.lib 4.0.0.1 Aug_2014 "; // $Id$
 category="Teaching";
 info="
 LIBRARY:  crypto.lib     Procedures for teaching cryptography
-AUTHOR:                  Gerhard Pfister, pfister@mathematik.uni-kl.de
+AUTHORS:                 Gerhard Pfister, pfister@mathematik.uni-kl.de
+@*                       David Brittinger, dativ@gmx.net
 
 OVERVIEW:
      The library contains procedures to compute the discrete logarithm,
@@ -15,9 +16,7 @@ OVERVIEW:
 
 PROCEDURES:
  decimal(s);                number corresponding to the hexadecimal number s
- exgcdN(a,n)                compute s,t,d such that d=gcd(a,n)=s*a+t*n
  eexgcdN(L)                 T with sum_i L[i]*T[i]=T[n+1]=gcd(L[1],...,L[n])
- gcdN(a,b)                  compute gcd(a,b)
  lcmN(a,b)                  compute lcm(a,b)
  powerN(m,d,n)              compute m^d mod n
  chineseRem(T,L)            compute x such that x = T[i] mod L[i]
@@ -49,11 +48,41 @@ PROCEDURES:
  generateG(a,b,m)           m-th division polynomial of y^2=x^3+a*x+b  over Z/N
  factorLenstraECM(N,S,B,[]) Lenstra's factorization
  ECPP(N)                    primaly-test of Goldwasser-Kilian
+ calculate_ordering(num1, primitive, mod1)    Calculates x so that primitive^x == num1 mod mod1
+  is_primitive_root(primitive, mod1) Checks if primitive is a primitive root modulo mod1
+  find_first_primitive_root(mod1) Returns the first primitive root modulo mod1, starting with 1
+  binary_add(binary_list)         Adds a 1 to a binary encoded list
+  inverse_modulus(num,mod1)       Finds a t so that t*num = 1 mod mod1
+  is_prime(n)                     Checks if n is prime
+  proc find_biggest_index(a)      Returns the index of the biggest element of a
+  find_index(a,e)                 Returns the list index of element e in list a. Returns 0 if e is not in a
+  subset_sum01(list knapsack, int solution)                          solves the subset-sum-knapsack-problem by calculating all subsets and choosing the right solution
+  subset_sum02(list knapsack, int sol)                            solves the subset-sum-knapsack-problem with a naive greedy algorithm
+  unbounded_knapsack(list knapsack, list profit, int capacity)                solves the unbounded_knapsack-problem, needing a list of knapsack weights, a list of profits and a capacity
+  multidimensional_knapsack(matrix m, list capacities, list profits)              solves the multidimensional_knapsack-problem by using the PECH algorithm, needing a weight matrix m, a list of capacities and a list of profits
+  naccache_stern_generation(int key, int primenum)                      generates a hard knapsack for the Naccache-Stern Kryptosystem for given key and prime modulus
+  naccache_stern_encryption(list knapsack, list message, int primenum)            encrypts a message with the Naccache-Stern Kryptosystem, using a hard knapsack, a message encoded as binary list and a prime modulus
+  naccache_stern_decryption(list knapsack, int key, int primenum, int message)        decrypts a message with the Naccache-Stern Kryptosystem, using the easy knapsack, the key, the prime modulus and the message encoded as integer
+  m_merkle_hellman_transformation(list knapsack, int primitive, int mod1)            generates a hard knapsack for the multiplicative Merkle-Hellman Kryptosystem for a given easy knapsack and a primitive root for a modulus mod1
+  m_merkle_hellman_encryption(list knapsack, list message)                  encrypts a message with the multiplicative Merkle-Hellman Kryptosystem, using a hard knapsack and a message encoded as binary list
+  m_merkle_hellman_decryption(list knapsack, bigint primitive, bigint mod1, int message)    decrypts a message with the multiplicative Merkle-Hellman Kryptosystem, using the easy knapsack, the key given by the primitive root, the modulus mod1 and the message encoded as integer
+  merkle_hellman_transformation(list knapsack, int key, int mod1                generates a hard knapsack for the  Merkle-Hellman Kryptosystem for a given easy knapsack , a multiplicator key and a modulus mod1
+  merkle_hellman_encryption(list knapsack, list message)                    encrypts a message with the Merkle-Hellman Kryptosystem, using a hard knapsack and a message encoded as binary list
+  merkle_hellman_decryption(list knapsack, int key, int mod1, int message)          decrypts a message with the multiplicative Merkle-Hellman Kryptosystem, using the hard knapsack, the key, the modulus mod1 and the message encoded as integer   
+  super_increasing_knapsack(int ksize)                            Creates the smallest super-increasing knapsack of given size ksize
+  h_increasing_knapsack(int ksize, int h)                            Creates the smallest h-increasing knapsack of given size ksize and h
+  injective_knapsack(int ksize, int kmaxelement)                        Creates all list of all injective knapsacks of given size ksize and maximal element kmaxelement
+  calculate_max_sum(list a)                                  Calculates the maximal sum of a given knapsack a
+  set_is_injective(list a)                                    Checks if knapsack a is injective
+  is_h_injective(list a, int h)                                Checks if knapsack a is h-injective
+  is_fix_injective(list a)                                  Checks if knapsack a is fix-injective
+  three_elements(list out, int iterations)                          Creates the smallest injective knapsack with a given injective_knapsack by using the three-elements-algorithm with a given number of iterations
 
               [parameters in square brackets are optional]
 ";
 
 LIB "poly.lib";
+LIB "atkins.lib";
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,6 +104,7 @@ EXAMPLE:example decimal; shows an example
    bigint m=0;
    for(i=1;i<=n;i++)
    {
+      k=0;
       if(s[i]=="1"){k=1;}
       if(s[i]=="2"){k=2;}
       if(s[i]=="3"){k=3;}
@@ -100,96 +130,61 @@ example
    decimal(s);
 }
 
-proc exgcdN(number a, number n)
-"USAGE:  exgcdN(a,n);
-RETURN: a list s,t,d of numbers satisfying d=gcd(a,n)=s*a+t*n
-EXAMPLE:example exgcdN; shows an example
-"
-{
-  number x=a mod n;
-  if(x==0){return(list(0,1,n))}
-  if (x<0) { x=x+n;}
-  list l=exgcdN(n,x);
-  return(list(l[2],l[1]-(a-x)*l[2]/n,l[3]))
-}
-example
-{ "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
-   exgcdN(24,15);
-}
-
 proc eexgcdN(list L)
 "USAGE:  eexgcdN(L);
 RETURN: list T such that sum_i L[i]*T[i]=T[n+1]=gcd(L[1],...,L[n])
 EXAMPLE:example eexgcdN; shows an example
 "
 {
-   if(size(L)==2){return(exgcdN(L[1],L[2]));}
-   number p=L[size(L)];
+   if(size(L)==2)
+   {
+     list LL=extgcd(L[1],L[2]);return(list(LL[2],LL[3],LL[1]));
+   }
+   bigint p=L[size(L)];
    L=delete(L,size(L));
    list T=eexgcdN(L);
-   list S=exgcdN(T[size(T)],p);
+   list S=extgcd(T[size(T)],p);
    int i;
    for(i=1;i<=size(T)-1;i++)
    {
-      T[i]=T[i]*S[1];
+      T[i]=T[i]*S[2];
    }
    p=T[size(T)];
-   T[size(T)]=S[2];
-   T[size(T)+1]=S[3];
+   T[size(T)]=S[3];
+   T[size(T)+1]=S[1];
    return(T);
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    eexgcdN(list(24,15,21));
 }
 
-proc gcdN(number a, number b)
-"USAGE:  gcdN(a,b);
-RETURN: gcd(a,b)
-EXAMPLE:example gcdN; shows an example
-"
-{
-   //if((a mod b)==0){return(b)}
-   //return(gcdN(b,a mod b));
-   return(gcd(a,b));
-}
-example
-{ "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
-   gcdN(24,15);
-}
-
-proc lcmN(number a, number b)
+proc lcmN(bigint a, bigint b)
 "USAGE:  lcmN(a,b);
 RETURN: lcm(a,b);
 EXAMPLE:example lcmN; shows an example
 "
 {
-   //number d=gcdN(a,b);
-   //return(a*b/d);
    return (a*b/gcd(a,b));
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    lcmN(24,15);
 }
 
-proc powerN(number m, number d, number n)
+proc powerN(bigint m, bigint d, bigint n)
 "USAGE:  powerN(m,d,n);
 RETURN: m^d mod n
 EXAMPLE:example powerN; shows an example
 "
 {
-   if(d==0){return(1);}
+   if(d==0){return(bigint(1));}
    int i;
    if(n==0)
    {
       for(i=12;i>=2;i--)
       {
-         if((d mod i)==0){return(powerN(m,d/i,n)^i);}
+         if((d mod i)==0){return(powerN(m,d div i,n)^i);}
       }
       return(m*powerN(m,d-1,n));
    }
@@ -197,7 +192,7 @@ EXAMPLE:example powerN; shows an example
    {
       if((d mod i)==0)
       {
-        number rr=powerN(m,d/i,n)^i mod n;
+        bigint rr=powerN(m,d div i,n)^i mod n;
         if (rr<0) { rr=rr+n;}
         return(rr);
       }
@@ -206,7 +201,6 @@ EXAMPLE:example powerN; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    powerN(24,15,7);
 }
 
@@ -219,7 +213,7 @@ EXAMPLE:example chineseRem; shows an example
 {
    int i;
    int n=size(L);
-   number N=1;
+   bigint N=1;
    for(i=1;i<=n;i++)
    {
       N=N*L[i];
@@ -227,10 +221,10 @@ EXAMPLE:example chineseRem; shows an example
    list M;
    for(i=1;i<=n;i++)
    {
-      M[i]=N/L[i];
+      M[i]=N div L[i];
    }
    list S=eexgcdN(M);
-   number x;
+   bigint x;
    for(i=1;i<=n;i++)
    {
       x=x+S[i]*M[i]*T[i];
@@ -240,11 +234,10 @@ EXAMPLE:example chineseRem; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    chineseRem(list(24,15,7),list(2,3,5));
 }
 
-proc Jacobi(number a, number n)
+proc Jacobi(bigint a, bigint n)
 "USAGE:  Jacobi(a,n);
 RETURN: the generalized Legendre symbol
 NOTE: if n is an odd prime then Jacobi(a,n)=0,1,-1 if n|a, a=x^2 mod n,else
@@ -253,10 +246,10 @@ EXAMPLE:example Jacobi; shows an example
 {
    int i;
    int z=1;
-   number t=1;
-   number k;
+   bigint t=1;
+   bigint k;
 
-   if((((n-1)/2) mod 2)!=0){z=-1;}
+   if((((n-1) div 2) mod 2)!=0){z=-1;}
    if(a<0){return(z*Jacobi(-a,n));}
    a=a mod n;
    if(n==1){return(1);}
@@ -266,7 +259,7 @@ EXAMPLE:example Jacobi; shows an example
    {
       while((a mod 2)==0)
       {
-         a=a/2;
+         a=a div 2;
          if(((n mod 8)==3)||((n mod 8)==5)){t=-t;}
       }
       k=a;a=n;n=k;
@@ -278,7 +271,6 @@ EXAMPLE:example Jacobi; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    Jacobi(13580555397810650806,5792543);
 }
 
@@ -311,7 +303,7 @@ example
    L[size(L)];
 }
 
-proc primL(number q)
+proc primL(bigint q)
 "USAGE:  primL(q);
 RETURN: list of the first primes p_1,...,p_r such that q>p_1*...*p_(r-1)
         and q<p_1*...*p_r
@@ -322,7 +314,7 @@ EXAMPLE:example primL; shows an example
    list re;
    re[1]=2;
    re[2]=3;
-   number s=6;
+   bigint s=6;
    i=3;
    while(s<=q)
    {
@@ -343,7 +335,6 @@ EXAMPLE:example primL; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    primL(20);
 }
 
@@ -355,25 +346,29 @@ EXAMPLE:example intPart; shows an example
 {
   if (x>=0)
   {
-    return((numerator(x)-(numerator(x) mod denominator(x)))/denominator(x));
+    return(bigint((numerator(x)-(bigint(numerator(x)) mod bigint(denominator(x)))))
+         div bigint(denominator(x)));
   }
   else
   {
-    return((numerator(x)-(numerator(x) mod denominator(x)+denominator(x)))/denominator(x));
+    return(bigint((numerator(x)-(bigint(numerator(x)) mod bigint(denominator(x)+denominator(x)))))
+         div bigint(denominator(x)));
   }
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
+   ring r=0,x,dp;
    intPart(7/3);
 }
 
-proc intRoot(number m)
+proc intRoot(bigint mm)
 "USAGE:  intRoot(m);
 RETURN: the integral part of the square root of m
 EXAMPLE:example intRoot; shows an example
 "
 {
+   ring R = 0,@x,dp;
+   number m=mm;
    number x=1;
    number t=x^2;
    number s=(x+1)^2;
@@ -394,17 +389,16 @@ EXAMPLE:example intRoot; shows an example
          s=(x+1)^2;
       }
    }
-   if(t>m){return(x-1);}
-   if(s==m){return(x+1);}
-   return(x);
+   if(t>m){return(bigint(x-1));}
+   if(s==m){return(bigint(x+1));}
+   return(bigint(x));
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    intRoot(20);
 }
 
-proc squareRoot(number a, number p)
+proc squareRoot(bigint a, bigint p)
 "USAGE:  squareRoot(a,p);
 RETURN: the square root of a in Z/p, p prime
 NOTE:   assumes the Jacobi symbol is 1 or p=2.
@@ -417,33 +411,33 @@ EXAMPLE:example squareRoot; shows an example
    if(powerN(a,p-1,p)!=1)
    {
       "p is not prime";
-      return(number(-5));
+      return(bigint(-5));
    }
-   number n=random(1,2147483647) mod p;
+   bigint n=random(1,2147483647) mod p;
    if(n==0){n=n+1;}
-   number j=Jacobi(n,p);
+   bigint j=Jacobi(n,p);
    if(j==0)
    {
       "p is not prime";
-      return(number(-5));
+      return(bigint(-5));
    }
    if(j==1)
    {
       return(squareRoot(a,p));
    }
-   number q=p-1;
-   number e=0;
-   number two=2;
-   number z,m,t;
+   bigint q=p-1;
+   bigint e=0;
+   bigint two=2;
+   bigint z,m,t;
    while((q mod 2)==0)
    {
       e=e+1;
-      q=q/2;
+      q=q div 2;
    }
-   number y=powerN(n,q,p);
-   number r=e;
-   number x=powerN(a,(q-1)/2,p);
-   number b=a*x^2 mod p;
+   bigint y=powerN(n,q,p);
+   bigint r=e;
+   bigint x=powerN(a,(q-1) div 2,p);
+   bigint b=a*x^2 mod p;
    x=a*x mod p;
 
    while(((b-1) mod p)!=0)
@@ -464,12 +458,11 @@ EXAMPLE:example squareRoot; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
    squareRoot(8315890421938608,32003);
 }
 
 
-proc solutionsMod2(matrix M)
+proc solutionsMod2(bigintmat MM)
 "USAGE:  solutionsMod2(M);
 RETURN: an intmat containing a basis of the vector space of solutions of the
         linear system of equations defined by M over the prime field of
@@ -477,13 +470,17 @@ RETURN: an intmat containing a basis of the vector space of solutions of the
 EXAMPLE:example solutionsMod2; shows an example
 "
 {
-   def R=basering;
    ring Rhelp=2,z,(c,dp);
-   matrix M=imap(R,M);
-   matrix S=syz(M);
-   setring(R);
-   matrix S=imap(Rhelp,S);
    int i,j;
+   matrix M[nrows(MM)][ncols(MM)];
+   for(i=1;i<=nrows(MM);i++)
+   {
+      for(j=1;j<=ncols(MM);j++)
+      {
+         M[i,j]=MM[i,j];
+      }
+   }
+   matrix S=syz(M);
    intmat v[nrows(S)][ncols(S)];
    for(i=1;i<=nrows(S);i++)
    {
@@ -496,8 +493,7 @@ EXAMPLE:example solutionsMod2; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
-   matrix M[3][3]=1,2,3,4,5,6,7,6,5;
+   bigintmat M[3][3]=1,2,3,4,5,6,7,6,5;
    solutionsMod2(M);
 }
 
@@ -527,7 +523,7 @@ example
 
 //============== Shank's baby step - giant step ========================
 
-proc babyGiant(number b, number y, number p)
+proc babyGiant(bigint b, bigint y, bigint p)
 "USAGE:  babyGiant(b,y,p);
 RETURN: the discrete logarithm x: b^x=y mod p
 NOTE:   This procedure works based on Shank's baby step - giant step method.
@@ -536,8 +532,8 @@ EXAMPLE:example babyGiant; shows an example
 {
    int i,j,m;
    list l;
-   number h=1;
-   number x;
+   bigint h=1;
+   bigint x;
 
 //choose m minimal such that m^2>p
    for(i=1;i<=p;i++){if(i^2>p) break;}
@@ -548,7 +544,7 @@ EXAMPLE:example babyGiant; shows an example
 
 //giant-step: compute b^(m+j), 1<=j<=m and search in the baby-step table
 //for an i with y*b^i=b^(m*j). If found then x=m*j-i
-   number g=b^m mod p;
+   bigint g=b^m mod p;
    while(j<m)
    {
       j++;
@@ -567,16 +563,15 @@ EXAMPLE:example babyGiant; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number b=2;
-   number y=10;
-   number p=101;
+   bigint b=2;
+   bigint y=10;
+   bigint p=101;
    babyGiant(b,y,p);
 }
 
 //==============  Pollards rho  =================================
 
-proc rho(number b, number y, number p)
+proc rho(bigint b, bigint y, bigint p)
 "USAGE:  rho(b,y,p);
 RETURN: the discrete logarithm x=log_b(y): b^x=y mod p
 NOTE: Pollard's rho:
@@ -590,7 +585,7 @@ EXAMPLE:example rho; shows an example
 {
    int i=1;
    int j;
-   number s,t;
+   bigint s,t;
    list e,f,x;
 
    e[1]=0;
@@ -639,27 +634,26 @@ EXAMPLE:example rho; shows an example
       }
    }
 
-   list w=exgcdN(s,p-1);
-   number u=w[1];
-   number d=w[3];
+   list w=extgcd(s,p-1);
+   bigint u=w[2];
+   bigint d=w[1];
 
-   number a=(t*u/d) mod (p-1);
+   bigint a=(t*u div d) mod (p-1);
 
-   number pn=powerN(b,a,p);
+   bigint pn=powerN(b,a,p);
    if (pn<0) { pn=pn+p;}
    while(powerN(b,a,p)!=y)
    {
-      a=(a+(p-1)/d) mod (p-1);
+      a=(a+(p-1) div d) mod (p-1);
       if (a<0) { a=a+p-1; }
    }
    return(a);
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,x,dp;
-   number b=2;
-   number y=10;
-   number p=101;
+   bigint b=2;
+   bigint y=10;
+   bigint p=101;
    rho(b,y,p);
 }
 //====================================================================
@@ -668,7 +662,7 @@ example
 
 //================================= Miller-Rabin =====================
 
-proc MillerRabin(number n, int k)
+proc MillerRabin(bigint n, int k)
 "USAGE:  MillerRabin(n,k);
 RETURN: 1 if n is prime, 0 else
 NOTE: probabilistic test of Miller-Rabin with k loops to test if n is prime.
@@ -682,19 +676,19 @@ EXAMPLE:example MillerRabin; shows an example
    if((n mod 2)==0){return(0);}
 
    int i;
-   number a,b,j,r,s;
+   bigint a,b,j,r,s;
    r=n-1;
    s=0;
    while((r mod 2)==0)
    {
       s=s+1;
-      r=r/2;
+      r=r div 2;
    }
    while(i<k)
    {
       i++;
       a=random(2,2147483629) mod n; if(a==0){a=3;}
-      if(exgcdN(a,n)[3]!=1){return(0);}
+      if(gcd(a,n)!=1){return(0);}
       b=powerN(a,r,n);
       if(b!=1)
       {
@@ -712,15 +706,14 @@ EXAMPLE:example MillerRabin; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number x=2;
+   bigint x=2;
    x=x^787-1;
    MillerRabin(x,3);
 }
 
 //======================= Soloway-Strassen  ==========================
 
-proc SolowayStrassen(number n, int k)
+proc SolowayStrassen(bigint n, int k)
 "USAGE:  SolowayStrassen(n,k);
 RETURN: 1 if n is prime, 0 else
 NOTE: probabilistic test of Soloway-Strassen with k loops to test if n is
@@ -733,14 +726,14 @@ EXAMPLE:example SolowayStrassen; shows an example
    if((n==2)||(n==3)){return(1);}
    if((n mod 2)==0){return(0);}
 
-   number a,pn,jn;
+   bigint a,pn,jn;
    int i;
    while(i<k)
    {
       i++;
       a=random(2,2147483629) mod n; if(a==0){a=3;}
       if(gcd(a,n)!=1){return(0);}
-      pn=powerN(a,(n-1)/2,n);
+      pn=powerN(a,(n-1) div 2,n);
       if (pn<0) { pn=pn+n;}
       jn=Jacobi(a,n) mod n;
       if (jn<0) { jn=jn+n;}
@@ -750,9 +743,8 @@ EXAMPLE:example SolowayStrassen; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number h=10;
-   number p=h^100+267;
+   bigint h=10;
+   bigint p=h^100+267;
    //p=h^100+43723;
    //p=h^200+632347;
    SolowayStrassen(h,3);
@@ -769,7 +761,7 @@ SolowayStrassen(n,3);
 
 //===================== Pocklington-Lehmer ==============================
 
-proc PocklingtonLehmer(number N, list #)
+proc PocklingtonLehmer(bigint N, list #)
 "USAGE: PocklingtonLehmer(N); optional: PocklingtonLehmer(N,L);
         L a list of the first k primes
 RETURN:message N is not prime or {A,{p},{a_p}} as certificate for N being prime
@@ -780,7 +772,7 @@ NOTE:assumes that it is possible to factorize N-1=A*B such that gcd(A,B)=1,
 EXAMPLE:example PocklingtonLehmer; shows an example
 "
 {
-   number m=intRoot(N);
+   bigint m=intRoot(N);
    if(size(#)>0)
    {
       list S=PollardRho(N-1,10000,1,#);
@@ -790,8 +782,8 @@ EXAMPLE:example PocklingtonLehmer; shows an example
       list S=PollardRho(N-1,10000,1);
    }
    int i,j;
-   number A=1;
-   number p,a,g;
+   bigint A=1;
+   bigint p,a,g;
    list PA;
    list re;
 
@@ -818,7 +810,7 @@ EXAMPLE:example PocklingtonLehmer; shows an example
    }
    if(A<=m)
    {
-     A=N/A;
+     A=N div A;
      PA=list(S[size(S)]);
    }
    for(i=1;i<=size(PA);i++)
@@ -828,7 +820,7 @@ EXAMPLE:example PocklingtonLehmer; shows an example
       {
          a=a+1;
          if(powerN(a,N-1,N)!=1){return("not prime");}
-         g=gcd(powerN(a,(N-1)/PA[i],N),N);
+         g=gcd(powerN(a,(N-1) div PA[i],N),N);
          if(g==1)
          {
            re[size(re)+1]=list(PA[i],a);
@@ -841,8 +833,7 @@ EXAMPLE:example PocklingtonLehmer; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number N=105554676553297;
+   bigint N=105554676553297;
    PocklingtonLehmer(N);
    list L=primList(1000);
    PocklingtonLehmer(N,L);
@@ -854,7 +845,7 @@ example
 
 //======================= Pollards rho  =================================
 
-proc PollardRho(number n, int k, int allFactors, list #)
+proc PollardRho(bigint n, int k, int allFactors, list #)
 "USAGE:  PollardRho(n,k,allFactors); optional: PollardRho(n,k,allFactors,L);
          L a list of the first k primes
 RETURN: a list of factors of n (which could be just n),if allFactors=0@*
@@ -887,14 +878,14 @@ EXAMPLE:example PollardRho; shows an example
           re[size(re)+1]=L[i];
           while((n mod L[i])==0)
           {
-             n=n/L[i];
+             n=n div L[i];
           }
        }
        if(n==1){return(re);}
     }
     int e=size(re);
 //here the rho-algorithm starts
-    number a,d,x,y;
+    bigint a,d,x,y;
     while(n>1)
     {
        a=random(2,2147483629);
@@ -914,7 +905,7 @@ EXAMPLE:example PollardRho; shows an example
              re[size(re)+1]=d;
              while((n mod d)==0)
              {
-               n=n/d;
+               n=n div d;
              }
              break;
           }
@@ -948,14 +939,13 @@ EXAMPLE:example PollardRho; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number h=10;
-   number p=h^30+4;
+   bigint h=10;
+   bigint p=h^30+4;
    PollardRho(p,5000,0);
 }
 
 //======================== Pollards p-factorization ================
-proc pFactor(number n,int B, list P)
+proc pFactor(bigint n,int B, list P)
 "USAGE:  pFactor(n,B,P); n to be factorized, B a bound , P a list of primes
 RETURN: a list of factors of n or n if no factor found
 NOTE: Pollard's p-factorization
@@ -966,8 +956,8 @@ EXAMPLE:example pFactor; shows an example
 "
 {
    int i;
-   number k=1;
-   number w;
+   bigint k=1;
+   bigint w;
    while(i<size(P))
    {
       i++;
@@ -979,24 +969,23 @@ EXAMPLE:example pFactor; shows an example
       }
       k=k*w;
    }
-   number a=random(2,2147483629);
-   number d=gcd(powerN(a,k,n)-1,n);
+   bigint a=random(2,2147483629);
+   bigint d=gcd(powerN(a,k,n)-1,n);
    if((d>1)&&(d<n)){return(d);}
    return(n);
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    list L=primList(1000);
    pFactor(1241143,13,L);
-   number h=10;
+   bigint h=10;
    h=h^30+25;
    pFactor(h,20,L);
 }
 
 //==================== quadratic sieve ==============================
 
-proc quadraticSieve(number n, int c, list B, int k)
+proc quadraticSieve(bigint n, int c, list B, int k)
 "USAGE:  quadraticSieve(n,c,B,k); n to be factorized, [-c,c] the
          sieve-intervall, B a list of primes,
          k for using the first k elements in B
@@ -1006,14 +995,14 @@ NOTE: The idea being used is to find x,y such that x^2=y^2 mod n then
 EXAMPLE:example quadraticSieve; shows an example
 "
 {
-   number f,d;
+   bigint f,d;
    int i,j,l,s,p;
    list S,tmp;
    intvec v;
    v[k]=0;
 
 //compute the integral part of the square root of n
-   number m=intRoot(n);
+   bigint m=intRoot(n);
 
 //consider the function f(X)=(X+m)^2-n and compute for s in [-c,c] the values
    while(i<=2*c)
@@ -1045,7 +1034,7 @@ EXAMPLE:example quadraticSieve; shows an example
          while((f mod p)==0)
          {
             s++;
-            f=f/p;
+            f=f div p;
          }
          if(s)
          {
@@ -1062,7 +1051,7 @@ EXAMPLE:example quadraticSieve; shows an example
               while((f mod p)==0)
               {
                 s++;
-                f=f/p;
+                f=f div p;
               }
               S[l][2]=f;
               v[i]=s;
@@ -1083,7 +1072,7 @@ EXAMPLE:example quadraticSieve; shows an example
 
 //the system of equations for the exponents {l_s} for the f(s) such
 //product f(s)^l_s is a square (l_s are 1 or 0)
-   matrix M[k+1][size(T)];
+   bigintmat M[k+1][size(T)];
    for(j=1;j<=size(T);j++)
    {
       if(T[j][2]==-1){M[1,j]=1;}
@@ -1097,8 +1086,8 @@ EXAMPLE:example quadraticSieve; shows an example
 //construction of x and y such that x^2=y^2 mod n and d=gcd(x-y,n)
 //y=square root of product f(s)^l_s
 //x=product s+m
-   number x=1;
-   number y=1;
+   bigint x=1;
+   bigint y=1;
 
    for(i=1;i<=ncols(G);i++)
    {
@@ -1123,7 +1112,6 @@ EXAMPLE:example quadraticSieve; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    list L=primList(5000);
    quadraticSieve(7429,3,L,4);
    quadraticSieve(1241143,100,L,50);
@@ -1135,7 +1123,7 @@ example
 
 //================= elementary operations ==============================
 
-proc isOnCurve(number N, number a, number b, list P)
+proc isOnCurve(bigint N, bigint a, bigint b, list P)
 "USAGE:  isOnCurve(N,a,b,P);
 RETURN: 1 or 0 (depending on whether P is on the curve or not)
 NOTE: checks whether P=(P[1]:P[2]:P[3]) is a point on the elliptic
@@ -1148,11 +1136,10 @@ EXAMPLE:example isOnCurve; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    isOnCurve(32003,5,7,list(10,16,1));
 }
 
-proc ellipticAdd(number N, number a, number b, list P, list Q)
+proc ellipticAdd(bigint N, bigint a, bigint b, list P, list Q)
 "USAGE:  ellipticAdd(N,a,b,P,Q);
 RETURN: list L, representing the point P+Q
 NOTE: P=(P[1]:P[2]:P[3]), Q=(Q[1]:Q[2]:Q[3]) points on the elliptic curve
@@ -1168,14 +1155,14 @@ EXAMPLE:example ellipticAdd; shows an example
       Q[i]=Q[i] mod N; if (Q[i]<0) { Q[i]=Q[i]+N;}
    }
    list Resu;
-   Resu[1]=number(0);
-   Resu[2]=number(1);
-   Resu[3]=number(0);
+   Resu[1]=bigint(0);
+   Resu[2]=bigint(1);
+   Resu[3]=bigint(0);
    list Error;
    Error[1]=0;
    //test for ellictic curve
-   number D=4*a^3+27*b^2;
-   number g=gcd(D,N);
+   bigint D=4*a^3+27*b^2;
+   bigint g=gcd(D,N);
    if(g==N){return(Error);}
    if(g!=1)
    {
@@ -1194,57 +1181,56 @@ EXAMPLE:example ellipticAdd; shows an example
    }
    if(P[3]==0){return(Q);}
    if(Q[3]==0){return(P);}
-   list I=exgcdN(P[3],N);
-   if(I[3]!=1)
+   list I=extgcd(P[3],N);
+   if(I[1]!=1)
    {
-      P[4]=I[3];
+      P[4]=I[1];
       return(P);
    }
-   P[1]=P[1]*I[1] mod N;
-   P[2]=P[2]*I[1] mod N;
-   I=exgcdN(Q[3],N);
-   if(I[3]!=1)
+   P[1]=P[1]*I[2] mod N;
+   P[2]=P[2]*I[2] mod N;
+   I=extgcd(Q[3],N);
+   if(I[1]!=1)
    {
-      P[4]=I[3];
+      P[4]=I[1];
       return(P);
    }
-   Q[1]=Q[1]*I[1] mod N;
-   Q[2]=Q[2]*I[1] mod N;
+   Q[1]=Q[1]*I[2] mod N;
+   Q[2]=Q[2]*I[2] mod N;
    if((P[1]==Q[1])&&(((P[2]+Q[2]) mod N)==0)){return(Resu);}
-   number L;
+   bigint L;
    if((P[1]==Q[1])&&(P[2]==Q[2]))
    {
-      I=exgcdN(2*Q[2],N);
-      if(I[3]!=1)
+      I=extgcd(2*Q[2],N);
+      if(I[1]!=1)
       {
-         P[4]=I[3];
+         P[4]=I[1];
          return(P);
       }
-      L=I[1]*(3*Q[1]^2+a) mod N;
+      L=I[2]*(3*Q[1]^2+a) mod N;
    }
    else
    {
-      I=exgcdN(Q[1]-P[1],N);
-      if(I[3]!=1)
+      I=extgcd(Q[1]-P[1],N);
+      if(I[1]!=1)
       {
-         P[4]=I[3];
+         P[4]=I[1];
          return(P);
       }
-      L=(Q[2]-P[2])*I[1] mod N;
+      L=(Q[2]-P[2])*I[2] mod N;
    }
    Resu[1]=(L^2-P[1]-Q[1]) mod N;
    if (Resu[1]<0) { Resu[1]=Resu[1]+N; }
    Resu[2]=(L*(P[1]-Resu[1])-P[2]) mod N;
    if (Resu[2]<0) { Resu[2]=Resu[2]+N; }
-   Resu[3]=number(1);
+   Resu[3]=bigint(1);
    return(Resu);
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number N=11;
-   number a=1;
-   number b=6;
+   bigint N=11;
+   bigint a=1;
+   bigint b=6;
    list P,Q;
    P[1]=2;
    P[2]=4;
@@ -1255,7 +1241,7 @@ example
    ellipticAdd(N,a,b,P,Q);
 }
 
-proc ellipticMult(number N, number a, number b, list P, number k)
+proc ellipticMult(bigint N, bigint a, bigint b, list P, bigint k)
 "USAGE:  ellipticMult(N,a,b,P,k);
 RETURN: a list L representing the point k*P
 NOTE:  P=(P[1]:P[2]:P[3]) a point on the elliptic curve defined by
@@ -1265,9 +1251,9 @@ EXAMPLE:example ellipticMult; shows an example
 {
    if(P[3]==0){return(P);}
    list resu;
-   resu[1]=number(0);
-   resu[2]=number(1);
-   resu[3]=number(0);
+   resu[1]=bigint(0);
+   resu[2]=bigint(1);
+   resu[3]=bigint(0);
 
    if(k==0){return(resu);}
    if(k==1){return(P);}
@@ -1293,10 +1279,9 @@ EXAMPLE:example ellipticMult; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number N=11;
-   number a=1;
-   number b=6;
+   bigint N=11;
+   bigint a=1;
+   bigint b=6;
    list P;
    P[1]=2;
    P[2]=4;
@@ -1306,7 +1291,7 @@ example
 
 //================== Random for elliptic curves =====================
 
-proc ellipticRandomCurve(number N)
+proc ellipticRandomCurve(bigint N)
 "USAGE:  ellipticRandomCurve(N);
 RETURN: a list of two random numbers a,b and 4a^3+27b^2 mod N
 NOTE:   y^2z=x^3+a*xz^2+b^2*z^3 defines an elliptic curve over Z/N
@@ -1317,30 +1302,29 @@ EXAMPLE:example ellipticRandomCurve; shows an example
    while(k<=10)
    {
      k++;
-     number a=random(1,2147483647) mod N;
-     number b=random(1,2147483647) mod N;
+     bigint a=random(1,2147483647) mod N;
+     bigint b=random(1,2147483647) mod N;
      //test for ellictic curve
-     number D=4*a^3+27*b^4; //the constant term is b^2
-     number g=gcd(D,N);
+     bigint D=4*a^3+27*b^4; //the constant term is b^2
+     bigint g=gcd(D,N);
      if(g<N){return(list(a,b,g));}
    }
    ERROR("no random curve found");
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    ellipticRandomCurve(32003);
 }
 
-proc ellipticRandomPoint(number N, number a, number b)
+proc ellipticRandomPoint(bigint N, bigint a, bigint b)
 "USAGE:  ellipticRandomPoint(N,a,b);
 RETURN: a list representing  a random point (x:y:z) of the elliptic curve
         defined by y^2z=x^3+a*xz^2+b*z^3  over Z/N
 EXAMPLE:example ellipticRandomPoint; shows an example
 "
 {
-   number x=random(1,2147483647) mod N;
-   number h=x^3+a*x+b;
+   bigint x=random(1,2147483647) mod N;
+   bigint h=x^3+a*x+b;
    h=h mod N;
    list resu;
    resu[1]=x;
@@ -1348,7 +1332,7 @@ EXAMPLE:example ellipticRandomPoint; shows an example
    resu[3]=1;
    if(h==0){return(resu);}
 
-   number n=Jacobi(h,N);
+   bigint n=Jacobi(h,N);
    if(n==0)
    {
       resu=-5;
@@ -1364,7 +1348,6 @@ EXAMPLE:example ellipticRandomPoint; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    ellipticRandomPoint(32003,3,181);
 }
 
@@ -1375,7 +1358,7 @@ example
 //====================================================================
 
 //==================   the trivial approaches  =======================
-proc countPoints(number N, number a, number b)
+proc countPoints(bigint N, bigint a, bigint b)
 "USAGE:  countPoints(N,a,b);
 RETURN: the number of points of the elliptic curve defined by
         y^2=x^3+a*x+b  over Z/N
@@ -1383,8 +1366,8 @@ NOTE: trivial approach
 EXAMPLE:example countPoints; shows an example
 "
 {
-  number x;
-  number r=N+1;
+  bigint x;
+  bigint r=N+1;
   while(x<N)
   {
      r=r+Jacobi((x^3+a*x+b) mod N,N);
@@ -1394,11 +1377,10 @@ EXAMPLE:example countPoints; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    countPoints(181,71,150);
 }
 
-proc ellipticAllPoints(number N, number a, number b)
+proc ellipticAllPoints(bigint N, bigint a, bigint b)
 "USAGE:  ellipticAllPoints(N,a,b);
 RETURN: list of points (x:y:z) of the elliptic curve defined by
         y^2z=x^3+a*xz^2+b*z^3  over Z/N
@@ -1411,7 +1393,7 @@ EXAMPLE:example ellipticAllPoints; shows an example
    point[3]=0;
    resu[1]=point;
    point[3]=1;
-   number x,h,n;
+   bigint x,h,n;
    while(x<N)
    {
       h=(x^3+a*x+b) mod N;
@@ -1440,7 +1422,6 @@ EXAMPLE:example ellipticAllPoints; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    list L=ellipticAllPoints(181,71,150);
    size(L);
    L[size(L)];
@@ -1448,7 +1429,7 @@ example
 
 //================ the algorithm of Shanks and Mestre =================
 
-proc ShanksMestre(number q, number a, number b, list #)
+proc ShanksMestre(bigint q, bigint a, bigint b, list #)
 "USAGE:  ShanksMestre(q,a,b); optional: ShanksMestre(q,a,b,s); s the number
          of loops in the algorithm (default s=1)
 RETURN: the number of points of the elliptic curve defined by
@@ -1457,9 +1438,9 @@ NOTE: algorithm of Shanks and Mestre (baby-step-giant-step)
 EXAMPLE:example ShanksMestre; shows an example
 "
 {
-   number n=intRoot(4*q);
-   number m=intRoot(intRoot(16*q))+1;
-   number d;
+   bigint n=intRoot(4*q);
+   bigint m=intRoot(intRoot(16*q))+1;
+   bigint d;
    int i,j,k,s;
    list B,K,T,P,Q,R,mP;
    B[1]=list(0,1,0);
@@ -1491,7 +1472,6 @@ EXAMPLE:example ShanksMestre; shows an example
             j++;
             if((Q[1]==B[j][1])&&(Q[2]==B[j][2])&&(Q[3]==B[j][3]))
             {
-
                T[1]=P;
                T[2]=q+1+n-(i*m+j-1);
                K[size(K)+1]=T;
@@ -1538,13 +1518,12 @@ EXAMPLE:example ShanksMestre; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    ShanksMestre(32003,71,602);
 }
 
 //==================== Schoof's algorithm =============================
 
-proc Schoof(number N,number a, number b)
+proc Schoof(bigint N,bigint a, bigint b)
 "USAGE:  Schoof(N,a,b);
 RETURN: the number of points of the elliptic curve defined by
         y^2=x^3+a*x+b  over Z/N
@@ -1554,8 +1533,8 @@ EXAMPLE:example Schoof; shows an example
 {
    int pr=printlevel;
 //test for ellictic curve
-   number D=4*a^3+27*b^2;
-   number G=gcd(D,N);
+   bigint D=4*a^3+27*b^2;
+   bigint G=gcd(D,N);
    if(G==N){ERROR("not an elliptic curve");}
    if(G!=1){ERROR("not a prime");}
 
@@ -1563,7 +1542,7 @@ EXAMPLE:example Schoof; shows an example
   // if((N<=500)&&(pr<5)){return(countPoints(int(N),a,b));}
 
 //=== the general case
-   number q=intRoot(4*N);
+   bigint q=intRoot(4*N);
    list L=primL(2*q);
    int r=size(L);
    list T;
@@ -1585,12 +1564,11 @@ EXAMPLE:example Schoof; shows an example
       "we obtain t = ",chineseRem(T,L)-q;
       "===================================================================";
    }
-   number t=chineseRem(T,L)-q;
+   bigint t=chineseRem(T,L)-q;
    return(N+1-t);
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    Schoof(32003,71,602);
 }
 
@@ -1637,7 +1615,7 @@ example
 }
 
 
-proc testElliptic(int q,number a,number b,int l)
+static proc testElliptic(int q,bigint aa,bigint bb,int l)
 "USAGE:  testElliptic(q,a,b,l);
 RETURN: an integer t, the trace of the Frobenius
 NOTE: the kernel for the Schoof algorithm: looks for the t such that for all
@@ -1649,10 +1627,9 @@ EXAMPLE:example testElliptic; shows an example
 "
 {
    int pr=printlevel;
-   def R=basering;
    ring S=q,(y,x),(L(100000),lp);
-   number a=imap(R,a);
-   number b=imap(R,b);
+   number a=aa;
+   number b=bb;
    poly F=y2-x3-a*x-b;       // the curve C
    poly G=generateG(a,b,l);
    ideal I=std(ideal(F,G));  // the points C[l]
@@ -1692,7 +1669,6 @@ EXAMPLE:example testElliptic; shows an example
          "the gcd(x^q-x,x^3+ax+b)=",J[1];
          pause();
       }
-      setring R;
       return(t);
    }
    //=== (F1/G1,F2/G2)=[ql](x,y) ==========================================
@@ -1734,7 +1710,7 @@ EXAMPLE:example testElliptic; shows an example
    }
    //=== test if all points of C[l] satisfy  (x,y)^(q^2)=-[ql](x,y)
    //=== if so: t mod l =0 is returned
-   if(size(reduce(J,I))==0){setring R;return(0);}
+   if(size(reduce(J,I))==0){return(0);}
 
    //==== test for (x,y)^(q^2)=[ql](x,y) for some point
 
@@ -1757,9 +1733,7 @@ EXAMPLE:example testElliptic; shows an example
    }
    if(deg(J[1])>0)
    {
-      setring R;
       int w=int(squareRoot(q,l));
-      setring S;
       //=== +/-2w mod l zurueckgeben, wenn (x,y)^q=+/-[w](x,y)
       //==== the case t>0 :  (Q1/P1,Q2/P2)=[w](x,y) ==============
       if(w==1)
@@ -1849,15 +1823,14 @@ EXAMPLE:example testElliptic; shows an example
        reduce(ideal(Q1*L1-P1*H1,Q2*L2+P2*H2),I);
          pause();
       }
-      if(size(reduce(J,I))==0){setring R;return(t);}
+      if(size(reduce(J,I))==0){return(t);}
       J=Q1*L1-P1*H1,Q2*L2+P2*H2;
-      if(size(reduce(J,I))==0){setring R;return(l-t);}
+      if(size(reduce(J,I))==0){return(l-t);}
    }
    ERROR("something is wrong in testElliptic");
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    testElliptic(1267985441,338474977,64740730,3);
 }
 
@@ -1867,7 +1840,7 @@ example
 
 //============= Lenstra's ECM Factorization ==================================
 
-proc factorLenstraECM(number N, list S, int B, list #)
+proc factorLenstraECM(bigint N, list S, int B, list #)
 "USAGE:  factorLenstraECM(N,S,B); optional: factorLenstraECM(N,S,B,d);
          d+1 the number of loops in the algorithm (default d=0)
 RETURN: a factor of N or the message no factor found
@@ -1879,7 +1852,7 @@ EXAMPLE:example factorLenstraECM; shows an example
 "
 {
    list L,P;
-   number g,M,w;
+   bigint g,M,w;
    int i,j,k,d;
    int l=size(S);
    if(size(#)>0)
@@ -1914,17 +1887,16 @@ EXAMPLE:example factorLenstraECM; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
    list L=primList(1000);
    factorLenstraECM(181*32003,L,10,5);
-   number h=10;
+   bigint h=10;
    h=h^30+25;
    factorLenstraECM(h,L,4,3);
 }
 
 //================= ECPP (Goldwasser-Kilian) a primaly-test =============
 
-proc ECPP(number N)
+proc ECPP(bigint N)
 "USAGE:  ECPP(N);
 RETURN: message:N is not prime or {L,P,m,q} as certificate for N being prime@*
          L a list (y^2=x^3+L[1]*x+L[2] defines an elliptic curve C)@*
@@ -1943,10 +1915,10 @@ EXAMPLE:example ECPP; shows an example
 "
 {
    list L,S,P;
-   number m,q;
+   bigint m,q;
    int i;
 
-   number n=intRoot(intRoot(N));
+   bigint n=intRoot(intRoot(N));
    n=(n+1)^2;                         //lower bound for q
    while(1)
    {
@@ -1960,7 +1932,7 @@ EXAMPLE:example ECPP; shows an example
       }
       if(n<q){break;}
    }
-   number u=m/q;
+   bigint u=m/q;
    while(1)
    {
       P=ellipticRandomPoint(N,L[1],L[2]);  //a random point on C
@@ -1975,8 +1947,7 @@ EXAMPLE:example ECPP; shows an example
 }
 example
 { "EXAMPLE:"; echo = 2;
-   ring R = 0,z,dp;
-   number N=1267985441;
+   bigint N=1267985441;
    ECPP(N);
 }
 
@@ -1984,8 +1955,8 @@ static proc wordToNumber(string s)
 {
    int i;
    intvec v;
-   number n;
-   number t=27;
+   bigint n;
+   bigint t=27;
    for(i=size(s);i>0;i--)
    {
       if(s[i]=="a"){v[i]=0;}
@@ -2023,20 +1994,20 @@ static proc wordToNumber(string s)
    return(n);
 }
 
-static proc numberToWord(number n)
+static proc numberToWord(bigint n)
 {
    int i,j;
    string v;
    list s;
-   number t=27;
-   number mm;
-   number nn=n;
+   bigint t=27;
+   bigint mm;
+   bigint nn=n;
    while(nn>t)
    {
       j++;
       mm=nn mod t;
       s[j]=mm;
-      nn=(nn-mm)/t;
+      nn=(nn-mm) div t;
    }
    j++;
    s[j]=nn;
@@ -2076,23 +2047,22 @@ static proc numberToWord(number n)
 proc code(string s)
 "USAGE:  code(s); s a string
 ASSUME:  s contains only small letters and space
-COMPUTE: a number, RSA-coding of the string s
+COMPUTE: a bigint, RSA-coding of the string s
 RETURN:  return RSA-coding of the string s as string
 EXAMPLE: code;  shows an example
 "
 {
    ring r=0,x,dp;
-   number
+   bigint
 p=398075086424064937397125500550386491199064362342526708406385189575946388957261768583317;
-   number
+   bigint
 q=472772146107435302536223071973048224632914695302097116459852171130520711256363590397527;
-   number n=p*q;
-   number phi=(p-1)*(q-1);
-   number e=1234567891;
-   list L=exgcdN(e,phi);
-   number d=L[1];
-   number m=wordToNumber(s);
-   number c=powerN(m,e,n);
+   bigint n=p*q;
+   bigint phi=(p-1)*(q-1);
+   bigint e=1234567891;
+   //bigint d=extgcd(e,phi)[2];
+   bigint m=wordToNumber(s);
+   bigint c=powerN(m,e,n);
    string cc=string(c);
    return(cc);
 }
@@ -2104,24 +2074,22 @@ example
 
 proc decodeString(string g)
 "USAGE:  decodeString(s); s a string
-ASSUME:  s is a string of a number, the output of code
+ASSUME:  s is a string of a bigint, the output of code
 COMPUTE: a string, RSA-decoding of the string s
 RETURN:  return RSA-decoding of the string s as string
 EXAMPLE: decodeString;  shows an example
 "
 {
-   ring r=0,x,dp;
-   number
+   bigint
 p=398075086424064937397125500550386491199064362342526708406385189575946388957261768583317;
-   number
+   bigint
 q=472772146107435302536223071973048224632914695302097116459852171130520711256363590397527;
-   number n=p*q;
-   number phi=(p-1)*(q-1);
-   number e=1234567891;
-   list L=exgcdN(e,phi);
-   number d=L[1];
-   execute("number c="+g+";");
-   number f=powerN(c,d,n);
+   bigint n=p*q;
+   bigint phi=(p-1)*(q-1);
+   bigint e=1234567891;
+   bigint d=extgcd(e,phi)[2];
+   execute("bigint c="+g+";");
+   bigint f=powerN(c,d,n);
    string s=numberToWord(f);
    return(s);
 }
@@ -2132,7 +2100,1500 @@ s="78638618599886548153321853785991541374544958648147340831959482696082179852616
   string t=decodeString(s);
   t;
 }
+/*----------------------------------------------------------------------------
+ * set stuff
+ * -------------------------------------------------------------------------*/
+static proc set_multiply_list_content(list h)
+"USAGE:   set_multiply_list_content(h)
+RETURN:  An integer c als product of all elements in h
+EXAMPLE: example set_multiply_list_content; shows an example;
+"
+{
+  int c = 1;
+  for (int i=1;i<=size(h);i++)
+  {
+    c = c*h[i];
+  }
+  return(c);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h=2,4,5;
+  set_multiply_list_content(h);
+}
 
+static proc set_delete_certain_element(list a, int e)
+"USAGE:   set_delete_certain_element(a,e)
+RETURN:  A list a without element e. If e was not in the list before, a will not be changed
+EXAMPLE: example set_delete_certain_element; shows an example.
+"
+{
+  list output_list = a;
+  for (int i=1;i<=size(a);i++)
+  {
+    if (a[i]==e)
+    {
+      output_list = delete(output_list,i);
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h=2,4,5;
+  set_delete_certain_element(h,4);
+  set_delete_certain_element(h,10);
+}
+
+static proc set_bubblesort_int(list output_list)
+"USAGE:   set_bubblesort_int(output_list)
+RETURN:  An ascending sorted list with integer values.
+EXAMPLE: set_bubblesort_int; shows an example.
+"
+{
+  output_list = bubblesort(output_list);
+  //Cast every value into an integer
+  for (int i=1; i<=size(output_list);i++)
+  {
+    output_list[i] = int(output_list[i]);
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list output_list=10,4,5,24,9;
+  set_bubblesort_int(output_list);
+}
+
+static proc set_is_set(list a)
+"USAGE:   set_is_set(a)
+RETURN:  1 if the list is a set, 0 the list contains any duplicated elements
+EXAMPLE: set_is_set; shows an example.
+"
+{
+  int i,v;
+  for (v=1; v<=size(a); v++)
+  {
+    for (i=v+1; i<=size(a); i++)
+    {
+      if (a[i]==a[v])
+      {
+        return(0);
+      }
+    }
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10,2;
+  list noset = 1,5,10,2,5;
+  set_is_set(set);
+  set_is_set(noset);
+}
+
+static proc set_contains(list a, int e)
+"USAGE:   set_contains(a,e)
+RETURN:  1 if the list contains e, 0 otherwise
+EXAMPLE: set_contains; shows an example.
+"
+{
+  for (int v=1; v<=size(a); v++)
+  {
+    if (a[v]==e)
+    {
+      return(1);
+    }
+  }
+  return(0);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10,2;
+  set_contains(set,5);
+  set_contains(set,40);
+}
+
+static proc set_delete_duplicates(list a)
+"USAGE:   set_delete_duplicates(a)
+RETURN:  a list a without any duplicated elements
+EXAMPLE: set_delete_duplicates; shows an example.
+"
+{
+  int i;
+  list output_list = a[1];
+  for (i=1; i<=size(a); i++)
+  {
+    if (set_contains(output_list,a[i])==0)
+    {
+      output_list = insert(output_list,a[i]);
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10,2,10,5;
+  set_delete_duplicates(set);
+}
+
+static proc set_equals(list a,list b)
+"USAGE:   set_equals(a, b)
+RETURN:  1 if the lists are equal from a set-structure standpoint, 0 otherwise
+EXAMPLE: set_equals; shows an example.
+"
+{
+  //Checks if the lists have the same length
+  if (size(a)!=size(b))
+  {
+    return(0);
+  }
+
+  //Sorts the lists
+  a = set_bubblesort_int(a);
+  b = set_bubblesort_int(b);
+
+  //Checks every single element of both lists
+  for (int i=1; i<=size(a); i++)
+  {
+    if (a[i]!=b[i])
+    {
+      return(0);
+    }
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set1 = 1,5,10,2;
+  list set2 = 10,2,5,1;
+  list set3 = 1,5,9,2;
+  set_equals(set1,set2);
+  set_equals(set1,set3);
+}
+
+static proc set_insert(list a, int e)
+"USAGE:   set_insert(a,e)
+RETURN:  list a containing element e
+EXAMPLE: set_insert; shows an example.
+"
+{
+  if(set_contains(a,e))
+  {
+    return(a);
+  }
+  else
+  {
+    a=insert(a,e);
+    return(a);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10,2;
+  set_insert(set,5);
+  set_insert(set,22);
+}
+
+static proc set_union(list a, list b)
+"USAGE:   set_union(a, b)
+RETURN:  list a as union of a and b
+EXAMPLE: set_union; shows an example.
+"
+{
+  for (int i=1; i<=size(b); i++)
+  {
+    if (set_contains(a,b[i])==0)
+    {
+      a = insert(a,b[i]);
+    }
+  }
+  return(a);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set1 = 1,5,10,2;
+  list set2 = 5,10,93,58,29;
+  set_union(set1,set2);
+}
+
+static proc set_section(list a, list b)
+"USAGE:   set_section(a, b)
+RETURN:  list output_list as intersection of a and b
+EXAMPLE: set_section; shows an example.
+"
+{
+  list output_list;
+  for (int i=1; i<=size(a); i++)
+  {
+    if (set_contains(b,a[i])==1)
+    {
+      output_list = insert(output_list,a[i]);
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set1 = 1,5,10,2;
+  list set2 = 5,10,93,58,29;
+  set_section(set1,set2);
+}
+
+static proc set_list_delete_duplicates(list a)
+"USAGE:   set_list_delete_duplicates(a)
+RETURN:  list output_list with no duplicated lists
+EXAMPLE: set_list_delete_duplicates; shows an example.
+"
+{
+  int v;
+  int i;
+  int counter;
+  int out_size;
+  list output_list=insert(output_list,a[1]);
+  //Create a new list and try to insert every list element from a into that list. If a list is already inserted into the
+  //new list, do nothing.
+  for (i=2; i<=size(a); i++)
+  {
+    out_size = size(output_list);
+    counter = 0;
+
+    for (v=1; v<=out_size; v++)
+    {
+      if (set_equals(output_list[v],a[i])==1)
+      {
+        counter++;
+      }
+    }
+    if (counter==0)
+    {
+      output_list = insert(output_list,a[i]);
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set1 = 1,5,10,2;
+  list set2 = 1,10,2,5;
+  list set3 = 1,2,3;
+  list superset = set1,set2,set3;
+  set_list_delete_duplicates(superset);
+}
+
+static proc set_construct_increasing_set(int maxelement)
+"USAGE:   set_construct_increasing_set(maxelement)
+RETURN:  list output_list with increasing elements from 1 to maxelement
+EXAMPLE: set_construct_increasing_set; shows an example.
+"
+{
+  list output_list;
+  for (int i=1; i<=maxelement; i++)
+  {
+    output_list = insert(output_list, i);
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  set_construct_increasing_set(10);
+}
+
+static proc set_addtoall(list a, int element)
+"USAGE:   set_addtoall(a,alement)
+RETURN:  Transformed list with e_i+element for every element e_i in list a
+EXAMPLE: set_addtoall; shows an example.
+"
+{
+  list output_list;
+  int c;
+  for (int i=1; i<=size(a); i++)
+  {
+    c = a[i]+element;
+    output_list = insert(output_list,c);
+  }
+  return(set_turn(output_list));
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10,2;
+  set_addtoall(set,5);
+}
+
+static proc set_turn(list a)
+"USAGE:   set_turn(a)
+RETURN:  Turned list a
+EXAMPLE: set_turn; shows an example.
+"
+{
+  list output_list;
+  for (int i=1; i<=size(a); i++)
+  {
+    output_list[size(a)+1-i] = a[i];
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10;
+  set_turn(set);
+}
+
+static proc set_subset_set(list a)
+"USAGE:   set_subset_set(a)
+RETURN:  Set of subsets
+EXAMPLE: set_subset_set; shows an example.
+"
+{
+  int v;
+  int choice;
+  list output_list;
+  list start = a[1];
+  list insertion_list;
+  int output_length;
+  output_list = insert(output_list,start);
+
+  for (int i=2; i<=size(a); i++)
+  {
+    choice = 0;
+    start = a[i];
+    output_list = insert(output_list,start);
+    output_length = size(output_list);
+    for (v=2; v<=output_length; v++)
+    {
+      insertion_list = set_insert(output_list[v],a[i]);
+      output_list = insert(output_list, insertion_list,size(output_list));
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list set = 1,5,10;
+  set_subset_set(set);
+}
+/* -----------------------------------------------------------------
+ * knapsack_utilities: Utility functions needed for knapsack
+ * -----------------------------------------------------------------*/
+proc calculate_ordering(bigint num1, bigint primitive, bigint mod1)
+"USAGE:   calculate_ordering(num1, primitive, mod1)
+RETURN:  x so that primitive^x == num1 mod mod1
+EXAMPLE: example calculate_ordering; shows an example;
+"
+{
+  for (int i=1;i<=int((mod1-2));i++)
+  {
+    if ((primitive^i%mod1)==num1)
+    {
+      return(i);
+    }
+  }
+  return(0);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  bigint mod1 = 33;
+  bigint primitive = 14;
+  bigint num1 = 5;
+  calculate_ordering(num1,primitive,mod1);
+}
+
+proc is_primitive_root(bigint primitive, bigint mod1)
+"USAGE:   is_primitive_root(primitive, mod1)
+RETURN:  1 if primitive is a primitive root modulo mod1, 0 otherwise
+EXAMPLE: example is_primitive_root; shows an example;
+"
+{
+  list output_list;
+  for (int i=1;i<=int((mod1-1));i++)
+  {
+    output_list = set_insert(output_list,int((primitive^i%mod1)));
+  }
+  if (bigint(size(output_list))==bigint(mod1-1))
+  {
+    return(1);
+  }
+  else
+  {
+    return(0);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  is_primitive_root(3,7);
+  is_primitive_root(2,7);
+}
+
+proc find_first_primitive_root(bigint mod1)
+"USAGE:   find_first_primitive_root(mod1)
+RETURN:  First primitive root modulo mod1, 0 if no root can be found.
+EXAMPLE: example find_first_primitive_root; shows an example;
+"
+{
+  for (int i=0;i<=int(mod1-1);i++)
+  {
+    if (is_primitive_root(bigint(i),mod1)==1)
+    {
+      return(i);
+    }
+  }
+  return(0);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0,x,lp;
+  find_first_primitive_root(7);
+  find_first_primitive_root(557);
+}
+
+proc binary_add(list binary_list)
+"USAGE:   binary_add(binary_list)
+RETURN:  binary encoded list, increased by 1
+EXAMPLE: example binary_add; shows an example;
+"
+{
+  int residual=1;
+  int position = size(binary_list);
+  while((residual==1)&&(position!=0))
+  {
+    if(binary_list[position]==0)
+    {
+      binary_list[position]=1;
+      residual=0;
+    }
+    else
+    {
+      binary_list[position]=0;
+      position--;
+    }
+  }
+  if (position==0)
+  {
+    binary_list = insert(binary_list,1);
+  }
+  return(binary_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0,x,lp;
+  list binary_list = 1,0,1,1,1;
+  binary_add(binary_list);
+}
+
+proc inverse_modulus(int num, int mod1)
+"USAGE:   inverse_modulus(num, mod1)
+RETURN:  inverse element of num modulo mod1
+EXAMPLE: example inverse_modulus; shows an example;
+"
+{
+  if (num>=mod1)
+  {
+    return(0);
+  }
+  else
+  {
+    for (int i=1;i<mod1;i++)
+    {
+      if ((i*num%mod1)==1)
+      {
+        return(i);
+      }
+    }
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0,x,lp;
+  int mod1 = 13;
+  int num = 5;
+  inverse_modulus(num,mod1);
+}
+
+proc is_prime(int n)
+"USAGE:   is_prime(n)
+RETURN:  1 if n is prime, 0 otherwise
+EXAMPLE: example is_prime; shows an example;
+"
+{
+  int prime1 = 1;
+  for (int i=n-1;i>1;i--)
+  {
+    if(n%i==0)
+    {
+        prime1 = 0;
+    }
+  }
+  return(prime1);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0,x,lp;
+  is_prime(10);
+  is_prime(7);
+}
+
+proc find_biggest_index(list a)
+"USAGE:   find_biggest_index( a)
+RETURN:  Returns the index of the biggest element of a
+EXAMPLE: example find_biggest_index; shows an example;
+"
+{
+  list sortedlist = bubblesort(a);
+  return(find_index(a,sortedlist[1]));
+}
+
+proc find_index(list a, bigint e)
+"USAGE:   find_index(a, e)
+RETURN:  Returns the list index of element e in list a. Returns 0 if e is not in a
+EXAMPLE: example find_index; shows an example;
+"
+{
+  for(int i=1;i<=size(a);i++)
+  {
+    if (bigint(a[i])==e)
+    {
+      return(i);
+    }
+  }
+  return(0);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list a = 1,5,20,6,37;
+  find_index(a,20);
+  find_index(a,6);
+  find_index(a,100);
+}
+/* ------------------------------------------------------------------
+ * Knapsack Algorithmus such as solving several knapsack problems,
+ * kryptographic algorithms and algorithms for creatings suitable knapsacks
+ * ---------------------------------------------------------------- */
+proc subset_sum01(list knapsack, int solution)
+"USAGE:   subset_sum01(knapsack,solution)
+RETURN:  binary list of the positions of the elements included in the subset sum or 0 if no solution exists
+NOTE: This will return the first solution of the ssk-problem, given be the smallest binary encoding. It wont return several solutions if they exist
+EXAMPLE: example subset_sum01; shows an example;
+"
+{
+  int i;
+  int v;
+  int comparable;
+  //Check if the knapsack is a set
+  if (set_is_set(knapsack)==1)
+  {
+    //Create a binary list full of zeroes
+    list binary_list;
+    for (i=1;i<=size(knapsack);i++)
+    {
+      binary_list = insert(binary_list,0);
+    }
+    binary_list = binary_add(binary_list);
+
+    for(i=1;i<=2^(size(knapsack));i++)
+    {
+      comparable = 0;
+      //Create the Subset-Sum for the actual binary coding of binary_list
+      for (v=1;v<=size(knapsack);v++)
+      {
+        comparable = comparable+knapsack[v]*binary_list[v];
+      }
+      //Check if the sum equals the solution
+      if (comparable==solution)
+      {
+        return(binary_list);
+      }
+      else
+      {
+        binary_list = binary_add(binary_list);
+      }
+    }
+    return(0);
+  }
+  else
+  {
+    return(0);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h=1,4,7,32;
+  subset_sum01(h,20);
+  subset_sum01(h,11);
+  subset_sum01(h,33);
+}
+
+proc subset_sum02(list knapsack, int sol)
+"USAGE:   subset_sum02(knapsack,sol)
+RETURN:  binary list of the positions of the elements included in the subset sum or 0 if no solution exists
+EXAMPLE: example subset_sum02; shows an example;
+"
+{
+  list summands;
+  int calcu;
+  int i;
+  //Create a sorted copy of the knapsack, calling it worksack
+  list worksack = set_bubblesort_int(knapsack);
+  int counter = 1;
+  while((counter<=size(worksack))&&(sol>0))
+  {
+    //Try to substract an element of the knapsack from the capacity. Create a list with all the summands used
+    calcu = sol-worksack[counter];
+    if (calcu>=0)
+    {
+      sol = sol-worksack[counter];
+      summands = insert(summands,int(worksack[counter]));
+    }
+    counter++;
+  }
+  if(sol>0)
+  {
+    return(0);
+  }
+
+  //Get the index of the summands of the original knapsack and change the bits in the binary list wich will be the solution
+  list binary_list;
+  for (i=1;i<=size(knapsack);i++)
+  {
+    binary_list = insert(binary_list,0);
+  }
+
+  for (i=1; i<=size(knapsack);i++)
+  {
+    if (set_contains(summands,knapsack[i])==1)
+    {
+      binary_list[i]=1;
+    }
+  }
+  return(binary_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h=1,4,7,32;
+  subset_sum02(h,20);
+  subset_sum02(h,11);
+  subset_sum02(h,33);
+}
+
+proc unbounded_knapsack(list knapsack, list profit, int capacity)
+"USAGE:   unbounded_knapsack(knapsack,profit,capacity)
+RETURN:  list of maximum profit of each iteration. For example, output_list[2] contains the maximum profit that can be achieved if the knapsack has capacity 2.
+EXAMPLE: unbounded_knapsack; shows an example;
+"
+{
+  int i;
+  int v;
+  list output_list;
+  for (i=1;i<=capacity+1;i++)
+  {
+    output_list = insert(output_list,0);
+  }
+  for (i=1;i<=capacity+1;i++)
+  {
+    for(v=1;v<=size(knapsack);v++)
+    {
+      if (knapsack[v]<i)
+      {
+        if(output_list[i]<(output_list[i-knapsack[v]]+profit[v]))
+        {
+          output_list[i] = output_list[i-knapsack[v]]+profit[v];
+        }
+      }
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h=1,4,7,32;
+  list knapsack = 5,2;
+  list profit = 10,3;
+  int capacity = 5;
+  unbounded_knapsack(knapsack,profit,capacity);
+}
+
+proc multidimensional_knapsack(matrix m, list capacities, list profits)
+"USAGE:   multidimensional_knapsack(m,capacities,profits)
+RETURN:  binary list of the positions of the elements included in the optimal selection
+EXAMPLE: example multidimensional_knapsack; shows an example;
+"
+{
+  int index;
+  list output_list;
+  list nolist;
+  list y_list;
+  list minmax_list;
+  int i;
+  int v;
+  int checkint;
+  //create the output_list full of zeroes with the length of all given selections
+  for (i=1;i<=size(profits);i++)
+  {
+    output_list = insert(output_list,0);
+  }
+
+  //Create the List E with all indices of the output_list that haven't been used yet.
+  list E = set_turn(set_construct_increasing_set(size(profits)));
+
+  //Repeat till every index in E is used.
+  while(size(E)>0)
+  {
+    y_list = nolist;
+    for (i=1;i<=size(E);i++)
+    {
+      //Create all possible elements of y_i (y_list). minimax_list will be replaced of an empty list in each iteration
+      minmax_list = nolist;
+      for (v=1; v<=size(capacities);v++)
+      {
+        if (set_contains(E,v)==1)
+        {
+        minmax_list = insert(minmax_list, bigint(capacities[v])/bigint(m[v,E[i]]));
+        }
+      }
+      //Sort the elements so that it is easy to pick the smallest one
+      minmax_list = bubblesort(minmax_list);
+
+      //insert Element y_i into y_list, wich is the smallest of (b_i/w_ij) like in the PECH algorithm description.
+      y_list = insert(y_list,minmax_list[size(minmax_list)],size(y_list));
+
+
+    }
+
+    //Check if all y_i in y_list are smaller than 1. If so, every additional selection will exceed the capacity and the algorithm stops.
+    checkint=0;
+    for(i=1;i<=size(y_list);i++)
+    {
+      if (y_list[i]>=1)
+      {
+        checkint=1;
+      }
+    }
+    if (checkint==0)
+    {
+      return(output_list);
+    }
+
+
+    //Find the index of the selection and update the binary output_list
+    minmax_list = nolist;
+    for (i=1;i<=size(E);i++)
+    {
+      minmax_list = insert(minmax_list, profits[E[i]]*y_list[i],size(minmax_list));
+    }
+    index = find_biggest_index(minmax_list);
+
+    output_list[E[index]]=1;
+
+    //Update the capacities by substracting the weights of the selection
+    for (i=1;i<=size(capacities);i++)
+    {
+      capacities[i] = capacities[i]- m[i,E[index]];
+    }
+    E = set_delete_certain_element(E,index);
+
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  ring r = 0,x,lp;
+  matrix m[3][3] = 1,4,10,7,8,3,1,9,7;
+  list c = 12,17,10;
+  list p = 3,2,5;
+  multidimensional_knapsack(m,c,p);
+}
+
+proc naccache_stern_generation(int key, int primenum)
+"USAGE:   naccache_stern_generation(key, primenum)
+RETURN:  a hard knapsack list
+EXAMPLE: example naccache_stern_generation; shows an example;
+"
+{
+  //Check if primenum is a prime and the gcd-Condition holds
+  if ((is_prime(primenum)==0)||(gcd(key,(primenum-1))!=1))
+  {
+    return(0);
+  }
+  else
+  {
+    int i;
+    int p;
+    list primelist;
+    int primecounter=2;
+    //Generate the knapsack containing the smallest prime numbers so that primenum exceeds the product of all of them
+    while(set_multiply_list_content(primelist)<primenum)
+    {
+      if (is_prime(primecounter)==1)
+      {
+      primelist = insert(primelist,primecounter);
+      }
+      primecounter++;
+    }
+    primelist = delete(primelist,1);
+
+
+    //Generate the hard knapsack of the length of the prime numbers containing zeroes.
+    list hardknapsack;
+    for (i=1;i<=size(primelist);i++)
+    {
+      hardknapsack = insert(hardknapsack,0);
+    }
+
+    //Create the elements of the hard knapsack
+    primecounter = 1;
+    bigint calcu;
+    i=0;
+    while (i<size(primelist))
+    {
+      //Create some v_i^key%primenum and store it in calcu
+      calcu = bigint(primecounter)^key%bigint(primenum);
+
+      //If calcu is one of the prime numbers in the knapsack, find the index and insert v_i in the hard knapsack at that given index
+      if(set_contains(primelist,int(calcu))==1)
+      {
+        p=find_index(primelist,int(calcu));
+        hardknapsack[p] = primecounter;
+        i++;
+      }
+      primecounter++;
+    }
+  return(hardknapsack);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  naccache_stern_generation(5,292);
+  naccache_stern_generation(5,293);
+}
+
+proc naccache_stern_encryption(list knapsack, list message, int primenum)
+"USAGE:   naccache_stern_encryption(knapsack, message, primenum)
+RETURN:  an encrypted message as integer
+EXAMPLE: example naccache_stern_encryption; shows an example;
+"
+{
+  bigint solution = 1;
+  if (size(knapsack)==size(message))
+  {
+    for(int i=1;i<=size(knapsack);i++)
+    {
+      solution = solution*((bigint(knapsack[i])^message[i])%bigint(primenum));
+    }
+    return(solution);
+  }
+  else
+  {
+    return(0);
+  }
+
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values for primenum and hardknapsack have been obtained from the example of naccache_stern_generation!
+  list hardknapsack = 85,164,117,44;
+  int primenum = 293;
+  list message = 1,0,1,0;
+  naccache_stern_encryption(hardknapsack,message,primenum);
+}
+
+proc naccache_stern_decryption(list knapsack, int key, int primenum, int message)
+"USAGE:   naccache_stern_decryption(knapsack, key, primenum, message)
+RETURN:  decrypted binary list
+EXAMPLE: example naccache_stern_decryption; shows an example;
+"
+{
+  //create a binary list with the length of the knapsack containing zeros
+  int k = int(bigint(message)^key%bigint(primenum));
+  int i;
+  list binary_list;
+  for (i=1;i<=size(knapsack);i++)
+  {
+    binary_list = insert(binary_list,0);
+  }
+
+  //create primelist like in int naccache_stern_generation process
+  list primelist;
+  int primecounter=2;
+  while(size(primelist)<size(knapsack))
+  {
+    if (is_prime(primecounter)==1)
+    {
+      primelist = insert(primelist,primecounter);
+    }
+      primecounter++;
+  }
+
+  //find divisors of k and update the binarylist in a way that the positions of the divisors in primelist are marked
+  for (i=1;i<=size(primelist);i++)
+  {
+    if(k%primelist[i]==0)
+    {
+      binary_list[i]=1;
+    }
+  }
+  return(binary_list);
+
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values have been obtained from the example of naccache_stern_generation and naccache_stern_encryption!
+  int primenum = 293;
+  int message = 9945;
+  int key = 5;
+  list hardknapsack = 85,164,117,44;
+  naccache_stern_decryption(hardknapsack,key,primenum,message);
+}
+
+proc m_merkle_hellman_transformation(list knapsack, int primitive, int mod1)
+"USAGE:   m_merkle_hellman_transformation(knapsack, primitive, mod1)
+RETURN:  list containing a hard knapsack
+EXAMPLE: example m_merkle_hellman_transformation; shows an example;
+"
+{
+  bigint new_element;
+  list output_list;
+  //calculate the primitiv root of every element in knapsack and insert it into a new knapsack
+  for (int i=size(knapsack);i>=1;i--)
+  {
+    new_element = calculate_ordering(knapsack[i],primitive,mod1);
+    output_list = insert(output_list,int(new_element));
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values for primenum and hardknapsack have been obtained from the example of naccache_stern_generation and naccache_stern_encryption!
+  list knapsack = 2,3,5,7;
+  int mod1 = 211;
+  int primitive = 2;
+  m_merkle_hellman_transformation(knapsack,primitive,mod1);
+}
+
+proc m_merkle_hellman_encryption(list knapsack, list message)
+"USAGE:    m_merkle_hellman_encryption(knapsack, message)
+RETURN:  an encrypted message as integer
+NOTE: This works in the same way as merkle_hellman_encryption. The additional function is created to keep consistency with the needed functions for every kryptosystem.
+EXAMPLE: example m_merkle_hellman_encryption; shows an example;
+"
+{
+  return(merkle_hellman_encryption(knapsack,message));
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values for primenum and hardknapsack have been obtained from the example of m_merkle_hellman_transformation!
+  list knapsack = 1,43,132,139;
+  list message = 1,0,0,1;
+  m_merkle_hellman_encryption(knapsack,message);
+}
+
+proc m_merkle_hellman_decryption(list knapsack, bigint primitive, bigint mod1, int message)
+"USAGE:  m_merkle_hellman_decryption(knapsack, primitive, mod1, message)
+RETURN:  decrypted binary list
+EXAMPLE: example merkle_hellman_decryption; shows an example;
+"
+{
+  //Convert message
+  int factorizing = int((primitive^message)%mod1);
+  int i;
+
+  //Create binary list of length of the knapsack, containing zeroes.
+  list binary_list;
+  for (i=1;i<=size(knapsack);i++)
+  {
+    binary_list = insert(binary_list,0);
+  }
+
+  //factorize the converted message, mark the factor positions in knapsack as bits in binary_list
+  for (i=1;i<=size(knapsack);i++)
+  {
+    if(factorizing%knapsack[i]==0)
+    {
+      binary_list[i]=1;
+    }
+  }
+  return(binary_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values  have been obtained from the example of m_merkle_hellman_encryption and m_merkle_hellman_transformation!
+  list knapsack = 2,3,5,7;
+  int message = 140;
+  bigint primitive = 2;
+  bigint mod1 = 211;
+  m_merkle_hellman_decryption(knapsack,primitive,mod1,message);
+}
+
+proc merkle_hellman_transformation(list knapsack, int key, int mod1)
+"USAGE:   merkle_hellman_transformation(knapsack, key, mod1)
+RETURN:  hard knapsack
+EXAMPLE: example merkle_hellman_transformation; shows an example;
+"
+{
+  list output_list;
+  int new_element;
+  //transform every element in the knapsack with normal strong modular multiplication
+  for (int i=size(knapsack);i>=1;i--)
+  {
+    new_element=knapsack[i]*key%mod1;
+    output_list = insert(output_list,new_element);
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list knapsack = 1,3,5,12;
+  int key = 3;
+  int mod1 = 23;
+  merkle_hellman_transformation(knapsack,key,mod1);
+}
+
+proc merkle_hellman_encryption(list knapsack, list message)
+"USAGE:   merkle_hellman_encryption(knapsack, message)
+RETURN:  encrypted integer
+EXAMPLE: example merkle_hellman_encryption; shows an example;
+"
+{
+  int solution = 0;
+  if (size(knapsack)!=size(message)||(set_is_set(knapsack)==0))
+  {
+    return(0);
+  }
+  else
+  {
+    for (int i=1;i<=size(knapsack);i++)
+    {
+      solution = solution+knapsack[i]*message[i];
+    }
+    return(solution);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values  have been obtained from the example of merkle_hellman_transformation!
+  list hardknapsack =3,9,15,13;
+  list message = 0,1,0,1;
+  merkle_hellman_encryption(hardknapsack,message);
+}
+
+proc merkle_hellman_decryption(list knapsack, int key, int mod1, int message)
+"USAGE:   merkle_hellman_decryption(knapsack, key, mod1, message)
+RETURN:  decrypted binary list
+EXAMPLE: example merkle_hellman_decryption; shows an example;
+"
+{
+  int new_element;
+  int t = inverse_modulus(key,mod1);
+  int transformed_message;
+  list binary_list;
+  if ((set_is_set(knapsack)==1)&&(key<mod1))
+  {
+    //reconstruct easy knapsack be multiplying with the inverse modulus t
+    list easy_knapsack;
+    for (int i=size(knapsack);i>=1;i--)
+    {
+      new_element=knapsack[i]*t%mod1;
+      easy_knapsack = insert(easy_knapsack,new_element);
+    }
+
+    //solve the easy knapsack problem with subset_sum01 or subset_sum02
+    transformed_message = (message*t)%mod1;
+    transformed_message;
+    binary_list = subset_sum01(easy_knapsack,transformed_message);
+    return(binary_list)
+  }
+  else
+  {
+    return(0)
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //Please note that the values  have been obtained from the example of merkle_hellman_decryption and merkle_hellman_transformation!
+  list hardknapsack =3,9,15,13;
+  int key = 3;
+  int message = 22;
+  int mod1 = 23;
+  merkle_hellman_decryption(hardknapsack, key, mod1, message);
+}
+
+proc super_increasing_knapsack(int ksize)
+"USAGE:   super_increasing_knapsack(ksize)
+RETURN:  super-increasing knapsack list
+EXAMPLE: super_increasing_knapsack; shows an example;
+"
+{
+  list output_list = insert(output_list,1);
+  int next_element;
+
+  for (int i=2; i<=ksize; i++)
+  {
+    next_element = calculate_max_sum(output_list)+1;
+    output_list = insert(output_list,next_element);
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  super_increasing_knapsack(10);
+}
+
+proc h_increasing_knapsack(int ksize, int h)
+"USAGE:   h_increasing_knapsack(ksize, h)
+RETURN:  h-increasing knapsack list
+EXAMPLE: h_increasing_knapsack; shows an example;
+"
+{
+  int v;
+  if (ksize<=h+1)
+  {
+    return(set_turn(super_increasing_knapsack(ksize)))
+  }
+  else
+  {
+    list out = set_turn(super_increasing_knapsack(h+1));
+    int next_element;
+    for (int i=h+2; i<=ksize; i++)
+    {
+      next_element = 0;
+      for (v=i-h; v<=i-1; v++)
+      {
+        next_element = next_element+out[v];
+      }
+      next_element++;
+      out = insert(out,next_element,size(out));
+    }
+    return(out);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  h_increasing_knapsack(10,5);
+}
+
+proc injective_knapsack(int ksize, int kmaxelement)
+"USAGE:   injective_knapsack(ksize, kmaxelement)
+RETURN:  list of injective knapsacks with maximal element kmaxelement and size ksize
+EXAMPLE: injective_knapsack; shows an example;
+"
+{
+  //Create a List of size ksize with the greatest possible elements keeping the set structure
+  list list_of_lists;
+  list A = insert(A,kmaxelement);
+  int i;
+  for (i=2;i<=ksize;i++)
+  {
+    A = insert(A,kmaxelement-(i-1));
+  }
+  A = set_turn(A);
+  list_of_lists = insert(list_of_lists,A);
+
+  //Create all possible sets containing the possible elements of A
+  int residual;
+  int position;
+  while(A[1]==kmaxelement)
+  {
+    residual=3;
+    position = ksize;
+    while((residual!=0))
+    {
+      if(A[position]==1)
+      {
+        A[position]=kmaxelement-position+1;
+        residual=1;
+        position--;
+      }
+      else
+      {
+        A[position]=A[position]-1;
+        residual=0;
+      }
+    }
+    //Insert the list into the overall list if its a set
+    if (set_is_set(A)==1)
+    {
+      list_of_lists = insert(list_of_lists,A);
+    }
+  }
+  //delete the first element since it is smaller than kmaxelement
+  list_of_lists = delete(list_of_lists,1);
+  //delete duplicates
+  list_of_lists = set_list_delete_duplicates(list_of_lists);
+
+  //Check if the remaining knapsacks are injective
+  list output_list;
+  for(i=1;i<=size(list_of_lists);i++)
+  {
+    if (set_is_injective(list_of_lists[i])==1)
+    {
+      output_list=insert(output_list,list_of_lists[i]);
+    }
+  }
+  return(output_list);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  injective_knapsack(3,9);
+}
+
+proc calculate_max_sum(list a)
+"USAGE:   calculate_max_sum(a)
+RETURN:  sum of all elements in a
+EXAMPLE: calculate_max_sum; shows an example;
+"
+{
+  int sum = a[1];
+  for (int i=2; i<=size(a);i++)
+  {
+    sum = sum+a[i];
+  }
+  return(sum);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list a = 1,5,3,2,12;
+  calculate_max_sum(a);
+}
+
+proc set_is_injective(list a)
+"USAGE:   set_is_injective(a)
+RETURN:  1 if a is injective, 0 otherwise
+EXAMPLE: set_is_injective; shows an example;
+"
+{
+  //Create all subsets of the set a
+  list subsum = set_subset_set(a);
+  list checklist=calculate_max_sum(subsum[1]);
+  int calculator;
+  for (int i=2; i<=size(subsum);i++)
+  {
+    //calculate the maximal subset_sum for every subset. Check if there are duplicated subset_sums. If so, a is not injective
+    calculator = calculate_max_sum(subsum[i]);
+    if (set_contains(checklist, calculator))
+    {
+      return(0);
+    }
+    else
+    {
+      checklist = insert(checklist,calculator);
+    }
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list inj = 1,5,7,41;
+  list non_inj = 1,2,3,4;
+  set_is_injective(inj);
+  set_is_injective(non_inj);
+}
+
+proc is_h_injective(list a, int h)
+"USAGE:   is_h_injective(a, h)
+RETURN:  1 if a is h-injective, 0 otherwise
+EXAMPLE: is_h_injective; shows an example;
+"
+{
+  //Create all sets of subsets
+  list subsetlist = set_subset_set(a);
+  list h_subsetlist;
+  //delete every list with elements more than h+1 since they are not needed to check h-injectivity
+  for (int i=1; i<=size(subsetlist); i++)
+  {
+    if(size(subsetlist[i])<=h)
+    {
+      h_subsetlist = insert(h_subsetlist,subsetlist[i]);
+    }
+  }
+
+  //Check if the remaining max_sums do not occure more than once
+  list checklist=calculate_max_sum(h_subsetlist[1]);
+  int calculator;
+  for (i=2; i<=size(h_subsetlist);i++)
+  {
+    calculator = calculate_max_sum(h_subsetlist[i]);
+    if (set_contains(checklist, calculator)==1)
+    {
+      return(0);
+    }
+    else
+    {
+      checklist = insert(checklist,calculator);
+    }
+  }
+  return(1);
+
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  list h_inj = 1,2,4,10,17;
+  is_h_injective(h_inj,3);
+  //1+2+4+10=17
+  is_h_injective(h_inj,4);
+}
+
+proc is_fix_injective(list a)
+"USAGE:   is_fix_injective(a)
+RETURN:  1 if a is fix-injective, 0 otherwise
+EXAMPLE: is_fix_injective; shows an example;
+"
+{
+  //Generation of the list-list-list
+  list subsetlist = set_subset_set(a);
+  list alreadycreatedlist;
+  list listoflists;
+  list emptylist1;
+  list worklist;
+  int i;
+  int v;
+  list checklist;
+  int calculator;
+
+  int set_destination;
+
+  //create list of lists wich contain the lists of a certain length as elements
+  for (i = 1; i<= size(subsetlist); i++)
+  {
+    //Determine the size of the acutal list to choose where to insert it in the listoflists
+    set_destination = size(subsetlist[i]);
+    if (set_contains(alreadycreatedlist,set_destination)==1)
+    {
+      //There is already an element with the same set size, so just insert it
+      listoflists[set_destination] = insert(listoflists[set_destination],subsetlist[i]);
+    }
+    else
+    {
+      //There is not yet an element with the same set size, so create a new one
+      listoflists[set_destination] = insert(emptylist1,subsetlist[i]);
+      alreadycreatedlist = set_insert(alreadycreatedlist,set_destination );
+    }
+  }
+
+  //Check for injectivity of each seperate list. Works as in injectivity or h-injectivity
+  for (v=1; v<=size(listoflists); v++)
+  {
+    worklist = listoflists[v];
+
+    checklist=calculate_max_sum(worklist[1]);
+    for (i=2; i<=size(worklist); i++)
+    {
+      calculator = calculate_max_sum(worklist[i]);
+      if (set_contains(checklist, calculator)==1)
+      {
+        return(0);
+      }
+      else
+      {
+        checklist = insert(checklist,calculator);
+      }
+    }
+  }
+  return(1);
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //this is fix-injective because 17=10+2+4+1 with different numbers of addens.
+  list fix_inj = 1,2,4,10,17;
+  //this is not fix-injective because 4+1=2+3.
+  list not_fix_inj = 1,2,3,4;
+  is_fix_injective(fix_inj);
+  is_fix_injective(not_fix_inj);
+}
+
+proc three_elements(list out, int iterations)
+"USAGE:   three_elements(out, iterations)
+RETURN:  Injective_knapsack created with the three elements method
+EXAMPLE: three_elements; shows an example;
+"
+{
+  int a;
+  int b;
+  int c;
+  int subsum;
+  int adden = 1;
+  int condition = 0;
+  out = set_turn(out);
+  if (set_is_injective(out)==0)
+  {
+    return(0);
+  }
+  else
+  {
+    for (int i=1; i<=iterations; i++)
+    {
+      while(condition==0)
+      {
+        subsum = calculate_max_sum(out);
+        a = 2*subsum+adden;
+        b = a+subsum+adden;
+        c = b+subsum+1;
+        if ((a+b)>(c+subsum))
+        {
+          condition=1;
+        }
+        else
+        {
+          adden++;
+        }
+      }
+      adden =1;
+      condition=0;
+      out=set_insert(out, a);
+      out=set_insert(out, b);
+      out=set_insert(out, c);
+    }
+    return(out);
+  }
+}
+example
+{
+  "EXAMPLE:"; echo = 2;
+  //this is fix-injective because 17=10+2+4+1 with different numbers of addens.
+  list super_increasing = 1,2,4,10,20;
+  list a = three_elements(super_increasing,2);
+  a;
+  set_is_injective(a);
+}
 /*
 //===============================================================
 //=======  Example for DSA  =====================================

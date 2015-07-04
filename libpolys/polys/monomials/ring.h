@@ -15,8 +15,7 @@
 //
 
 /* forward declaration of types */
-class idrec;
-typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
+class idrec; typedef idrec *   idhdl; // _only_ for idhdl ip_sring::idroot
 struct  spolyrec;
 typedef struct spolyrec    polyrec;
 typedef struct spolyrec *         poly;
@@ -200,6 +199,12 @@ struct sro_ord
 struct nc_struct;
 typedef struct nc_struct   nc_struct;
 #endif
+class skStrategy;
+typedef skStrategy * kStrategy;
+
+typedef poly (*NF_Proc)(ideal, ideal, poly, int, int, const ring _currRing);
+typedef ideal (*BBA_Proc) (const ideal, const ideal, const intvec *, const intvec *, kStrategy strat, const ring);
+
 
 struct ip_sring
 {
@@ -246,10 +251,10 @@ struct ip_sring
   void * ext_ref;   /* libsing GAP object */
 // #ifdef HAVE_RINGS
 //   unsigned int  cf->ringtype;  /* cring = 0 => coefficient field, cring = 1 => coeffs from Z/2^m */
-//   int_number    cf->modBase; /* Z/(ringflag^cf->modExponent)=Z/cf->modNumber*/
+//   mpz_ptr    cf->modBase; /* Z/(ringflag^cf->modExponent)=Z/cf->modNumber*/
 //   unsigned long cf->modExponent;
 //   unsigned long cf->modNumber;  /* Z/cf->modNumber */
-//   int_number    cf->modNumber;
+//   mpz_ptr    cf->modNumber;
 // #endif
 
   unsigned long options; /* ring dependent options */
@@ -741,6 +746,7 @@ BOOLEAN rHasSimpleLexOrder(const ring r);
 
 inline BOOLEAN rHasGlobalOrdering(const ring r){ return (r->OrdSgn==1); }
 inline BOOLEAN rHasLocalOrMixedOrdering(const ring r){ return (r->OrdSgn==-1); }
+inline BOOLEAN rHasMixedOrdering(const ring r) { return (r->MixedOrder); }
 
 // #define rHasGlobalOrdering(R) ((R)->OrdSgn==1)
 // #define rHasLocalOrMixedOrdering(R) ((R)->OrdSgn==-1)
@@ -748,16 +754,16 @@ inline BOOLEAN rHasLocalOrMixedOrdering(const ring r){ return (r->OrdSgn==-1); }
 #define rHasGlobalOrdering_currRing() rHasGlobalOrdering(currRing)
 #define rHasLocalOrMixedOrdering_currRing() rHasLocalOrMixedOrdering(currRing)
 
-BOOLEAN rOrd_is_Totaldegree_Ordering(ring r );
+BOOLEAN rOrd_is_Totaldegree_Ordering(const ring r);
 
 /// return TRUE if p_SetComp requires p_Setm
-BOOLEAN rOrd_SetCompRequiresSetm(ring r);
+BOOLEAN rOrd_SetCompRequiresSetm(const ring r);
 rOrderType_t    rGetOrderType(ring r);
 
 /// returns TRUE if var(i) belongs to p-block
-BOOLEAN rIsPolyVar(int i, ring r);
+BOOLEAN rIsPolyVar(int i, const ring r);
 
-static inline BOOLEAN rOrd_is_Comp_dp(ring r)
+static inline BOOLEAN rOrd_is_Comp_dp(const ring r)
 {
   assume(r != NULL);
   assume(r->cf != NULL);
@@ -792,12 +798,6 @@ void rKillModifiedRing_Simple(ring r);
 void rDebugPrint(ring r);
 // void pDebugPrint(poly p);
 void p_DebugPrint(poly p, const ring r);
-#endif
-
-#ifndef SING_NDEBUG
-/// debug-print at most nTerms (2 by default) terms from poly/vector p,
-/// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
-void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms = 2);
 #endif
 
 int64 * rGetWeightVec(ring r);
