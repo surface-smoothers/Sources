@@ -574,7 +574,10 @@ static BOOLEAN jjPOWER_I(leftv res, leftv u, leftv v)
         }
       }
       if (overflow)
-        WarnS("int overflow(^), result may be wrong");
+      {
+        Print("int overflow(^), result may be wrong");
+        exit(253);
+      }
     }
     res->data = (char *)((long)rc);
     if (u!=NULL) return jjOP_REST(res,u,v);
@@ -633,8 +636,9 @@ static BOOLEAN jjPOWER_P(leftv res, leftv u, leftv v)
   && ((v_i!=0) &&
       ((long)pTotaldegree(u_p) > (signed long)currRing->bitmask / (signed long)v_i/2)))
   {
-    Werror("OVERFLOW in power(d=%ld, e=%d, max=%ld)",
+    Print("OVERFLOW in power(d=%ld, e=%d, max=%ld)",
                                     pTotaldegree(u_p),v_i,currRing->bitmask/2);
+    exit(253);                                    
     pDelete(&u_p);
     return TRUE;
   }
@@ -778,7 +782,9 @@ static BOOLEAN jjPLUS_I(leftv res, leftv u, leftv v)
   res->data = (char *)((long)c);
   if (((Sy_bit(31)&a)==(Sy_bit(31)&b))&&((Sy_bit(31)&a)!=(Sy_bit(31)&c)))
   {
-    WarnS("int overflow(+), result may be wrong");
+    //WarnS("int overflow(+), result may be wrong");
+    Print("int overflow(+), result may be wrong");
+    exit(253);    
   }
   return jjPLUSMINUS_Gen(res,u,v);
 }
@@ -870,7 +876,9 @@ static BOOLEAN jjMINUS_I(leftv res, leftv u, leftv v)
   unsigned int c=a-b;
   if (((Sy_bit(31)&a)!=(Sy_bit(31)&b))&&((Sy_bit(31)&a)!=(Sy_bit(31)&c)))
   {
-    WarnS("int overflow(-), result may be wrong");
+    //WarnS
+    Print("int overflow(-), result may be wrong");
+    exit(253);
   }
   res->data = (char *)((long)cc);
   return jjPLUSMINUS_Gen(res,u,v);
@@ -929,7 +937,11 @@ static BOOLEAN jjTIMES_I(leftv res, leftv u, leftv v)
   int b=(int)(long)v->Data();
   int64 c=(int64)a * (int64)b;
   if ((c>INT_MAX)||(c<INT_MIN))
-    WarnS("int overflow(*), result may be wrong");
+  {
+    
+    Print("int overflow(*), result may be wrong");
+    exit(253);
+  }
   res->data = (char *)((long)((int)c));
   if ((u->Next()!=NULL) || (v->Next()!=NULL))
     return jjOP_REST(res,u,v);
@@ -965,8 +977,9 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
       if ((a!=NULL) && (b!=NULL)
       && ((long)pTotaldegree(a)>si_max((long)rVar(currRing),(long)currRing->bitmask/2)-(long)pTotaldegree(b)))
       {
-        Warn("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
+        Print("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
           pTotaldegree(a),pTotaldegree(b),currRing->bitmask/2);
+          exit(253);
       }
       res->data = (char *)(pMult( a, b));
       pNormalize((poly)res->data);
@@ -977,8 +990,9 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
     if ((a!=NULL) && (b!=NULL)
     && (pTotaldegree(a)+pTotaldegree(b)>si_max((long)rVar(currRing),(long)currRing->bitmask/2)))
     {
-      Warn("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
+      Print("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
           pTotaldegree(a),pTotaldegree(b),currRing->bitmask/2);
+      exit(253);
     }
     res->data = (char *)(pMult( a, b));
     pNormalize((poly)res->data);
@@ -992,7 +1006,8 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
   {
     pDelete(&a);
     pDelete(&b);
-    WerrorS("OVERFLOW");
+    Print("OVERFLOW");
+    exit(253);     
     return TRUE;
   }
   res->data = (char *)(pMult( a, b));
@@ -6049,7 +6064,7 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
   {
     if (v_typ==0)
     {
-      Werror("`%s` is undefined",v->Fullname());
+      Werror("`%s` is undefined 2",v->Fullname());
       return TRUE;
     }
     // try to convert to MATRIX:
@@ -6374,7 +6389,8 @@ static BOOLEAN jjSUBST_P(leftv res, leftv u, leftv v,leftv w)
     if ((monomexpr!=NULL) && (p!=NULL) && (pTotaldegree(p)!=0) &&
     ((unsigned long)pTotaldegree(monomexpr) > (currRing->bitmask / (unsigned long)pTotaldegree(p)/2)))
     {
-      Warn("possible OVERFLOW in subst, max exponent is %ld, subtituting deg %d by deg %d",currRing->bitmask/2, pTotaldegree(monomexpr), pTotaldegree(p));
+      Print("possible OVERFLOW in subst, max exponent is %ld, subtituting deg %d by deg %d",currRing->bitmask/2, pTotaldegree(monomexpr), pTotaldegree(p));
+      exit(253);
       //return TRUE;
     }
     if ((monomexpr==NULL)||(pNext(monomexpr)==NULL))
@@ -6413,7 +6429,10 @@ static BOOLEAN jjSUBST_Id(leftv res, leftv u, leftv v,leftv w)
       }
     }
     if (overflow)
-      Warn("possible OVERFLOW in subst, max exponent is %ld",currRing->bitmask/2);
+    {
+      Print("possible OVERFLOW in subst, max exponent is %ld",currRing->bitmask/2);
+      exit(253);
+    }
     if ((monomexpr==NULL)||(pNext(monomexpr)==NULL))
     {
       if (res->rtyp==MATRIX_CMD) id=(ideal)mp_Copy((matrix)id,currRing);
@@ -7426,7 +7445,7 @@ BOOLEAN jjLIST_PL(leftv res, leftv v)
       if (rt==0)
       {
         L->Clean();
-        Werror("`%s` is undefined",h->Fullname());
+        Werror("`%s` is undefined 1",h->Fullname());
         return TRUE;
       }
       if ((rt==RING_CMD)||(rt==QRING_CMD))
@@ -8068,7 +8087,7 @@ static BOOLEAN iiExprArith2TabIntern(leftv res, leftv a, int op, leftv b,
         s=b->Fullname();
       }
       if (s!=NULL)
-        Werror("`%s` is not defined",s);
+        Werror("`%s` is not defined in %s, line %d, \n %s ",s, currentVoice->filename,  yylineno, my_yylinebuf );
       else
       {
         i=0; /*iiTabIndex(dArithTab2,JJTAB2LEN,op);*/
@@ -8283,7 +8302,7 @@ BOOLEAN iiExprArith1Tab(leftv res, leftv a, int op, struct sValCmd1* dA1, int at
     {
       if ((at==0) && (a->Fullname()!=sNoName))
       {
-        Werror("`%s` is not defined",a->Fullname());
+        Werror("`%s` is not defined in %s, line %d, \n %s ",a->Fullname(), currentVoice->filename, yylineno, my_yylinebuf);
       }
       else
       {
@@ -8486,7 +8505,7 @@ static BOOLEAN iiExprArith3TabIntern(leftv res, int op, leftv a, leftv b, leftv 
         s=c->Fullname();
       }
       if (s!=NULL)
-        Werror("`%s` is not defined",s);
+        Werror("`%s` is not defined in %s, line %d, \n %s ",s, currentVoice->filename,  yylineno, my_yylinebuf);
       else
       {
         i=0;
@@ -8702,7 +8721,7 @@ BOOLEAN iiExprArithM(leftv res, leftv a, int op)
     {
       if ((args>0) && (a->rtyp==0) && (a->Name()!=sNoName))
       {
-        Werror("`%s` is not defined",a->Fullname());
+        Werror("`%s` is not defined in line %d, \n %s ",a->Fullname(),  yylineno, my_yylinebuf);
       }
       else
       {

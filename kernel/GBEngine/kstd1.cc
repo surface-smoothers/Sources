@@ -1641,6 +1641,8 @@ loop_count = 1;
       strat->P.p = redtail(&(strat->P),strat->sl,strat);
       if (strat->P.p==NULL)
       {
+        Print("expoent overflow - wrong ordering");
+        exit(252);
         WerrorS("expoent overflow - wrong ordering");
         return(idInit(1,1));
       }

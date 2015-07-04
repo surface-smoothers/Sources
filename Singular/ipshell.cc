@@ -762,7 +762,10 @@ leftv iiMap(map theMap, const char * what)
         }
       }
       if (overflow)
-        Warn("possible OVERFLOW in map, max exponent is %ld",currRing->bitmask/2);
+      {
+        Print("possible OVERFLOW in map, max exponent is %ld",currRing->bitmask/2);
+        exit(253);
+      }
 #if 0
       if (((tmpW.rtyp==IDEAL_CMD)||(tmpW.rtyp==MODUL_CMD)) && idIs0(IDIDEAL(w)))
       {
