@@ -4,7 +4,6 @@
 #include <initial.h>
 #include <lift.h>
 #include <groebnerCone.h>
-// #include <neighbours.h>
 #include <tropicalStrategy.h>
 #include <tropicalCurves.h>
 #include <bbcone.h>
@@ -13,57 +12,11 @@
 #include <tropicalStrategy.h>
 
 
-/***
- * checks whether sigma is contained in the tropical variety
- * by testing whether the initial Ideal with respect to the interior point
- * is monomial free.
- **/
-// static bool checkContainmentInTropicalVariety(const groebnerCone sigma)
-// {
-//   ideal I = sigma.getPolynomialIdeal();
-//   ring r = sigma.getPolynomialRing();
-//   const tropicalStrategy* currentStrategy = sigma.getTropicalStrategy();
-
-//   gfan::ZCone zc = sigma.getPolyhedralCone();
-//   gfan::ZMatrix zm = zc.extremeRays();
-//   for (int i=0; i<zm.getHeight(); i++)
-//   {
-//     gfan::ZVector w = zm[i];
-//     if (currentStrategy->isValuationNonTrivial() && w[0].sign()==0)
-//       continue;
-//     poly s = currentStrategy->checkInitialIdealForMonomial(I,r,w);
-//     if (s)
-//     {
-//       p_Delete(&s,r);
-//       return false;
-//     }
-//   }
-
-//   zm = zc.generatorsOfLinealitySpace();
-//   for (int i=0; i<zm.getHeight(); i++)
-//   {
-//     gfan::ZVector w = zm[i];
-//     if (currentStrategy->isValuationNonTrivial() && w[0].sign()==0)
-//       continue;
-//     poly s = currentStrategy->checkInitialIdealForMonomial(I,r,w);
-//     if (s)
-//     {
-//       p_Delete(&s,r);
-//       return false;
-//     }
-//   }
-
-//   return true;
-// }
-
-
-// static bool checkOneCodimensionalLinealitySpace(const groebnerCone sigma)
-// {
-//   gfan::ZCone zc = sigma.getPolyhedralCone();
-//   int linDim = zc.dimensionOfLinealitySpace();
-//   int dim = zc.dimension();
-//   return (linDim+1)==dim;
-// }
+groebnerCone groebnerStartingCone(const tropicalStrategy& currentStrategy)
+{
+  groebnerCone sigma(currentStrategy.getStartingIdeal(), currentStrategy.getStartingRing(), currentStrategy);
+  return sigma;
+}
 
 
 /**
@@ -384,7 +337,7 @@ groebnerCone tropicalStartingCone(const tropicalStrategy& currentStrategy)
   ring r = currentStrategy.getStartingRing();
   ideal I = currentStrategy.getStartingIdeal();
   currentStrategy.reduce(I,r);
-  if (currentStrategy.isConstantCoefficientCase())
+  if (currentStrategy.isValuationTrivial())
   {
     // copy the data, so that it be deleted when passed to the loop
     // s <- r
@@ -401,6 +354,22 @@ groebnerCone tropicalStartingCone(const tropicalStrategy& currentStrategy)
     // equals the dimension of the tropical variety
     gfan::ZCone zc = linealitySpaceOfGroebnerFan(inI,s);
     gfan::ZVector startingPoint; groebnerCone ambientMaximalCone;
+    if (zc.dimension()>=currentStrategy.getExpectedDimension())
+    {
+      // check whether the lineality space is contained in the tropical variety
+      // i.e. whether the ideal does not contain a monomial
+      poly mon = checkForMonomialViaSuddenSaturation(I,r);
+      if (mon)
+      {
+        groebnerCone emptyCone = groebnerCone();
+        p_Delete(&mon,r);
+        id_Delete(&inI,s);
+        return emptyCone;
+      }
+      groebnerCone startingCone(inI,inI,s,currentStrategy);
+      id_Delete(&inI,s);
+      return startingCone;
+    }
     while (zc.dimension()<currentStrategy.getExpectedDimension())
     {
       // compute a point in the tropical variety outside the lineality space
@@ -446,9 +415,16 @@ groebnerCone tropicalStartingCone(const tropicalStrategy& currentStrategy)
     // and check whether the dimension of its homogeneity space
     // equals the dimension of the tropical variety
     gfan::ZCone zc = linealitySpaceOfGroebnerFan(inJ,s);
-    if (zc.dimension()==currentStrategy.getExpectedDimension())
+    if (zc.dimension()>=currentStrategy.getExpectedDimension())
     { // this shouldn't happen as trivial cases should be caught beforehand
       // this is the case that the tropical variety consists soely out of the lineality space
+      poly mon = checkForMonomialViaSuddenSaturation(I,r);
+      if (mon)
+      {
+        groebnerCone emptyCone = groebnerCone();
+        p_Delete(&mon,r);
+        return emptyCone;
+      }
       groebnerCone startingCone(I,inJ,s,currentStrategy);
       id_Delete(&inJ,s);
       rDelete(s);
