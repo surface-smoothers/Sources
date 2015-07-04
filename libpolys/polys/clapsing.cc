@@ -153,15 +153,13 @@ poly singclap_gcd_and_divide ( poly& f, poly& g, const ring r)
 
   if (g == NULL)
   {
-    res= p_Copy (f,r);
-    p_Delete (&f, r);
+    res= f;
     f=p_One (r);
     return res;
   }
   if (f==NULL)
   {
-    res= p_Copy (g,r);
-    p_Delete (&g, r);
+    res= g;
     g=p_One (r);
     return res;
   }
@@ -1629,16 +1627,15 @@ number singclap_det_bi( bigintmat * m, const coeffs cf)
   {
     for(j=m->cols();j>0;j--)
     {
-      M(i,j)=cf->convSingNFactoryN(BIMATELEM(*m,i,j),setchar,cf);
+      M(i,j)=n_convSingNFactoryN(BIMATELEM(*m,i,j),setchar,cf);
       setchar=FALSE;
     }
   }
-  number res= cf->convFactoryNSingN( determinant(M,m->rows()),cf ) ;
+  number res=n_convFactoryNSingN( determinant(M,m->rows()),cf ) ;
   return res;
 }
 
 #ifdef HAVE_NTL
-#if 1
 matrix singntl_HNF(matrix  m, const ring s )
 {
   int r=m->rows();
@@ -1675,7 +1672,7 @@ matrix singntl_HNF(matrix  m, const ring s )
   return res;
 }
 
-intvec* singntl_HNF(intvec*  m, const ring)
+intvec* singntl_HNF(intvec*  m)
 {
   int r=m->rows();
   if (r!=m->cols())
@@ -1735,7 +1732,7 @@ matrix singntl_LLL(matrix  m, const ring s )
   return res;
 }
 
-intvec* singntl_LLL(intvec*  m, const ring)
+intvec* singntl_LLL(intvec*  m)
 {
   int r=m->rows();
   int c=m->cols();
@@ -1744,7 +1741,7 @@ intvec* singntl_LLL(intvec*  m, const ring)
   int i,j;
   for(i=r;i>0;i--)
   {
-    for(j=r;j>0;j--)
+    for(j=c;j>0;j--)
     {
       M(i,j)=IMATELEM(*m,i,j);
     }
@@ -1838,6 +1835,36 @@ ideal singclap_absFactorize ( poly f, ideal & mipos, intvec ** exps, int & numFa
   return res;
 }
 
-#endif
+#else
+matrix singntl_HNF(matrix  m, const ring s )
+{
+  WerrorS("NTL missing");
+  return NULL;
+}
+
+intvec* singntl_HNF(intvec*  m)
+{
+  WerrorS("NTL missing");
+  return NULL;
+}
+
+matrix singntl_LLL(matrix  m, const ring s )
+{
+  WerrorS("NTL missing");
+  return NULL;
+}
+
+intvec* singntl_LLL(intvec*  m)
+{
+  WerrorS("NTL missing");
+  return NULL;
+}
+
+ideal singclap_absFactorize ( poly f, ideal & mipos, intvec ** exps, int & numFactors, const ring r)
+{
+  WerrorS("NTL missing");
+  return NULL;
+}
+
 #endif /* HAVE_NTL */
 

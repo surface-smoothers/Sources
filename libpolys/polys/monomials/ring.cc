@@ -21,7 +21,6 @@
 
 #include <coeffs/numbers.h>
 #include <coeffs/coeffs.h>
-#include <coeffs/rmodulon.h>
 
 #include <polys/monomials/p_polys.h>
 #include <polys/simpleideals.h>
@@ -616,8 +615,7 @@ char * rVarStr(ring r)
 
 /// TODO: make it a virtual method of coeffs, together with:
 /// Decompose & Compose, rParameter & rPar
-char * rCharStr(ring r)
-{ return r->cf->cfCoeffString(r->cf); }
+char * rCharStr(const ring r){ assume( r != NULL ); return nCoeffString(r->cf); }
 
 char * rParStr(ring r)
 {
@@ -1052,6 +1050,7 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
       return -1;
     }
   }
+  tmpR.bitmask=si_max(r1->bitmask,r2->bitmask);
   sum=(ring)omAllocBin(sip_sring_bin);
   memcpy(sum,&tmpR,sizeof(ip_sring));
   rComplete(sum);
@@ -1245,9 +1244,19 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
 
     omFree((ADDRESS)perm2);
   }
-  if ( (Q1!=NULL) || ( Q2!=NULL))
+  if (Q1!=NULL) 
   {
-    Q = id_SimpleAdd(Q1,Q2,sum);
+    if ( Q2!=NULL)
+      Q = id_SimpleAdd(Q1,Q2,sum);
+    else
+      Q=id_Copy(Q1,sum);
+  }
+  else
+  {
+    if ( Q2!=NULL)
+      Q = id_Copy(Q2,sum);
+    else
+      Q=NULL;
   }
   sum->qideal = Q;
 
@@ -1318,7 +1327,8 @@ ring rCopy0(const ring r, BOOLEAN copy_qideal, BOOLEAN copy_ordering)
   res->ShortOut=r->ShortOut;
   res->CanShortOut=r->CanShortOut;
   res->LexOrder=r->LexOrder; // TRUE if the monomial ordering has polynomial and power series blocks
-  res->MixedOrder=r->MixedOrder; // ?? 1 for lex ordering (except ls), -1 otherwise
+  res->MixedOrder=r->MixedOrder; // TRUE for mixed (global/local) ordering, FALSE otherwise,
+  // 2 for diffenerent signs within one block
   res->ComponentOrder=r->ComponentOrder;
 
   //memset: res->ExpL_Size=0;
@@ -1460,7 +1470,8 @@ ring rCopy0AndAddA(const ring r,  int64vec *wv64, BOOLEAN copy_qideal, BOOLEAN c
   res->ShortOut=r->ShortOut;
   res->CanShortOut=r->CanShortOut;
   res->LexOrder=r->LexOrder; // TRUE if the monomial ordering has polynomial and power series blocks
-  res->MixedOrder=r->MixedOrder; // ?? 1 for lex ordering (except ls), -1 otherwise
+  res->MixedOrder=r->MixedOrder; // TRUE for mixed (global/local) ordering, FALSE otherwise,
+  // 2 for diffenerent signs within one block
   res->ComponentOrder=r->ComponentOrder;
 
   //memset: res->ExpL_Size=0;
@@ -1834,7 +1845,7 @@ BOOLEAN rHasSimpleOrderAA(ring r)
 }
 
 // return TRUE if p_SetComp requires p_Setm
-BOOLEAN rOrd_SetCompRequiresSetm(ring r)
+BOOLEAN rOrd_SetCompRequiresSetm(const ring r)
 {
   if (r->typ != NULL)
   {
@@ -1854,7 +1865,7 @@ BOOLEAN rOrd_SetCompRequiresSetm(ring r)
 }
 
 // return TRUE if p->exp[r->pOrdIndex] holds total degree of p */
-BOOLEAN rOrd_is_Totaldegree_Ordering(ring r)
+BOOLEAN rOrd_is_Totaldegree_Ordering(const ring r)
 {
   // Hmm.... what about Syz orderings?
   return (rVar(r) > 1 &&
@@ -1867,7 +1878,7 @@ BOOLEAN rOrd_is_Totaldegree_Ordering(ring r)
 }
 
 // return TRUE if p->exp[r->pOrdIndex] holds a weighted degree of p */
-BOOLEAN rOrd_is_WeightedDegree_Ordering(ring r )
+BOOLEAN rOrd_is_WeightedDegree_Ordering(const ring r )
 {
   // Hmm.... what about Syz orderings?
   return ((rVar(r) > 1) &&
@@ -1876,7 +1887,7 @@ BOOLEAN rOrd_is_WeightedDegree_Ordering(ring r )
            rOrder_is_WeightedOrdering(( rRingOrder_t)r->order[1])));
 }
 
-BOOLEAN rIsPolyVar(int v, ring r)
+BOOLEAN rIsPolyVar(int v,const ring r)
 {
   int  i=0;
   while(r->order[i]!=0)
@@ -2517,6 +2528,11 @@ static unsigned long rGetExpSize(unsigned long bitmask, int & bits)
 */
 static unsigned long rGetExpSize(unsigned long bitmask, int & bits, int N)
 {
+#if SIZEOF_LONG == 8
+  if (N<4) N=4;
+#else
+  if (N<2) N=2;
+#endif
   bitmask =rGetExpSize(bitmask, bits);
   int vars_per_long=BIT_SIZEOF_LONG/bits;
   int bits1;
@@ -2670,9 +2686,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         assume((i == 0) && (j == 0));
         if (try_omit_comp)
         {
-#ifndef SING_NDEBUG
-          Warn("WRONG USAGE? of rModifyRing: omitting component due to the ordering block [%d]: %d (ringorder_s)", i, r_ord);
-#endif
+          // tried, but cannot omit component due to the ordering block [%d]: %d (ringorder_s)", i, r_ord
           try_omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
@@ -3012,7 +3026,7 @@ static void rHighSet(ring r, int o_r, int o)
       {
         int i;
         for(i=r->block1[o]-r->block0[o];i>=0;i--)
-          if (r->wvhdl[o][i]<0) { r->MixedOrder=TRUE; break; }
+          if (r->wvhdl[o][i]<0) { r->MixedOrder=2; break; }
       }
       break;
     case ringorder_c:
@@ -3020,7 +3034,7 @@ static void rHighSet(ring r, int o_r, int o)
       break;
     case ringorder_C:
     case ringorder_S:
-      r->ComponentOrder=-1;
+      r->ComponentOrder=TRUE;
       break;
     case ringorder_M:
       r->LexOrder=TRUE;
@@ -3127,7 +3141,7 @@ static void rSetDegStuff(ring r)
   {
     r->MixedOrder = FALSE;
     for(int ii=block0[0];ii<=block1[0];ii++)
-      if (wvhdl[0][ii-1]<0) { r->MixedOrder=TRUE;break;}
+      if (wvhdl[0][ii-1]<0) { r->MixedOrder=2;break;}
     r->LexOrder=FALSE;
     for(int ii=block0[0];ii<=block1[0];ii++)
       if (wvhdl[0][ii-1]==0) { r->LexOrder=TRUE;break;}
@@ -3168,12 +3182,24 @@ static void rSetDegStuff(ring r)
       r->pLDeg = pLDeg1c;
       r->pFDeg = p_Totaldegree;
     }
-    if ((order[0] == ringorder_a)
+    else if ((order[0] == ringorder_a)
     || (order[0] == ringorder_wp)
-    || (order[0] == ringorder_Wp)
-    || (order[0] == ringorder_ws)
-    || (order[0] == ringorder_Ws))
+    || (order[0] == ringorder_Wp))
+    {
       r->pFDeg = p_WFirstTotalDegree;
+    }
+    else if ((order[0] == ringorder_ws)
+    || (order[0] == ringorder_Ws))
+    {
+      for(int ii=block0[0];ii<=block1[0];ii++)
+      {
+        if (wvhdl[0][ii-1]<0) { r->MixedOrder=2;break;}
+      }
+      if (r->MixedOrder==0)
+        r->pFDeg = p_WFirstTotalDegree;
+      else
+        r->pFDeg = p_Totaldegree;
+    }
     r->firstBlockEnds=block1[0];
     r->firstwv = wvhdl[0];
   }
@@ -3201,10 +3227,18 @@ static void rSetDegStuff(ring r)
     if (wvhdl!=NULL) r->firstwv = wvhdl[1];
     if ((order[1] == ringorder_a)
     || (order[1] == ringorder_wp)
-    || (order[1] == ringorder_Wp)
-    || (order[1] == ringorder_ws)
-    || (order[1] == ringorder_Ws))
+    || (order[1] == ringorder_Wp))
       r->pFDeg = p_WFirstTotalDegree;
+    else if ((order[1] == ringorder_ws)
+    || (order[1] == ringorder_Ws))
+    {
+      for(int ii=block0[1];ii<=block1[1];ii++)
+        if (wvhdl[1][ii-1]<0) { r->MixedOrder=2;break;}
+      if (r->MixedOrder==FALSE)
+        r->pFDeg = p_WFirstTotalDegree;
+      else
+        r->pFDeg = p_Totaldegree;
+    }
   }
   /*------- more than one block ----------------------*/
   else
@@ -3241,7 +3275,12 @@ static void rSetDegStuff(ring r)
   }
 
   if (rOrd_is_Totaldegree_Ordering(r) || rOrd_is_WeightedDegree_Ordering(r))
-    r->pFDeg = p_Deg;
+  {
+    if(r->MixedOrder==FALSE)
+      r->pFDeg = p_Deg;
+    else
+      r->pFDeg = p_Totaldegree;
+  }
 
   if( rGetISPos(0, r) != -1 ) // Are there Schreyer induced blocks?
   {
@@ -3342,6 +3381,28 @@ void p_SetGlobals(const ring r, BOOLEAN complete)
     si_opt_1 &= ~ TEST_RINGDEP_OPTS;
     si_opt_1 |= r->options;
   }
+}
+
+static inline int sign(int x) { return (x > 0) - (x < 0);}
+BOOLEAN rOrd_is_MixedDegree_Ordering(ring r)
+{
+  int i;
+  poly p=p_One(r);
+  p_SetExp(p,1,1,r);p_Setm(p,r);
+  int vz=sign(p_FDeg(p,r));
+  for(i=2;i<=rVar(r);i++)
+  {
+    p_SetExp(p,i-1,0,r);
+    p_SetExp(p,i,1,r);
+    p_Setm(p,r);
+    if (sign(p_FDeg(p,r))!=vz)
+    {
+      p_Delete(&p,r);
+      return TRUE;
+    }
+  }
+  p_Delete(&p,r);
+  return FALSE;
 }
 
 BOOLEAN rComplete(ring r, int force)
@@ -3744,6 +3805,10 @@ BOOLEAN rComplete(ring r, int force)
   // p_Procs: call AFTER NegWeightL
   r->p_Procs = (p_Procs_s*)omAlloc(sizeof(p_Procs_s));
   p_ProcsSet(r, r->p_Procs);
+
+  // use totaldegree on crazy oderings:
+  if ((r->pFDeg==p_WTotaldegree) && rOrd_is_MixedDegree_Ordering(r))
+    r->pFDeg = p_Totaldegree;
   return FALSE;
 }
 
@@ -4180,42 +4245,6 @@ static inline void m_DebugPrint(const poly p, const ring R)
 }
 
 
-#ifndef SING_NDEBUG
-/// debug-print at most nTerms (2 by default) terms from poly/vector p,
-/// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
-void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms)
-{
-  assume( nTerms >= 0 );
-  if( p != NULL )
-  {
-    assume( p != NULL );
-
-    p_Write(p, lmRing, tailRing);
-
-    if( (p != NULL) && (nTerms > 0) )
-    {
-      assume( p != NULL );
-      assume( nTerms > 0 );
-
-      // debug pring leading term
-      m_DebugPrint(p, lmRing);
-
-      poly q = pNext(p); // q = tail(p)
-
-      // debug pring tail (at most nTerms-1 terms from it)
-      for(int j = nTerms - 1; (q !=NULL) && (j > 0); pIter(q), --j)
-        m_DebugPrint(q, tailRing);
-
-      if (q != NULL)
-        PrintS("...\n");
-    }
-  }
-  else
-    PrintS("0\n");
-}
-#endif
-
-
 //    F = system("ISUpdateComponents", F, V, MIN );
 //    // replace gen(i) -> gen(MIN + V[i-MIN]) for all i > MIN in all terms from F!
 void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ring r )
@@ -4230,7 +4259,7 @@ void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ri
   {
 #ifdef PDEBUG
     Print("F[%d]:", j);
-    p_DebugPrint(F->m[j], r, r, 0);
+    p_wrp(F->m[j], r);
 #endif
 
     for( poly p = F->m[j]; p != NULL; pIter(p) )
@@ -4249,14 +4278,10 @@ void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ri
 #ifdef PDEBUG
     Print("new F[%d]:", j);
     p_Test(F->m[j], r);
-    p_DebugPrint(F->m[j], r, r, 0);
+    p_wrp(F->m[j], r);
 #endif
   }
-
 }
-
-
-
 
 /*2
 * asssume that rComplete was called with r
@@ -5599,4 +5624,3 @@ int n_IsParam(const number m, const ring r)
 
   return 0;
 }
-

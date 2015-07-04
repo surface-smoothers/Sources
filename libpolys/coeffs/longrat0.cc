@@ -9,17 +9,12 @@
 #include <stdio.h>
 #include <string.h>
 
-
-
-
 #include <misc/auxiliary.h>
-
 #include <omalloc/omalloc.h>
 #include <reporter/reporter.h>
 
 #include "coeffs.h"
 #include "numbers.h"
-
 #include "longrat.h"
 
 /// Our Type!
@@ -109,7 +104,7 @@ const char * nlRead (const char *s, number *a, const coeffs r)
     else
     {
       number aa=*a;
-      nlNormalize(aa,r);
+      nlNormalize(aa,r); // FIXME? TODO? // extern void     nlNormalize(number &x, const coeffs r);
       *a=aa;
     }
   }
@@ -119,7 +114,7 @@ const char * nlRead (const char *s, number *a, const coeffs r)
 /*2
 * write a rational number
 */
-void nlWrite (number &a, const coeffs r)
+void nlWrite (number a, const coeffs r)
 {
   char *s,*z;
   if (SR_HDL(a) & SR_INT)
@@ -134,7 +129,7 @@ void nlWrite (number &a, const coeffs r)
   {
     if (a->s==0)
     {
-      nlNormalize(a,r);
+      nlNormalize(a,r); // FIXME? TODO? // extern void     nlNormalize(number &x, const coeffs r);
       nlWrite(a,r);
       return;
     }

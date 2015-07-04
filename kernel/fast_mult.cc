@@ -462,6 +462,8 @@ static poly p_MonMultCMB(poly p, poly q, ring r)
   p_ExpVectorSum(res,p, q,r);
   return res;
 }
+// unused
+#if 0
 static poly p_MonPowerMB(poly p, int exp, ring r)
 {
   int i;
@@ -481,6 +483,7 @@ static poly p_MonPowerMB(poly p, int exp, ring r)
   p_Setm(p,r);
   return p;
 }
+#endif
 static void buildTermAndAdd(int /*n*/,number* /*facult*/,poly* /*f_terms*/,int* exp,int f_len,kBucket_pt /*erg_bucket*/,ring r, number coef, poly & zw, poly /*tmp*/, poly** term_pot){
 
   int i;
@@ -591,7 +594,7 @@ poly pFastPowerMC(poly f, int n, ring r)
   if (n<=1)
     Werror("not implemented for so small n, recursion fails");//should be length(f)
    if (pLength(f)<=1)
-    Werror("not implemented for so small lenght of f, recursion fails");
+    Werror("not implemented for so small length of f, recursion fails");
   //  number null_number=n_Init(0,r);
   number* facult=(number*) omAlloc((n+1)*sizeof(number));
   facult[0]=n_Init(1,r->cf);

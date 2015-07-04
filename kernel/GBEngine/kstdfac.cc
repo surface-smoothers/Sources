@@ -321,6 +321,14 @@ static void completeReduceFac (kStrategy strat, ideal_list FL)
     {
       PrintS("-");mflush();
     }
+    int i;
+    if (strat->redTailChange)
+    {
+      for(i=strat->tl;i>=0;i--)
+      {
+        strat->initEcart(&strat->T[i]);
+      }
+    }
     ideal fac;
     ideal fac_copy;
 
@@ -333,7 +341,6 @@ static void completeReduceFac (kStrategy strat, ideal_list FL)
 
     deleteInS(si,strat);
 
-    int i;
     for(i=IDELEMS(fac)-1;i>=0;i--)
     {
       kStrategy n=strat;
@@ -581,7 +588,7 @@ ideal bbafac (ideal /*F*/, ideal Q,intvec */*w*/,kStrategy strat, ideal_list FL)
       if (TEST_OPT_PROT)
         message(currRing->pFDeg(strat->P.p,currRing),&olddeg,&reduc,strat, red_result);
     }
-    /* reduction of the element choosen from L */
+    /* reduction of the element chosen from L */
     kTest_TS(strat);
     red_result = strat->red(&strat->P,strat);
     if (strat->P.p != NULL)

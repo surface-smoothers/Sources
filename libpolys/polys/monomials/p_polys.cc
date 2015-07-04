@@ -8,11 +8,6 @@
  *  Created: 8/00
  *******************************************************************/
 
-
-
-
-
-
 #include <ctype.h>
 
 #include <omalloc/omalloc.h>
@@ -22,8 +17,8 @@
 #include <misc/options.h>
 #include <misc/intvec.h>
 
-#include <coeffs/longrat.h> // ???
-#include <coeffs/ffields.h>
+
+#include <coeffs/longrat.h> // snumber is needed...
 
 #include <polys/PolyEnumerator.h>
 
@@ -96,7 +91,7 @@ poly p_Farey(poly p, number N, const ring r)
 * assume: q[i]!=0
 * destroys xx
 */
-poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, const ring R)
+poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, CFArray &inv_cache,const ring R)
 {
   poly r,h,hh;
   int j;
@@ -129,10 +124,10 @@ poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, const ring R)
       else
         x[j]=n_Init(0, R);
     }
-    number n=n_ChineseRemainderSym(x,q,rl,TRUE,R->cf);
+    number n=n_ChineseRemainderSym(x,q,rl,TRUE,inv_cache,R->cf);
     for(j=rl-1;j>=0;j--)
     {
-      x[j]=NULL; // nlInit(0...) takes no memory
+      x[j]=NULL; // n_Init(0...) takes no memory
     }
     if (n_IsZero(n,R)) p_Delete(&h,R);
     else
@@ -312,7 +307,7 @@ void p_Setm_General(poly p, const ring r)
         }
         case ro_syzcomp:
         {
-          int c=p_GetComp(p,r);
+          long c=p_GetComp(p,r);
           long sc = c;
           int* Components = (_componentsExternal ? _components :
                              o->data.syzcomp.Components);
@@ -355,7 +350,7 @@ void p_Setm_General(poly p, const ring r)
 
 #ifndef SING_NDEBUG
 #if MYTEST
-          Print("p_Setm_General: ro_isTemp ord: pos: %d, p: ", pos);  p_DebugPrint(p, r, r, 1);
+          Print("p_Setm_General: ro_isTemp ord: pos: %d, p: ", pos);  p_wrp(p, r);
 #endif
 #endif
           int c = p_GetComp(p, r);
@@ -392,7 +387,7 @@ void p_Setm_General(poly p, const ring r)
           }
 #if MYTEST
 //          if( p->exp[o->data.isTemp.start] > 0 )
-            PrintS("after Values: "); p_DebugPrint(p, r, r, 1);
+            PrintS("after Values: "); p_wrp(p, r);
 #endif
 #endif
           break;
@@ -403,7 +398,7 @@ void p_Setm_General(poly p, const ring r)
         {
 #ifndef SING_NDEBUG
 #if MYTEST
-          Print("p_Setm_General: ro_is ord: pos: %d, p: ", pos);  p_DebugPrint(p, r, r, 1);
+          Print("p_Setm_General: ro_is ord: pos: %d, p: ", pos);  p_wrp(p, r);
 #endif
 #endif
 
@@ -421,9 +416,9 @@ void p_Setm_General(poly p, const ring r)
           {
 #ifndef SING_NDEBUG
 #if MYTEST
-            Print("p_Setm_General: ro_is : in rSetm: pos: %d, c: %d >  limit: %d\n", c, pos, limit); // p_DebugPrint(p, r, r, 1);
+            Print("p_Setm_General: ro_is : in rSetm: pos: %d, c: %d >  limit: %d\n", c, pos, limit);
             PrintS("preComputed Values: ");
-            p_DebugPrint(p, r, r, 1);
+            p_wrp(p, r);
 #endif
 #endif
 //          if( c > limit ) // BUG???
@@ -451,7 +446,7 @@ void p_Setm_General(poly p, const ring r)
 #ifndef SING_NDEBUG
 #if MYTEST
             Print("Respective F[c - %d: %d] pp: ", limit, c);
-            p_DebugPrint(pp, r, r, 1);
+            p_wrp(pp, r);
 #endif
 #endif
 
@@ -496,7 +491,7 @@ void p_Setm_General(poly p, const ring r)
             }
             // TODO: how to check this for computed values???
 #if MYTEST
-            PrintS("Computed Values: "); p_DebugPrint(p, r, r, 1);
+            PrintS("Computed Values: "); p_wrp(p, r);
 #endif
 #endif
           } else
@@ -515,7 +510,7 @@ void p_Setm_General(poly p, const ring r)
 #ifndef SING_NDEBUG
 #if MYTEST
             Print("ELSE p_Setm_General: ro_is :: c: %d <= limit: %d, vo: %d, exp: %d\n", c, limit, vo, p->exp[vo]);
-            p_DebugPrint(p, r, r, 1);
+            p_wrp(p, r);
 #endif
 #endif
           }
@@ -1360,7 +1355,7 @@ const char * p_Read(const char *st, poly &rc, const ring r)
   if (r==NULL) { rc=NULL;return st;}
   int i,j;
   rc = p_Init(r);
-  const char *s = r->cf->cfRead(st,&(rc->coef),r->cf);
+  const char *s = n_Read(st,&(p_GetCoeff(rc, r)),r->cf);
   if (s==st)
   /* i.e. it does not start with a coeff: test if it is a ringvar*/
   {
@@ -2420,13 +2415,13 @@ void p_SimpleContent(poly ph, int smax, const ring r)
   while (p!=NULL)
   {
 #if 0
-    d=nlGcd(h,pGetCoeff(p),r->cf);
-    nlDelete(&h,r->cf);
+    d=n_Gcd(h,pGetCoeff(p),r->cf);
+    n_Delete(&h,r->cf);
     h = d;
 #else
-    nlInpGcd(h,pGetCoeff(p),r->cf);
+    STATISTIC(n_Gcd); nlInpGcd(h,pGetCoeff(p),r->cf); // FIXME? TODO? // extern void nlInpGcd(number &a, number b, const coeffs r);
 #endif
-    if(nlSize(h,r->cf)<smax)
+    if(n_Size(h,r->cf)<smax)
     {
       //if (TEST_OPT_PROT) PrintS("g");
       return;
@@ -2434,20 +2429,20 @@ void p_SimpleContent(poly ph, int smax, const ring r)
     pIter(p);
   }
   p = ph;
-  if (!nlGreaterZero(pGetCoeff(p),r->cf)) h=nlNeg(h,r->cf);
-  if(nlIsOne(h,r->cf)) return;
+  if (!n_GreaterZero(pGetCoeff(p),r->cf)) h=n_InpNeg(h,r->cf);
+  if(n_IsOne(h,r->cf)) return;
   //if (TEST_OPT_PROT) PrintS("c");
   while (p!=NULL)
   {
 #if 1
-    d = nlExactDiv(pGetCoeff(p),h,r->cf);
+    d = n_ExactDiv(pGetCoeff(p),h,r->cf);
     p_SetCoeff(p,d,r);
 #else
-    nlInpExactDiv(pGetCoeff(p),h,r->cf);
+    STATISTIC(n_ExactDiv); nlInpExactDiv(pGetCoeff(p),h,r->cf); // no such function... ?
 #endif
     pIter(p);
   }
-  nlDelete(&h,r->cf);
+  n_Delete(&h,r->cf);
 }
 #endif
 
@@ -2461,19 +2456,19 @@ static number p_InitContent(poly ph, const ring r)
   assume(rField_is_Q(r));
   if (pNext(pNext(ph))==NULL)
   {
-    return nlGetNom(pGetCoeff(pNext(ph)),r->cf);
+    return n_GetNumerator(pGetCoeff(pNext(ph)),r->cf);
   }
   poly p=ph;
-  number n1=nlGetNom(pGetCoeff(p),r->cf);
+  number n1=n_GetNumerator(pGetCoeff(p),r->cf);
   pIter(p);
-  number n2=nlGetNom(pGetCoeff(p),r->cf);
+  number n2=n_GetNumerator(pGetCoeff(p),r->cf);
   pIter(p);
   number d;
   number t;
   loop
   {
     nlNormalize(pGetCoeff(p),r->cf);
-    t=nlGetNom(pGetCoeff(p),r->cf);
+    t=n_GetNumerator(pGetCoeff(p),r->cf);
     if (nlGreaterZero(t,r->cf))
       d=nlAdd(n1,t,r->cf);
     else
@@ -2484,7 +2479,7 @@ static number p_InitContent(poly ph, const ring r)
     pIter(p);
     if (p==NULL) break;
     nlNormalize(pGetCoeff(p),r->cf);
-    t=nlGetNom(pGetCoeff(p),r->cf);
+    t=n_GetNumerator(pGetCoeff(p),r->cf);
     if (nlGreaterZero(t,r->cf))
       d=nlAdd(n2,t,r->cf);
     else
@@ -2512,7 +2507,7 @@ static number p_InitContent(poly ph, const ring r)
     pIter(ph);
     if(ph==NULL)
     {
-      if (s2==-1) return nlCopy(d,r->cf);
+      if (s2==-1) return n_Copy(d,r->cf);
       break;
     }
     if (SR_HDL(pGetCoeff(ph))&SR_INT)
@@ -2532,7 +2527,7 @@ static number p_InitContent(poly ph, const ring r)
       s=mpz_size1(d->z);
     }
   }
-  return nlGcd(d,d2,r->cf);
+  return n_Gcd(d,d2,r->cf);
 }
 #endif
 
@@ -2764,7 +2759,7 @@ poly p_Cleardenom(poly p, const ring r)
       p = start;
       while (p!=NULL)
       {
-        /* should be:
+        /* should be: // NOTE: don't use ->coef!!!!
         * number hh;
         * nGetDenom(p->coef,&hh);
         * nMult(&h,&hh,&d);
@@ -2905,7 +2900,7 @@ void p_Cleardenom_n(poly ph,const ring r,number &c)
       p = ph;
       while (p!=NULL)
       {
-        /* should be:
+        /* should be: // NOTE: don't use ->coef!!!!
         * number hh;
         * nGetDenom(p->coef,&hh);
         * nMult(&h,&hh,&d);
@@ -2940,7 +2935,7 @@ void p_Cleardenom_n(poly ph,const ring r,number &c)
             p = ph;
             while (p!=NULL)
             {
-              /* should be:
+              /* should be: // NOTE: don't use ->coef!!!!
               * number hh;
               * nGetDenom(p->coef,&hh);
               * nMult(&h,&hh,&d);
@@ -3517,12 +3512,20 @@ void pEnlargeSet(poly* *p, int l, int increment)
 {
   poly* h;
 
-  h=(poly*)omReallocSize((poly*)*p,l*sizeof(poly),(l+increment)*sizeof(poly));
-  if (increment>0)
+  if (*p==NULL)
   {
-    //for (i=l; i<l+increment; i++)
-    //  h[i]=NULL;
-    memset(&(h[l]),0,increment*sizeof(poly));
+    if (increment==0) return;
+    h=(poly*)omAlloc0(increment*sizeof(poly));
+  }
+  else
+  {
+    h=(poly*)omReallocSize((poly*)*p,l*sizeof(poly),(l+increment)*sizeof(poly));
+    if (increment>0)
+    {
+      //for (i=l; i<l+increment; i++)
+      //  h[i]=NULL;
+      memset(&(h[l]),0,increment*sizeof(poly));
+    }
   }
   *p=h;
 }
@@ -3837,19 +3840,13 @@ poly n_PermNumber(const number z, const int *par_perm, const int , const ring sr
   {
     assume( !IS0(z) );
 
-    zz = NUM(z);
+    zz = NUM((fraction)z);
     p_Test (zz, srcExtRing);
 
     if( zz == NULL ) return NULL;
-    if( !DENIS1(z) )
+    if( !DENIS1((fraction)z) )
     {
-      if (p_IsConstant(DEN(z),srcExtRing))
-      {
-        number n=pGetCoeff(DEN(z));
-        zz=p_Div_nn(zz,n,srcExtRing);
-        p_Normalize(zz,srcExtRing);
-      }
-      else
+      if (!p_IsConstant(DEN((fraction)z),srcExtRing))
         WarnS("Not defined: Cannot map a rational fraction and make a polynomial out of it! Ignoring the denumerator.");
     }
   }
@@ -3881,11 +3878,16 @@ poly n_PermNumber(const number z, const int *par_perm, const int , const ring sr
   else
     qq = p_PermPoly(zz, par_perm-1, srcExtRing, dst, nMap, NULL, rVar (srcExtRing)-1);
 
+  if(nCoeff_is_transExt(srcCf)
+  && (!DENIS1((fraction)z))
+  && p_IsConstant(DEN((fraction)z),srcExtRing))
+  {
+    number n=nMap(pGetCoeff(DEN((fraction)z)),srcExtRing->cf, dstCf);
+    qq=p_Div_nn(qq,n,dst);
+    n_Delete(&n,dstCf);
+    p_Normalize(qq,dst);
+  }
   p_Test (qq, dst);
-
-//       poly p_PermPoly (poly p, int * perm, const ring oldRing, const ring dst, nMapFunc nMap, int *par_perm, int OldPar)
-
-//  assume( FALSE );  WarnS("longalg missing 2");
 
   return qq;
 }
@@ -3901,16 +3903,13 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
     p_Test(p, oldRing);
     PrintS("\np_PermPoly::p: "); p_Write(p, oldRing, oldRing); PrintLn();
 #endif
-
   const int OldpVariables = rVar(oldRing);
   poly result = NULL;
   poly result_last = NULL;
   poly aq = NULL; /* the map coefficient */
   poly qq; /* the mapped monomial */
-
   assume(dst != NULL);
   assume(dst->cf != NULL);
-
   while (p != NULL)
   {
     // map the coefficient
@@ -3918,40 +3917,27 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
     {
       qq = p_Init(dst);
       assume( nMap != NULL );
-
       number n = nMap(p_GetCoeff(p, oldRing), oldRing->cf, dst->cf);
-
       n_Test (n,dst->cf);
-
       if ( nCoeff_is_algExt(dst->cf) )
         n_Normalize(n, dst->cf);
-
       p_GetCoeff(qq, dst) = n;// Note: n can be a ZERO!!!
-      // coef may be zero:
-//      p_Test(qq, dst);
     }
     else
     {
       qq = p_One(dst);
-
 //      aq = naPermNumber(p_GetCoeff(p, oldRing), par_perm, OldPar, oldRing); // no dst???
 //      poly    n_PermNumber(const number z, const int *par_perm, const int P, const ring src, const ring dst)
       aq = n_PermNumber(p_GetCoeff(p, oldRing), par_perm, OldPar, oldRing, dst);
-
       p_Test(aq, dst);
-
       if ( nCoeff_is_algExt(dst->cf) )
         p_Normalize(aq,dst);
-
       if (aq == NULL)
         p_SetCoeff(qq, n_Init(0, dst->cf),dst); // Very dirty trick!!!
-
       p_Test(aq, dst);
     }
-
     if (rRing_has_Comp(dst))
        p_SetComp(qq, p_GetComp(p, oldRing), dst);
-
     if ( n_IsZero(pGetCoeff(qq), dst->cf) )
     {
       p_LmDelete(&qq,dst);
@@ -3977,10 +3963,8 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
             {
               assume( dst->cf->extRing == NULL );
               number ee = n_Param(1, dst);
-
               number eee;
               n_Power(ee, e, &eee, dst->cf); //nfDelete(ee,dst);
-
               ee = n_Mult(c, eee, dst->cf);
               //nfDelete(c,dst);nfDelete(eee,dst);
               pSetCoeff0(qq,ee);
@@ -3989,26 +3973,19 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
             {
               const int par = -perm[i];
               assume( par > 0 );
-
 //              WarnS("longalg missing 3");
 #if 1
               const coeffs C = dst->cf;
               assume( C != NULL );
-
               const ring R = C->extRing;
               assume( R != NULL );
-
               assume( par <= rVar(R) );
-
               poly pcn; // = (number)c
-
               assume( !n_IsZero(c, C) );
-
               if( nCoeff_is_algExt(C) )
                  pcn = (poly) c;
                else //            nCoeff_is_transExt(C)
-                 pcn = NUM(c);
-
+                 pcn = NUM((fraction)c);
               if (pNext(pcn) == NULL) // c->z
                 p_AddExp(pcn, -perm[i], e, R);
               else /* more difficult: we have really to multiply: */
@@ -4016,19 +3993,16 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
                 poly mmc = p_ISet(1, R);
                 p_SetExp(mmc, -perm[i], e, R);
                 p_Setm(mmc, R);
-
                 number nnc;
                 // convert back to a number: number nnc = mmc;
                 if( nCoeff_is_algExt(C) )
                    nnc = (number) mmc;
                 else //            nCoeff_is_transExt(C)
                   nnc = ntInit(mmc, C);
-
                 p_GetCoeff(qq, dst) = n_Mult((number)c, nnc, C);
                 n_Delete((number *)&c, C);
                 n_Delete((number *)&nnc, C);
               }
-
               mapped_to_par=1;
 #endif
             }
@@ -4071,11 +4045,8 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
 
       if (aq!=NULL)
          qq=p_Mult_q(aq,qq,dst);
-
       aq = qq;
-
       while (pNext(aq) != NULL) pIter(aq);
-
       if (result_last==NULL)
       {
         result=qq;
@@ -4092,7 +4063,6 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
       p_Delete(&aq,dst);
     }
   }
-
   result=p_SortAdd(result,dst);
 #else
   //  if (qq!=NULL)
@@ -4123,7 +4093,6 @@ poly p_PermPoly (poly p, const int * perm, const ring oldRing, const ring dst,
   //}
 #endif
   p_Test(result,dst);
-
 #if 0
   p_Test(result,dst);
   PrintS("\nresult: "); p_Write(result,dst,dst); PrintLn();
@@ -4525,8 +4494,8 @@ void p_Shift (poly * p,int i, const ring r)
  ***************************************************************/
 
 
-static inline unsigned long GetBitFields(long e,
-                                         unsigned int s, unsigned int n)
+static inline unsigned long GetBitFields(const long e,
+                                         const unsigned int s, const unsigned int n)
 {
 #define Sy_bit_L(x)     (((unsigned long)1L)<<(x))
   unsigned int i = 0;
@@ -4558,7 +4527,7 @@ static inline unsigned long GetBitFields(long e,
 // This way, we have:
 // exp1 / exp2 ==> (ev1 & ~ev2) == 0, i.e.,
 // if (ev1 & ~ev2) then exp1 does not divide exp2
-unsigned long p_GetShortExpVector(poly p, const ring r)
+unsigned long p_GetShortExpVector(const poly p, const ring r)
 {
   assume(p != NULL);
   if (p == NULL) return 0;
