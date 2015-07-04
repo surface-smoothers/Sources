@@ -199,6 +199,12 @@ struct sro_ord
 struct nc_struct;
 typedef struct nc_struct   nc_struct;
 #endif
+class skStrategy;
+typedef skStrategy * kStrategy;
+
+typedef poly (*NF_Proc)(ideal, ideal, poly, int, int, const ring _currRing);
+typedef ideal (*BBA_Proc) (const ideal, const ideal, const intvec *, const intvec *, kStrategy strat, const ring);
+
 
 struct ip_sring
 {
@@ -792,12 +798,6 @@ void rKillModifiedRing_Simple(ring r);
 void rDebugPrint(ring r);
 // void pDebugPrint(poly p);
 void p_DebugPrint(poly p, const ring r);
-#endif
-
-#ifndef SING_NDEBUG
-/// debug-print at most nTerms (2 by default) terms from poly/vector p,
-/// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
-void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms = 2);
 #endif
 
 int64 * rGetWeightVec(ring r);

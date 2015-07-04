@@ -21,5 +21,4 @@ short = 0 ;
 ideal I = 5/3*x*y;
 radical(I, "KL");
 
-
 tst_status(1);$

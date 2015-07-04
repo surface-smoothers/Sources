@@ -1244,9 +1244,19 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
 
     omFree((ADDRESS)perm2);
   }
-  if ( (Q1!=NULL) || ( Q2!=NULL))
+  if (Q1!=NULL) 
   {
-    Q = id_SimpleAdd(Q1,Q2,sum);
+    if ( Q2!=NULL)
+      Q = id_SimpleAdd(Q1,Q2,sum);
+    else
+      Q=id_Copy(Q1,sum);
+  }
+  else
+  {
+    if ( Q2!=NULL)
+      Q = id_Copy(Q2,sum);
+    else
+      Q=NULL;
   }
   sum->qideal = Q;
 
@@ -4235,42 +4245,6 @@ static inline void m_DebugPrint(const poly p, const ring R)
 }
 
 
-#ifndef SING_NDEBUG
-/// debug-print at most nTerms (2 by default) terms from poly/vector p,
-/// assuming that lt(p) lives in lmRing and tail(p) lives in tailRing.
-void p_DebugPrint(const poly p, const ring lmRing, const ring tailRing, const int nTerms)
-{
-  assume( nTerms >= 0 );
-  if( p != NULL )
-  {
-    assume( p != NULL );
-
-    p_Write(p, lmRing, tailRing);
-
-    if( (p != NULL) && (nTerms > 0) )
-    {
-      assume( p != NULL );
-      assume( nTerms > 0 );
-
-      // debug pring leading term
-      m_DebugPrint(p, lmRing);
-
-      poly q = pNext(p); // q = tail(p)
-
-      // debug pring tail (at most nTerms-1 terms from it)
-      for(int j = nTerms - 1; (q !=NULL) && (j > 0); pIter(q), --j)
-        m_DebugPrint(q, tailRing);
-
-      if (q != NULL)
-        PrintS("...\n");
-    }
-  }
-  else
-    PrintS("0\n");
-}
-#endif
-
-
 //    F = system("ISUpdateComponents", F, V, MIN );
 //    // replace gen(i) -> gen(MIN + V[i-MIN]) for all i > MIN in all terms from F!
 void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ring r )
@@ -4285,7 +4259,7 @@ void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ri
   {
 #ifdef PDEBUG
     Print("F[%d]:", j);
-    p_DebugPrint(F->m[j], r, r, 0);
+    p_wrp(F->m[j], r);
 #endif
 
     for( poly p = F->m[j]; p != NULL; pIter(p) )
@@ -4304,14 +4278,10 @@ void pISUpdateComponents(ideal F, const intvec *const V, const int MIN, const ri
 #ifdef PDEBUG
     Print("new F[%d]:", j);
     p_Test(F->m[j], r);
-    p_DebugPrint(F->m[j], r, r, 0);
+    p_wrp(F->m[j], r);
 #endif
   }
-
 }
-
-
-
 
 /*2
 * asssume that rComplete was called with r
