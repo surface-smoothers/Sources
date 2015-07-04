@@ -632,14 +632,14 @@ BOOLEAN PMfVector(leftv res, leftv args)
     }
     if (!ok)
     {
-      WerrorS("fVector: overflow in PmVectorInteger2Intvec");
+      WerrorS("fVectorP: overflow in PmVectorInteger2Intvec");
       return TRUE;
     }
     res->rtyp = INTVEC_CMD;
     res->data = (char*) hv;
     return FALSE;
   }
-  WerrorS("fVector: unexpected parameters");
+  WerrorS("fVectorP: unexpected parameters");
   return TRUE;
 }
 
@@ -1757,8 +1757,12 @@ BOOLEAN PMvertexEdgeGraph(leftv res, leftv args)
   return TRUE;
 }
 
+#include <omp.h>
+// extern "C" void omp_set_num_threads(int num_threads);
+
 extern "C" int SI_MOD_INIT(polymake)(SModulFunctions* p)
 {
+  omp_set_num_threads(1); // avoid multiple threads within polymake/libnormaliz
   if (init_polymake==NULL)
     {init_polymake = new polymake::Main();}
   init_polymake->set_application("fan");
@@ -1777,7 +1781,7 @@ extern "C" int SI_MOD_INIT(polymake)(SModulFunctions* p)
   p->iiAddCproc("polymake.so","latticeDegree",FALSE,PMlatticeDegree);
   p->iiAddCproc("polymake.so","latticeCodegree",FALSE,PMlatticeCodegree);
   p->iiAddCproc("polymake.so","ehrhartPolynomialCoeff",FALSE,PMehrhartPolynomialCoeff);
-  p->iiAddCproc("polymake.so","fVector",FALSE,PMfVector);
+  p->iiAddCproc("polymake.so","fVectorP",FALSE,PMfVector);
   p->iiAddCproc("polymake.so","hVector",FALSE,PMhVector);
   p->iiAddCproc("polymake.so","hStarVector",FALSE,PMhStarVector);
   p->iiAddCproc("polymake.so","isNormal",FALSE,PMisNormal);

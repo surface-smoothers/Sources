@@ -33,15 +33,15 @@ number  nAEExactDiv    (number a, number b, const coeffs r);
 number  nAEInit        (long i, const coeffs r);
 number  nAEInitMPZ     (mpz_t m, const coeffs r); //nachgucken/fragen
 int     nAESize        (number a, const coeffs r);///
-int     nAEInt         (number &a, const coeffs r);
+long    nAEInt         (number &a, const coeffs r);
 number  nAEMPZ         (number a, const coeffs r); //nachgucken/fragen
 number  nAENeg         (number c, const coeffs r);
 number  nAECopy        (number a, number b, const coeffs r); // nachgicken
 number  nAERePart      (number a, number b, const coeffs r); // nachgicken
 number  nAEImPart      (number a, number b, const coeffs r); // nachgicken
 
-void    nAEWriteLong   (number &a, const coeffs r);//
-void    nAEWriteShort  (number &a, const coeffs r);//
+void    nAEWriteLong   (number a, const coeffs r);//
+void    nAEWriteShort  (number a, const coeffs r);//
 
 
 const char *  nAERead  (const char *s, number *a, const coeffs r);
@@ -155,7 +155,7 @@ int nAESize (number a, const coeffs)
     return f->deg;
 }
 
-int nAEInt(number &, const coeffs)
+long nAEInt(number &, const coeffs)
 {
     return 1;
 }
@@ -191,14 +191,14 @@ number nAEImPart(number c, const coeffs)
     return (number) c;
 }
 
-void    nAEWriteLong   (number &a, const coeffs)
+void    nAEWriteLong   (number a, const coeffs)
 {
     int_poly* f=reinterpret_cast <int_poly*>(a);
     f->poly_print();
     return ;
 }
 
-void    nAEWriteShort  (number &a, const coeffs)
+void    nAEWriteShort  (number a, const coeffs)
 {
     int_poly* f=reinterpret_cast <int_poly*>(a);
     f->poly_print();

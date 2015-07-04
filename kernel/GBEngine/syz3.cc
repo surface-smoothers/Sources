@@ -1464,7 +1464,7 @@ static void procedeNextGenerators(ideal temp_generators,ideal /*temp_repr*/,
                 crit_comp);
       if (next_p!=NULL)
       {
-        if (pGetComp(next_p)<=(unsigned)crit_comp)
+        if (pGetComp(next_p)<=crit_comp)
         {
           pDelete(&next_p);
           //if (TEST_OPT_PROT) Print("u(%d)",index);
@@ -1787,11 +1787,7 @@ syStrategy syKosz(ideal arg,int * length)
     temp = idCopy(arg);
   if (rk_arg==0)
   {
-    for (j=0;j<IDELEMS(temp);j++)
-    {
-      if (temp->m[j]!=NULL)
-        p_Shift(&temp->m[j],1,currRing);
-    }
+    id_Shift(temp,1,currRing);
   }
   idSkipZeroes(temp);
 #ifdef WITH_SORT
@@ -2002,7 +1998,7 @@ syStrategy syKosz(ideal arg,int * length)
           {
             PrintS("Da ist was faul!!!\n");
             Print("Aber: Regularitaet %d, Grad %ld\n",
-		   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
+                   syzstr->regularity,p_FDeg(totake[index]->m[i],currRing));
           }
         }
       }

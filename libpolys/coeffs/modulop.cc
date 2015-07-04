@@ -30,7 +30,7 @@ static const n_coeffType ID = n_Zp;
 BOOLEAN npGreaterZero (number k, const coeffs r);
 number  npMult        (number a, number b, const coeffs r);
 number  npInit        (long i, const coeffs r);
-int     npInt         (number &n, const coeffs r);
+long    npInt         (number &n, const coeffs r);
 number  npAdd         (number a, number b,const coeffs r);
 number  npSub         (number a, number b,const coeffs r);
 void    npPower       (number a, int i, number * result,const coeffs r);
@@ -42,7 +42,7 @@ number  npNeg         (number c,const coeffs r);
 number  npInvers      (number c,const coeffs r);
 BOOLEAN npGreater     (number a, number b,const coeffs r);
 BOOLEAN npEqual       (number a, number b,const coeffs r);
-void    npWrite       (number &a, const coeffs r);
+void    npWrite       (number a, const coeffs r);
 void    npCoeffWrite  (const coeffs r, BOOLEAN details);
 const char *  npRead  (const char *s, number *a,const coeffs r);
 #ifdef LDEBUG
@@ -142,12 +142,12 @@ number npInit (long i, const coeffs r)
 /*2
  * convert a number to an int in (-p/2 .. p/2]
  */
-int npInt(number &n, const coeffs r)
+long npInt(number &n, const coeffs r)
 {
   n_Test(n, r);
 
-  if ((long)n > (((long)r->ch) >>1)) return (int)((long)n -((long)r->ch));
-  else                               return (int)((long)n);
+  if ((long)n > (((long)r->ch) >>1)) return ((long)n -((long)r->ch));
+  else                               return ((long)n);
 }
 
 number npAdd (number a, number b, const coeffs r)
@@ -347,7 +347,7 @@ BOOLEAN npEqual (number a,number b, const coeffs r)
   return npEqualM(a,b,r);
 }
 
-void npWrite (number &a, const coeffs r)
+void npWrite (number a, const coeffs r)
 {
   n_Test(a, r);
 

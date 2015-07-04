@@ -40,7 +40,7 @@ BOOLEAN  ngcIsOne(number a, const coeffs r);
 BOOLEAN  ngcIsMOne(number a, const coeffs r);
 BOOLEAN  ngcIsZero(number za, const coeffs r);
 number   ngcInit(long i, const coeffs r);
-int      ngcInt(number &n, const coeffs r);
+long     ngcInt(number &n, const coeffs r);
 number   ngcNeg(number za, const coeffs r);
 number   ngcInvers(number a, const coeffs r);
 number   ngcParameter(int i, const coeffs r);
@@ -52,7 +52,7 @@ void     ngcPower(number x, int exp, number *lu, const coeffs r);
 number   ngcCopy(number a, const coeffs r);
 number   ngc_Copy(number a, coeffs r);
 const char * ngcRead (const char *s, number *a, const coeffs r);
-void     ngcWrite(number &a, const coeffs r);
+void     ngcWrite(number a, const coeffs r);
 number   ngcRePart(number a, const coeffs r);
 number   ngcImPart(number a, const coeffs r);
 
@@ -107,11 +107,11 @@ number ngcInit (long i, const coeffs r)
 /*2
 * convert number to int
 */
-int ngcInt(number &i, const coeffs r)
+long ngcInt(number &i, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 
-  return (int)((gmp_complex*)i)->real();
+  return ((gmp_complex*)i)->real();
 }
 
 int ngcSize(number n, const coeffs R)
@@ -402,7 +402,7 @@ const char * ngcRead (const char * s, number * a, const coeffs r)
 /*2
 * write a floating point number
 */
-void ngcWrite (number &a, const coeffs r)
+void ngcWrite (number a, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 

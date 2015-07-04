@@ -98,7 +98,7 @@ void addLObject(LObject& h, kStrategy& strat)
 }
 
 
-ideal sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, kStrategy strat, const ring _currRing)
+ideal k_sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -372,7 +372,7 @@ ideal sca_gr_bba(const ideal F, const ideal Q, const intvec *, const intvec *, k
 ///////////////////////////////////////////////////////////////////////////////////////
 
 // Under development!!!
-ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec * /*hilb*/, kStrategy strat, const ring _currRing)
+ideal k_sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec * /*hilb*/, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -545,7 +545,6 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
   while (strat->Ll >= 0)
   {
 #ifdef KDEBUG
-//     loop_count++;
     if (TEST_OPT_DEBUG) messageSets(strat);
 #endif
 
@@ -614,7 +613,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
       message((strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
               &olddeg,&reduc,strat, red_result);
 
-    // reduction of the element choosen from L
+    // reduction of the element chosen from L
     red_result = strat->red(&strat->P,strat);
 
 
@@ -742,7 +741,7 @@ ideal sca_bba (const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
         h.PrepareRed(strat->use_buckets);
 
-        // reduction of the element choosen from L(?)
+        // reduction of the element chosen from L(?)
         red_result = strat->red(&h,strat);
 
         // reduction to non-zero new poly
@@ -892,11 +891,10 @@ static BOOLEAN kMoraUseBucket(kStrategy)
 
 #ifdef HAVE_ASSUME
 static int sca_mora_count = 0;
-static int sca_mora_loop_count;
 #endif
 
 // ideal sca_mora (ideal F, ideal Q, intvec *w, intvec *, kStrategy strat)
-ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *, kStrategy strat, const ring _currRing)
+ideal k_sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *, kStrategy strat, const ring _currRing)
 {
   const ring save = currRing;
   if( currRing != _currRing ) rChangeCurrRing(_currRing);
@@ -926,7 +924,6 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
 
 #ifdef HAVE_ASSUME
   sca_mora_count++;
-  sca_mora_loop_count = 0;
 #endif
 
   strat->update = TRUE;
@@ -1036,14 +1033,8 @@ ideal sca_mora(const ideal F, const ideal Q, const intvec */*w*/, const intvec *
     }
   }
 
-
-
-
   while (strat->Ll >= 0)
   {
-#ifdef HAVE_ASSUME
-    sca_mora_loop_count++;
-#endif
     //test_int_std(strat->kIdeal);
 #ifdef KDEBUG
     if (TEST_OPT_DEBUG) messageSets(strat);

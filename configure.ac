@@ -1,5 +1,5 @@
-AC_INIT([singular], [4.0.1], [singular@mathematik.uni-kl.de])
-AC_DEFINE([VERSION_DATE],["Sep 2014"],[release date])
+AC_INIT([singular], [4.0.2], [singular@mathematik.uni-kl.de])
+AC_DEFINE([VERSION_DATE],["Feb 2015"],[release date])
 
 _AC_SRCDIRS(["$ac_dir"])
 
@@ -95,7 +95,7 @@ LB_CHECK_FLINT(2.3,,AC_MSG_WARN([Unable to find FLINT (which is strongly recomme
 
 AC_CONFIG_GOOGLE_PERFTOOLS()
 
-## AX_PYTHON_DEFAULT()
+AX_PYTHON_DEFAULT()
 AX_PYTHON_WITH_VERSION([2.4])
 
 LB_CHECK_MATHICGB

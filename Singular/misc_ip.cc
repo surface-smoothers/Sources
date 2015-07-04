@@ -11,6 +11,7 @@
 /*****************************************************************************/
 
 // include header files
+#define PLURAL_INTERNAL_DECLARATIONS 1
 
 #include <kernel/mod2.h>
 #include <misc/auxiliary.h>
@@ -28,6 +29,7 @@
 
 #include <polys/ext_fields/algext.h>
 #include <polys/ext_fields/transext.h>
+#include <polys/nc/gb_hack.h>
 
 #ifdef HAVE_SIMPLEIPC
 #include <Singular/links/simpleipc.h>
@@ -1075,6 +1077,8 @@ void m2_end(int i)
 {
   if (!m2_end_called)
   {
+    extern FILE* File_Profiling;
+    if (File_Profiling!=NULL) { fclose(File_Profiling); File_Profiling=NULL; }
     m2_end_called = TRUE;
 #ifdef HAVE_SIMPLEIPC
     for (int j = SIPC_MAX_SEMAPHORES; j >= 0; j--)
@@ -1215,6 +1219,8 @@ void siInit(char *name)
 #endif
     omInitInfo();
 
+// options ---------------------------------------------------------------
+  si_opt_1=0;
 // interpreter tables etc.: -----------------------------------------------
   memset(&sLastPrinted,0,sizeof(sleftv));
   sLastPrinted.rtyp=NONE;
@@ -1304,6 +1310,13 @@ void siInit(char *name)
     }
   }
 #endif
+// setting routines for PLURAL QRINGS:
+  nc_NF=k_NF;
+  gnc_gr_bba=k_gnc_gr_bba;
+  gnc_gr_mora=k_gnc_gr_mora;
+  sca_bba=k_sca_bba;
+  sca_mora=k_sca_mora;
+  sca_gr_bba=k_sca_gr_bba;
 // loading standard.lib -----------------------------------------------
   if (! feOptValue(FE_OPT_NO_STDLIB))
   {

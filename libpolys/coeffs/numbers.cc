@@ -100,7 +100,7 @@ static number ndFarey(number,number,const coeffs r)
   Werror("farey not implemented for %s (c=%d)",r->cfCoeffString(r),getCoeffType(r));
   return NULL;
 }
-static number ndChineseRemainder(number *,number *,int,BOOLEAN,const coeffs r)
+static number ndChineseRemainder(number *,number *,int,BOOLEAN,CFArray&,const coeffs r)
 {
   Werror("ChineseRemainder not implemented for %s (c=%d)",r->cfCoeffString(r),getCoeffType(r));
   return r->cfInit(0,r);
@@ -227,7 +227,8 @@ static void ndClearDenominators(ICoeffsEnumerator& /*numberCollectionEnumerator*
 static number ndCopy(number a, const coeffs) { return a; }
 number ndCopyMap(number a, const coeffs aRing, const coeffs r)
 {
-  assume( getCoeffType(r) == getCoeffType(aRing) );
+  // aRing and r need not be the same, but must be the same representation
+  assume(aRing->rep==r->rep);
   if ( nCoeff_has_simple_Alloc(r) && nCoeff_has_simple_Alloc(aRing) )
     return a;
   else
@@ -276,7 +277,7 @@ static number ndInitMPZ(mpz_t m, const coeffs r)
 static BOOLEAN ndCoeffIsEqual(const coeffs r, n_coeffType n, void *)
 {
   /* test, if r is an instance of nInitCoeffs(n,parameter) */
-  /* if paramater is not needed */
+  /* if parameter is not needed */
   return (n==r->type);
 }
 

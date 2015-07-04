@@ -24,7 +24,7 @@ BOOLEAN nfGreaterZero (number k, const coeffs r);
 number  nfMult        (number a, number b, const coeffs r);
 number  nfInit        (long i, const coeffs r);
 number  nfParameter   (int i, const coeffs r);
-int     nfInt         (number &n, const coeffs r);
+long    nfInt         (number &n, const coeffs r);
 number  nfAdd         (number a, number b, const coeffs r);
 number  nfSub         (number a, number b, const coeffs r);
 void    nfPower       (number a, int i, number * result, const coeffs r);
@@ -244,9 +244,9 @@ static int nfParDeg(number n, const coeffs r)
 /*2
 * number -> int
 */
-int nfInt (number &, const coeffs )
+long nfInt (number &n, const coeffs )
 {
-  return 0;
+  return (long)n;
 }
 
 /*2
@@ -423,7 +423,7 @@ BOOLEAN nfEqual (number a,number b, const coeffs r)
 /*2
 * write via StringAppend
 */
-static void nfWriteLong (number &a, const coeffs r)
+static void nfWriteLong (number a, const coeffs r)
 {
 #ifdef LDEBUG
   nfTest(a, r);
@@ -445,7 +445,7 @@ static void nfWriteLong (number &a, const coeffs r)
 /*2
 * write (shortert output) via StringAppend
 */
-static void nfWriteShort (number &a, const coeffs r)
+static void nfWriteShort (number a, const coeffs r)
 {
 #ifdef LDEBUG
   nfTest(a, r);

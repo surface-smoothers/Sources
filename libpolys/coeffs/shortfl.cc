@@ -31,7 +31,7 @@ static const n_coeffType ID = n_R;
 BOOLEAN nrGreaterZero (number k, const coeffs r);
 number  nrMult        (number a, number b, const coeffs r);
 number  nrInit        (long i, const coeffs r);
-int     nrInt         (number &n, const coeffs r);
+long    nrInt         (number &n, const coeffs r);
 number  nrAdd         (number a, number b, const coeffs r);
 number  nrSub         (number a, number b, const coeffs r);
 void    nrPower       (number a, int i, number * result, const coeffs r);
@@ -43,7 +43,7 @@ number  nrNeg         (number c, const coeffs r);
 number  nrInvers      (number c, const coeffs r);
 BOOLEAN nrGreater     (number a, number b, const coeffs r);
 BOOLEAN nrEqual       (number a, number b, const coeffs r);
-void    nrWrite       (number &a, const coeffs r);
+void    nrWrite       (number a, const coeffs r);
 const char *  nrRead  (const char *s, number *a, const coeffs r);
 
 #ifdef LDEBUG
@@ -116,14 +116,14 @@ number nrInit (long i, const coeffs r)
 /*2
 * convert a number to int
 */
-int nrInt(number &n, const coeffs r)
+long nrInt(number &n, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 
-  int i;
+  long i;
   float f = nf(n).F();
   if (((float)(-MAX_INT_VAL-1) <= f) || ((float)MAX_INT_VAL >= f))
-    i = (int)f;
+    i = (long)f;
   else
     i = 0;
   return i;
@@ -279,7 +279,7 @@ BOOLEAN nrEqual (number a,number b, const coeffs r)
   return nf(x).F() == nf((float)0.0).F();
 }
 
-void nrWrite (number &a, const coeffs r)
+void nrWrite (number a, const coeffs r)
 {
   assume( getCoeffType(r) == ID );
 

@@ -238,6 +238,13 @@ extern BOOLEAN expected_parms;
 int iiOp; /* the current operation*/
 
 /*=================== simple helpers =================*/
+static int iin_Int(number &n,coeffs cf)
+{
+  long l=n_Int(n,cf);
+  int i=(int)l;
+  if ((long)i==l) return l;
+  return 0;
+}
 poly pHeadProc(poly p)
 {
   return pHead(p);
@@ -336,7 +343,7 @@ static BOOLEAN jjOP_I_IM(leftv res, leftv u, leftv v)
 static BOOLEAN jjCOLON(leftv res, leftv u, leftv v)
 {
   int l=(int)(long)v->Data();
-  if (l>0)
+  if (l>=0)
   {
     int d=(int)(long)u->Data();
     intvec *vv=new intvec(l);
@@ -344,7 +351,7 @@ static BOOLEAN jjCOLON(leftv res, leftv u, leftv v)
     for(i=l-1;i>=0;i--) { (*vv)[i]=d; }
     res->data=(char *)vv;
   }
-  return (l<=0);
+  return (l<0);
 }
 static BOOLEAN jjDOTDOT(leftv res, leftv u, leftv v)
 {
@@ -1086,7 +1093,7 @@ static BOOLEAN jjTIMES_MA(leftv res, leftv u, leftv v)
   res->data = (char *)mp_Mult(A,B,currRing);
   if (res->data==NULL)
   {
-     Werror("matrix size not compatible(%dx%d, %dx%d)",
+     Werror("matrix size not compatible(%dx%d, %dx%d) in *",
              MATROWS(A),MATCOLS(A),MATROWS(B),MATCOLS(B));
      return TRUE;
   }
@@ -1474,7 +1481,7 @@ static BOOLEAN jjINDEX_V(leftv res, leftv u, leftv v)
   poly p=(poly)u->CopyD(VECTOR_CMD);
   poly r=p; // pointer to the beginning of component i
   poly o=NULL;
-  unsigned i=(unsigned)(long)v->Data();
+  int i=(int)(long)v->Data();
   while (p!=NULL)
   {
     if (pGetComp(p)!=i)
@@ -1662,7 +1669,8 @@ static BOOLEAN jjCHINREM_BI(leftv res, leftv u, leftv v)
     q[i]=n_Init((*p)[i], coeffs_BIGINT);
     x[i]=n_Init((*c)[i], coeffs_BIGINT);
   }
-  number n=n_ChineseRemainderSym(x,q,rl,FALSE,coeffs_BIGINT);
+  CFArray iv(rl);
+  number n=n_ChineseRemainderSym(x,q,rl,FALSE,iv,coeffs_BIGINT);
   for(i=rl-1;i>=0;i--)
   {
     n_Delete(&(q[i]),coeffs_BIGINT);
@@ -1735,6 +1743,29 @@ static BOOLEAN jjCHINREM_P(leftv res, leftv u, leftv v)
   return FALSE;
 }
 #endif
+static BOOLEAN jjALIGN_V(leftv res, leftv u, leftv v)
+{
+  poly p=(poly)u->CopyD();
+  int s=(int)(long)v->Data();
+  if (s+p_MinComp(p,currRing)<=0)
+  { p_Delete(&p,currRing);return TRUE;}
+  p_Shift(&p,s,currRing);
+  res->data=p;
+  return FALSE;
+}
+static BOOLEAN jjALIGN_M(leftv res, leftv u, leftv v)
+{
+  ideal M=(ideal)u->CopyD();
+  int s=(int)(long)v->Data();
+  for(int i=IDELEMS(M)-1; i>=0;i--)
+  {
+    if (s+p_MinComp(M->m[i],currRing)<=0)
+    { id_Delete(&M,currRing);return TRUE;}
+  }
+  id_Shift(M,s,currRing);
+  res->data=M;
+  return FALSE;
+}
 static BOOLEAN jjCHINREM_ID(leftv res, leftv u, leftv v)
 {
   coeffs cf;
@@ -1857,7 +1888,8 @@ static BOOLEAN jjCHINREM_ID(leftv res, leftv u, leftv v)
   }
   if (return_type==BIGINT_CMD)
   {
-    number n=n_ChineseRemainderSym(xx,q,rl,TRUE,coeffs_BIGINT);
+    CFArray i_v(rl);
+    number n=n_ChineseRemainderSym(xx,q,rl,TRUE,i_v,coeffs_BIGINT);
     res->data=(char *)n;
   }
   else
@@ -2634,8 +2666,10 @@ static BOOLEAN jjLOAD_E(leftv /*res*/, leftv v, leftv u)
   char * s=(char *)u->Data();
   if(strcmp(s, "with")==0)
     return jjLOAD((char*)v->Data(), TRUE);
+  if (strcmp(s,"try")==0)
+    return jjLOAD_TRY((char*)v->Data());
   WerrorS("invalid second argument");
-  WerrorS("load(\"libname\" [,\"with\"]);");
+  WerrorS("load(\"libname\" [,option]);");
   return TRUE;
 }
 static BOOLEAN jjMODULO(leftv res, leftv u, leftv v)
@@ -2684,7 +2718,7 @@ static BOOLEAN jjMODULO(leftv res, leftv u, leftv v)
     atSet(res,omStrDup("isHomog"),w_u,INTVEC_CMD);
   }
   delete w_v;
-  if (TEST_OPT_RETURN_SB) setFlag(res,FLAG_STD);
+  //if (TEST_OPT_RETURN_SB) setFlag(res,FLAG_STD);
   return FALSE;
 }
 static BOOLEAN jjMOD_BI(leftv res, leftv u, leftv v)
@@ -3023,15 +3057,18 @@ static BOOLEAN jjREAD2(leftv res, leftv u, leftv v)
 }
 static BOOLEAN jjREDUCE_P(leftv res, leftv u, leftv v)
 {
-  assumeStdFlag(v);
-  res->data = (char *)kNF((ideal)v->Data(),currRing->qideal,(poly)u->Data());
+  ideal vi=(ideal)v->Data();
+  if (currRing->qideal!=NULL || vi->ncols>1 || rIsPluralRing(currRing))
+    assumeStdFlag(v);
+  res->data = (char *)kNF(vi,currRing->qideal,(poly)u->Data());
   return FALSE;
 }
 static BOOLEAN jjREDUCE_ID(leftv res, leftv u, leftv v)
 {
-  assumeStdFlag(v);
   ideal ui=(ideal)u->Data();
   ideal vi=(ideal)v->Data();
+  if (currRing->qideal!=NULL || vi->ncols>1 || rIsPluralRing(currRing))
+    assumeStdFlag(v);
   res->data = (char *)kNF(vi,currRing->qideal,ui);
   return FALSE;
 }
@@ -4707,7 +4744,7 @@ static BOOLEAN jjP2I(leftv res, leftv v)
     WerrorS("poly must be constant");
     return TRUE;
   }
-  res->data = (char *)(long)n_Int(pGetCoeff(p),currRing->cf);
+  res->data = (char *)(long)iin_Int(pGetCoeff(p),currRing->cf);
   return FALSE;
 }
 static BOOLEAN jjPREIMAGE_R(leftv res, leftv v)
@@ -5292,6 +5329,23 @@ BOOLEAN jjLOAD(const char *s, BOOLEAN autoexport)
   }
   return TRUE;
 }
+static int WerrorS_dummy_cnt=0;
+static void WerrorS_dummy(const char *)
+{
+  WerrorS_dummy_cnt++;
+}
+BOOLEAN jjLOAD_TRY(const char *s)
+{
+  void (*WerrorS_save)(const char *s) = WerrorS_callback;
+  WerrorS_callback=WerrorS_dummy;
+  WerrorS_dummy_cnt=0;
+  BOOLEAN bo=jjLOAD(s,TRUE);
+  if (TEST_OPT_PROT && (bo || (WerrorS_dummy_cnt>0)))
+    Print("loading of >%s< failed\n",s);
+  WerrorS_callback=WerrorS_save;
+  errorreported=0;
+  return FALSE;
+}
 
 static BOOLEAN jjstrlen(leftv res, leftv v)
 {
@@ -5404,14 +5458,14 @@ static BOOLEAN jjidTransp(leftv res, leftv v)
 static BOOLEAN jjnInt(leftv res, leftv u)
 {
   number n=(number)u->CopyD(); // n_Int may call n_Normalize
-  res->data=(char *)(long)n_Int(n,currRing->cf);
+  res->data=(char *)(long)iin_Int(n,currRing->cf);
   n_Delete(&n,currRing->cf);
   return FALSE;
 }
 static BOOLEAN jjnlInt(leftv res, leftv u)
 {
   number n=(number)u->Data();
-  res->data=(char *)(long)n_Int(n,coeffs_BIGINT );
+  res->data=(char *)(long)iin_Int(n,coeffs_BIGINT );
   return FALSE;
 }
 /*=================== operations with 3 args.: static proc =================*/
@@ -6123,11 +6177,15 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
            "with zero divisors.");
     return TRUE;
   }
+  res->rtyp=IDEAL_CMD;
   if ((mk < 1) || (mk > m->rows()) || (mk > m->cols()))
   {
-    Werror("invalid size of minors: %d (matrix is (%d x %d))", mk,
-           m->rows(), m->cols());
-    return TRUE;
+    ideal I=idInit(1,1);
+    if (mk<1) I->m[0]=p_One(currRing);
+    //Werror("invalid size of minors: %d (matrix is (%d x %d))", mk,
+    //       m->rows(), m->cols());
+    res->data=(void*)I;
+    return FALSE;
   }
   if ((!noAlgorithm) && (strcmp(algorithm, "Cache") == 0)
       && (noCacheMinors || noCacheMonomials))
@@ -6148,7 +6206,6 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
     res->data = getMinorIdeal(m, mk, (noK ? 0 : k), algorithm,
                               (noIdeal ? 0 : IasSB), false);
   if (v_typ!=MATRIX_CMD) idDelete((ideal *)&m);
-  res->rtyp = IDEAL_CMD;
   return FALSE;
 }
 static BOOLEAN jjNEWSTRUCT3(leftv, leftv u, leftv v, leftv w)
@@ -7949,9 +8006,9 @@ static BOOLEAN iiExprArith2TabIntern(leftv res, leftv a, int op, leftv b,
       while (dA2[i].cmd==op)
       {
         //Print("test %s %s\n",Tok2Cmdname(dA2[i].arg1),Tok2Cmdname(dA2[i].arg2));
-        if ((ai=iiTestConvert(at,dA2[i].arg1))!=0)
+        if ((ai=iiTestConvert(at,dA2[i].arg1,dConvertTypes))!=0)
         {
-          if ((bi=iiTestConvert(bt,dA2[i].arg2))!=0)
+          if ((bi=iiTestConvert(bt,dA2[i].arg2,dConvertTypes))!=0)
           {
             res->rtyp=dA2[i].res;
             if (currRing!=NULL)
@@ -8068,7 +8125,6 @@ BOOLEAN iiExprArith2Tab(leftv res, leftv a, int op,
 BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
 {
   memset(res,0,sizeof(sleftv));
-  BOOLEAN call_failed=FALSE;
 
   if (!errorreported)
   {
@@ -8256,7 +8312,6 @@ BOOLEAN iiExprArith1Tab(leftv res, leftv a, int op, struct sValCmd1* dA1, int at
 BOOLEAN iiExprArith1(leftv res, leftv a, int op)
 {
   memset(res,0,sizeof(sleftv));
-  BOOLEAN call_failed=FALSE;
 
   if (!errorreported)
   {
@@ -8276,7 +8331,19 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
 #endif
     int at=a->Typ();
     // handling bb-objects ----------------------------------------------------
-    if (at>MAX_TOK)
+    if(op>MAX_TOK) // explicit type conversion to bb
+    {
+      blackbox *bb=getBlackboxStuff(op);
+      if (bb!=NULL)
+      {
+        res->rtyp=op;
+        res->data=bb->blackbox_Init(bb);
+        if(!bb->blackbox_Assign(res,a)) return FALSE;
+        if (errorreported) return TRUE;
+      }
+      else          return TRUE;
+    }
+    else if (at>MAX_TOK) // argument is of bb-type
     {
       blackbox *bb=getBlackboxStuff(at);
       if (bb!=NULL)
@@ -8288,7 +8355,6 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
       else          return TRUE;
     }
 
-    BOOLEAN failed=FALSE;
     iiOp=op;
     int i=iiTabIndex(dArithTab1,JJTAB1LEN,op);
     return iiExprArith1Tab(res,a,op, dArith1+i,at,dConvertTypes);
@@ -8791,6 +8857,7 @@ const char * Tok2Cmdname(int tok)
   //if (tok==PRINT_EXPR) return "print_expr";
   if (tok==IDHDL) return "identifier";
   if (tok==CRING_CMD) return "(c)ring";
+  if (tok==QRING_CMD) return "ring";
   if (tok>MAX_TOK) return getBlackboxName(tok);
   int i;
   for(i=0; i<sArithBase.nCmdUsed; i++)

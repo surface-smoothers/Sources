@@ -64,7 +64,7 @@
 #include <polys/prCopy.h>
 #include <polys/weight.h>
 
-
+#include <coeffs/bigintmat.h>
 #include <kernel/fast_mult.h>
 #include <kernel/digitech.h>
 #include <kernel/combinatorics/stairc.h>
@@ -612,7 +612,16 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       return FALSE;
     }
     else
-  /*==================== complexNearZero ======================*/
+    /*======================= demon_list =====================*/
+    if (strcmp(sys_cmd,"denom_list")==0)
+    {
+      res->rtyp=LIST_CMD;
+      extern lists get_denom_list();
+      res->data=(lists)get_denom_list();
+      return FALSE;
+    }
+    else
+    /*==================== complexNearZero ======================*/
     if(strcmp(sys_cmd,"complexNearZero")==0)
     {
       const short t[]={2,NUMBER_CMD,INT_CMD};
@@ -711,7 +720,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       if (rField_is_Ring(currRing))
       {
         WerrorS("field required");
-	return TRUE;
+        return TRUE;
       }
       matrix pMat  = (matrix)h->Data();
       matrix lMat  = (matrix)h->next->Data();
@@ -862,7 +871,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       if (iiCheckTypes(h,t,1))
       {
         int id=0;
-        blackboxIsCmd((char*)h->Data(),id);
+        char *n=(char*)h->Data();
+        blackboxIsCmd(n,id);
         if (id>0)
         {
           blackbox *bb=getBlackboxStuff(id);
@@ -872,7 +882,9 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
             newstructShow(desc);
             return FALSE;
           }
+          else Werror("'%s' is not a newstruct",n);
         }
+        else Werror("'%s' is not a blackbox object",n);
       }
       return TRUE;
     }
@@ -1082,7 +1094,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       const short t[]={2,POLY_CMD,INT_CMD};
       if (iiCheckTypes(h,t,1))
       {
-        poly p=(poly)h->CopyD();
+        poly p=(poly)h->Data();
         h=h->next;
         int lV=(int)((long)(h->Data()));
         res->rtyp = POLY_CMD;
@@ -3418,15 +3430,6 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
                 */
 
   #endif
-/*======================= demon_list =====================*/
-  if (strcmp(sys_cmd,"denom_list")==0)
-  {
-    res->rtyp=LIST_CMD;
-    extern lists get_denom_list();
-    res->data=(lists)get_denom_list();
-    return FALSE;
-  }
-  else
   /*==================== mpz_t loader ======================*/
     if(strcmp(sys_cmd, "GNUmpLoad")==0)
     {
@@ -3710,6 +3713,62 @@ static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
     }
     else
   #endif
+/*==================== test64 =================*/
+  #if 0
+    if(strcmp(sys_cmd,"test64")==0)
+    {
+      long l=8;int i;
+      for(i=1;i<62;i++)
+      {
+        l=l<<1;
+        number n=n_Init(l,coeffs_BIGINT);
+        Print("%ld= ",l);n_Print(n,coeffs_BIGINT);
+        CanonicalForm nn=n_convSingNFactoryN(n,TRUE,coeffs_BIGINT);
+        n_Delete(&n,coeffs_BIGINT);
+        n=n_convFactoryNSingN(nn,coeffs_BIGINT);
+        PrintS(" F:");
+        n_Print(n,coeffs_BIGINT);
+        PrintLn();
+        n_Delete(&n,coeffs_BIGINT);
+      }
+      Print("SIZEOF_LONG=%d\n",SIZEOF_LONG);
+      return FALSE;
+    }
+    else
+   #endif
+/*==================== n_SwitchChinRem =================*/
+    if(strcmp(sys_cmd,"cache_chinrem")==0)
+    {
+      extern int n_SwitchChinRem;
+      Print("caching inverse in chines remainder:%d\n",n_SwitchChinRem);
+      if ((h!=NULL)&&(h->Typ()==INT_CMD))
+        n_SwitchChinRem=(int)(long)h->Data();
+      return FALSE;
+    }
+    else
+/*==================== LU for bigintmat =================*/
+#ifdef SINGULAR_4_1
+    if(strcmp(sys_cmd,"LU")==0)
+    {
+      if ((h!=NULL) && (h->Typ()==CMATRIX_CMD))
+      {
+        // get the argument:
+        bigintmat *b=(bigintmat *)h->Data();
+        // just for tests: simply transpose
+        bigintmat *bb=b->transpose();
+        // return the result:
+        res->rtyp=CMATRIX_CMD;
+        res->data=(char*)bb;
+        return FALSE;
+      }
+      else
+      {
+        WerrorS("system(\"LU\",<cmatrix>) expected");
+        return TRUE;
+      }
+    }
+    else
+#endif    
 /*==================== Error =================*/
       Werror( "(extended) system(\"%s\",...) %s", sys_cmd, feNotImplemented );
   }

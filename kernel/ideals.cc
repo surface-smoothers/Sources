@@ -475,7 +475,7 @@ static ideal idPrepare (ideal  h1, tHomog hom, int syzcomp, intvec **w)
   i = IDELEMS(h2)-1;
   if (k == 0)
   {
-    for (j=0; j<=i; j++) p_Shift(&(h2->m[j]),1,currRing);
+    id_Shift(h2,1,currRing);
     k = 1;
   }
   if (syzcomp<k)
@@ -574,13 +574,6 @@ ideal idSyzygies (ideal  h1, tHomog h,intvec **w, BOOLEAN setSyzComp,
   if (idIs0(h1))
   {
     ideal result=idFreeModule(idElemens_h1/*IDELEMS(h1)*/);
-    int curr_syz_limit=rGetCurrSyzLimit(currRing);
-    if (curr_syz_limit>0)
-    for (ii=0;ii<idElemens_h1/*IDELEMS(h1)*/;ii++)
-    {
-      if (h1->m[ii]!=NULL)
-        p_Shift(&h1->m[ii],curr_syz_limit,currRing);
-    }
     return result;
   }
   int slength=(int)id_RankFreeModule(h1,currRing);
@@ -771,13 +764,6 @@ ideal idLiftStd (ideal  h1, matrix* ma, tHomog hi, ideal * syz)
     if (lift3)
     {
       *syz=idFreeModule(IDELEMS(h1));
-      int curr_syz_limit=rGetCurrSyzLimit(currRing);
-      if (curr_syz_limit>0)
-      for (int ii=0;ii<IDELEMS(h1);ii++)
-      {
-        if (h1->m[ii]!=NULL)
-          p_Shift(&h1->m[ii],curr_syz_limit,currRing);
-      }
     }
     return idInit(1,h1->rank);
   }
@@ -879,15 +865,19 @@ ideal idLiftStd (ideal  h1, matrix* ma, tHomog hi, ideal * syz)
       q = prMoveR( s_h2->m[j], syz_ring,orig_ring);
       s_h2->m[j] = NULL;
 
-      while (q != NULL)
+      if (q!=NULL)
       {
-        p = q;
-        pIter(q);
-        pNext(p) = NULL;
-        t=pGetComp(p);
-        pSetComp(p,0);
-        pSetmComp(p);
-        MATELEM(*ma,t-k,i) = pAdd(MATELEM(*ma,t-k,i),p);
+        q=pReverse(q);
+        while (q != NULL)
+        {
+          p = q;
+          pIter(q);
+          pNext(p) = NULL;
+          t=pGetComp(p);
+          pSetComp(p,0);
+          pSetmComp(p);
+          MATELEM(*ma,t-k,i) = pAdd(MATELEM(*ma,t-k,i),p);
+        }
       }
       i++;
     }
@@ -1016,11 +1006,7 @@ ideal idLift(ideal mod, ideal submod,ideal *rest, BOOLEAN goodShape,
   idSkipZeroes(s_h3);
   if (lsmod==0)
   {
-    for (j=IDELEMS(s_temp);j>0;j--)
-    {
-      if (s_temp->m[j-1]!=NULL)
-        p_Shift(&(s_temp->m[j-1]),1,currRing);
-    }
+    id_Shift(s_temp,1,currRing);
   }
   if (unit!=NULL)
   {
@@ -1076,7 +1062,7 @@ ideal idLift(ideal mod, ideal submod,ideal *rest, BOOLEAN goodShape,
       pNeg(s_result->m[j]);
     }
   }
-  if ((lsmod==0) && (!idIs0(s_rest)))
+  if ((lsmod==0) && (s_rest!=NULL))
   {
     for (j=IDELEMS(s_rest);j>0;j--)
     {
@@ -1268,7 +1254,7 @@ static ideal idInitializeQuot (ideal  h1, ideal h2, BOOLEAN h1IsStb, BOOLEAN *ad
       if (h4->m[i-1]!=NULL)
       {
         p = p_Copy_noCheck(h4->m[i-1], currRing); p_Shift(&p,1,currRing);
-	// pTest(p);
+        // pTest(p);
         h4->m[i] = p;
       }
     }
@@ -1798,52 +1784,68 @@ ideal idMinors(matrix a, int ar, ideal R)
   return (result);
 }
 #else
-/*2
-* compute all ar-minors of the matrix a
-* the caller of mpRecMin
-* the elements of the result are not in R (if R!=NULL)
-*/
+
+
+/// compute all ar-minors of the matrix a
+/// the caller of mpRecMin
+/// the elements of the result are not in R (if R!=NULL)
 ideal idMinors(matrix a, int ar, ideal R)
 {
-  int elems=0;
-  int r=a->nrows,c=a->ncols;
-  int i;
-  matrix b;
-  ideal result,h;
-  ring origR=currRing;
-  ring tmpR;
-  long bound;
+
+  const ring origR=currRing;
+  id_Test((ideal)a, origR);
+
+  const int r = a->nrows;
+  const int c = a->ncols;
 
   if((ar<=0) || (ar>r) || (ar>c))
   {
     Werror("%d-th minor, matrix is %dx%d",ar,r,c);
     return NULL;
   }
-  h = id_Matrix2Module(mp_Copy(a,origR),origR);
-  bound = sm_ExpBound(h,c,r,ar,origR);
-  idDelete(&h);
-  tmpR=sm_RingChange(origR,bound);
-  b = mpNew(r,c);
-  for (i=r*c-1;i>=0;i--)
-  {
-    if (a->m[i])
+
+  ideal h = id_Matrix2Module(mp_Copy(a,origR),origR);
+  long bound = sm_ExpBound(h,c,r,ar,origR);
+  id_Delete(&h, origR);
+
+  ring tmpR = sm_RingChange(origR,bound);
+
+  matrix b = mpNew(r,c);
+
+  for (int i=r*c-1;i>=0;i--)
+    if (a->m[i] != NULL)
       b->m[i] = prCopyR(a->m[i],origR,tmpR);
-  }
+
+  id_Test( (ideal)b, tmpR);
+
   if (R!=NULL)
   {
-    R = idrCopyR(R,origR,tmpR);
+    R = idrCopyR(R,origR,tmpR); // TODO: overwrites R? memory leak?
     //if (ar>1) // otherwise done in mpMinorToResult
     //{
     //  matrix bb=(matrix)kNF(R,currRing->qideal,(ideal)b);
     //  bb->rank=b->rank; bb->nrows=b->nrows; bb->ncols=b->ncols;
     //  idDelete((ideal*)&b); b=bb;
     //}
+    id_Test( R, tmpR);
   }
-  result=idInit(32,1);
-  if(ar>1) mp_RecMin(ar-1,result,elems,b,r,c,NULL,R,tmpR);
-  else mp_MinorToResult(result,elems,b,r,c,R,tmpR);
-  idDelete((ideal *)&b);
+
+
+  ideal result = idInit(32,1);
+
+  int elems = 0;
+
+  if(ar>1)
+    mp_RecMin(ar-1,result,elems,b,r,c,NULL,R,tmpR);
+  else
+    mp_MinorToResult(result,elems,b,r,c,R,tmpR);
+
+  id_Test( (ideal)b, tmpR);
+
+  id_Delete((ideal *)&b, tmpR);
+
   if (R!=NULL) idDelete(&R);
+
   idSkipZeroes(result);
   rChangeCurrRing(origR);
   result = idrMoveR(result,tmpR,origR);
@@ -2082,7 +2084,7 @@ ideal idModulo (ideal h2,ideal h1, tHomog hom, intvec ** w)
       if (slength==0) p_Shift(&(temp->m[i]),1,currRing);
       p = temp->m[i];
       while (pNext(p)!=NULL) pIter(p);
-      pNext(p) = q;
+      pNext(p) = q; // will be sorted later correctly
     }
     else
       temp->m[i]=q;
@@ -2105,9 +2107,12 @@ ideal idModulo (ideal h2,ideal h1, tHomog hom, intvec ** w)
 
   ring orig_ring=currRing;
   ring syz_ring=rAssure_SyzComp(orig_ring, TRUE); rChangeCurrRing(syz_ring);
-  if (TEST_OPT_RETURN_SB)
-    rSetSyzComp(id_RankFreeModule(temp,orig_ring), syz_ring);
-  else
+  // we can use OPT_RETURN_SB only, if syz_ring==orig_ring,
+  // therefore we disable OPT_RETURN_SB for modulo:
+  // (see tr. #701)
+  //if (TEST_OPT_RETURN_SB)
+  //  rSetSyzComp(IDELEMS(h2)+length, syz_ring);
+  //else
     rSetSyzComp(length, syz_ring);
   ideal s_temp;
 

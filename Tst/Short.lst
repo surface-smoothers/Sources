@@ -1,7 +1,7 @@
 Short/absfact.tst
 Short/alexpoly.tst
 Short/algebralib.tst
-Short/algemodstd_s
+Short/nfmodstd_s
 Short/allres_s.tst
 Short/arcAtPoint.tst
 Short/assprimeszerodim_s.tst
@@ -274,6 +274,8 @@ Short/std_s.tst
 ;MP Short/stratify.tst
 Short/string.tst
 Short/test_c_dp.tst
+Short/test_unit_ideal_decomposition.tst
+Short/test_zero_ideal_decomposition.tst
 Short/triang_s.tst
 ; Short/tropical.tst ;; too long ?
 Short/tst_s.tst

@@ -19,7 +19,7 @@ static char* CoeffString(const coeffs r)
 {
   return ((nforder *)r->data)->String();
 }
-static void EltWrite(number &a, const coeffs r)
+static void EltWrite(number a, const coeffs r)
 {
   bigintmat * b = (bigintmat*)a;
   if (a) {
@@ -142,7 +142,7 @@ static int EltSize(number n, const coeffs r)
   return NULL;
 }
    /// convertion to int, 0 if impossible
-static int EltInt(number &n, const coeffs r)
+static long EltInt(number &n, const coeffs r)
 
 {
   Werror("%s called\n", __func__);
