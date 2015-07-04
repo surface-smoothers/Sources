@@ -1,8 +1,10 @@
-ACLOCAL_AMFLAGS = -I ../m4
+ACLOCAL_AMFLAGS = -I../m4
 
 GIT_VERSION := $(shell $(top_srcdir)/git-version-gen $(top_srcdir)/.tarball-git-version)
 
 AM_CPPFLAGS = -I${top_srcdir} -I${top_builddir} -I${top_srcdir}/kernel -I${top_builddir}/kernel -I${top_srcdir}/libpolys -I${top_builddir}/libpolys $(FACTORY_INCLUDES)  $(GMP_CFLAGS) $(NTL_CFLAGS) $(FLINT_CFLAGS) -DGIT_VERSION='"$(GIT_VERSION)"'
+
+all-local: feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib gftables MOD ${abs_builddir}/LIB Singular$(EXEEXT) ESingular$(EXEEXT) TSingular$(EXEEXT)
 
 SUBDIRS = dyn_modules
 
@@ -11,7 +13,7 @@ BUILTIN_FLAGS = ${BUILTIN_LIBS}
 
 ########################### libSingular* #########################
 
-libSingular_LTLIBRARIES = libSingular.la 
+libSingular_LTLIBRARIES = libSingular.la
 libSingulardir = $(libdir)
 
 libSingular_la_CPPFLAGS = ${AM_CPPFLAGS} -DLIBSINGULAR ${PTHREAD_CFLAGS}
@@ -54,7 +56,6 @@ SOURCES = \
    sdb.cc\
    links/silink.cc\
    links/sing_dbm.cc\
-   sing_win.cc\
    links/slInit_Static.cc\
    links/ssiLink.cc\
    links/semaphore.c\
@@ -107,7 +108,6 @@ SingularHEADERS = \
    sdb.h \
    links/silink.h \
    links/sing_dbm.h \
-   sing_win.h \
    links/slInit.h \
    links/ssiLink.h \
    links/simpleipc.h \
@@ -119,10 +119,10 @@ SingularHEADERS = \
    fevoices.h
 
 
-# -DMAKE_DISTRIBUTION 
+# -DMAKE_DISTRIBUTION
 
 # plural_cmd.inc
-nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc 
+nodist_libSingular_la_SOURCES = feOpt.inc iparith.inc
 
 libSingular_la_LDFLAGS    =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} -release ${PACKAGE_VERSION} ${PTHREAD_LDFLAGS}
 libSingular_la_LIBADD     =${USEPPROCSDYNAMICLDFLAGS} ${USEPPROCSDYNAMICLD} ${BUILTIN_FLAGS} ${top_builddir}/kernel/libkernel.la ${PTHREAD_LIBS}
@@ -153,19 +153,17 @@ EXTRA_PROGRAMS =  libparse Singulard
 
 # the "optional_programs" variable should be defined in the configure
 # script, and listed in an AC_SUBST macro
-optional_Singular_programs = 
+optional_Singular_programs =
 
 bin_PROGRAMS = Singular ESingular TSingular $(optional_Singular_programs)
 
-Singular ESingular TSingular $(optional_Singular_programs): ${abs_builddir}/LIB
-
-Singular_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
+Singular_SOURCES = tesths.cc fegetopt.c fegetopt.h utils.cc  utils.h
 
 Singular_LDADD = libSingular.la ${BUILTIN_FLAGS}
 
 Singular_LDFLAGS = -static ${AM_LDFLAGS} ${BUILTIN_FLAGS}
 
-Singulard_SOURCES = tesths.cc mmalloc.cc fegetopt.c fegetopt.h utils.cc  utils.h
+Singulard_SOURCES = tesths.cc fegetopt.c fegetopt.h utils.cc  utils.h
 
 Singulard_LDADD = libSingular.la ${BUILTIN_FLAGS}
 
@@ -230,13 +228,11 @@ TESTS=test
 check_PROGRAMS=$(TESTS)
 
 test_SOURCES = test.cc
-test_LDADD = libSingular.la 
+test_LDADD = libSingular.la
 
 #########################################################
-### plural_cmd.inc
 # These files are built first
 BUILT_SOURCES = feOpt.inc feOptTS.inc feOptES.inc iparith.inc all.lib gftables MOD
-
 CLEANFILES = $(BUILT_SOURCES) $(EXTRA_PROGRAMS)
 
 clean-local:
@@ -253,10 +249,6 @@ feOptES.inc: feOptES$(EXEEXT)
 feOptTS.inc: feOptTS$(EXEEXT)
 	${builddir}/feOptTS$(EXEEXT)
 
-# plural_cmd.inc is only necessary for documentation generation
-#plural_cmd.inc: gentable1$(EXEEXT)
-#	${builddir}/gentable1$(EXEEXT) argument
-
 iparith.inc: gentable1$(EXEEXT) table.h
 	${builddir}/gentable1$(EXEEXT)
 
@@ -270,8 +262,7 @@ ${abs_builddir}/LIB: ${srcdir}/LIB
 	  ln -snf ${abs_srcdir}/LIB ${abs_builddir}/; \
 	fi
 
-MOD: 
+MOD:
 	if [ -d "${top_builddir}/libpolys/polys/.libs" ]; then \
 	  ln -snf ${top_builddir}/libpolys/polys/.libs/ ${abs_builddir}/MOD; \
-	fi 	  
-
+	fi

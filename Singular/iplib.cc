@@ -30,7 +30,7 @@
 
 #if SIZEOF_LONG == 8
 #define SI_MAX_NEST 500
-#elif defined(ix86_Win)
+#elif defined(__CYGWIN__)
 #define SI_MAX_NEST 480
 #else
 #define SI_MAX_NEST 1000
@@ -38,7 +38,7 @@
 
 #if defined(ix86Mac_darwin) || defined(x86_64Mac_darwin) || defined(ppcMac_darwin)
 #  define MODULE_SUFFIX bundle
-#elif defined(ix86_Win)
+#elif defined(__CYGWIN__)
 #  define MODULE_SUFFIX dll
 #else
 #  define MODULE_SUFFIX so
@@ -1065,7 +1065,8 @@ BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
     Werror("'%s' is resered identifier\n", plib);
     goto load_modules_end;
   }
-  pl = IDROOT->get(plib,0);
+  pl = basePack->idroot->get(plib,0); /* packages only in top level
+                                        (see enterid) */
   if (pl==NULL)
   {
     pl = enterid( plib,0, PACKAGE_CMD, &IDROOT,
@@ -1090,6 +1091,7 @@ BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
   {
     Werror("dynl_open failed:%s", dynl_error());
     Werror("%s not found", newlib);
+    killhdl2(pl,&(basePack->idroot),NULL); // remove package
     goto load_modules_end;
   }
   else
@@ -1117,7 +1119,11 @@ BOOLEAN load_modules(const char *newlib, char *fullname, BOOLEAN autoexport)
       currPack=s;
       RET=FALSE;
     }
-    else Werror("mod_init not found:: %s\nThis is probably not a dynamic module for Singular!\n", dynl_error());
+    else
+    {
+      Werror("mod_init not found:: %s\nThis is probably not a dynamic module for Singular!\n", dynl_error());
+      killhdl2(pl,&(basePack->idroot),NULL); // remove package
+    }
   }
 
   load_modules_end:

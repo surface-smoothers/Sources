@@ -45,11 +45,12 @@ public:
 
   void appendPolynomialBegin(size_t termCount) {}
 
-  void appendTermBegin() {
+  void appendTermBegin(const mgb::GroebnerConfiguration::Component c) {
     if (mTerm == 0)
       mTerm = mIdeal->m[mPolyCount] = pInit();
     else
       mTerm = mTerm->next = pInit();
+    pSetComp(mTerm,c);
   }
 
   void appendExponent(VarIndex index, Exponent exponent) {
@@ -311,7 +312,7 @@ bool setOrder(ring r, mgb::GroebnerConfiguration& conf) {
 
 bool prOrderMatrix(ring r) {
   const int varCount = r->N;
-  mgb::GroebnerConfiguration conf(101, varCount);
+  mgb::GroebnerConfiguration conf(101, varCount,0);
   if (!setOrder(r, conf))
     return false;
   const std::vector<Exponent>& gradings = conf.monomialOrder().second;
@@ -462,18 +463,13 @@ BOOLEAN prOrderX(leftv result, leftv arg) {
   return FALSE;
 }
 
-BOOLEAN setRingGlobal(leftv result, leftv arg) {
-  currRing->OrdSgn = 1;
-  result->rtyp=NONE;
-  return FALSE;
-}
-
 BOOLEAN mathicgb(leftv result, leftv arg)
 {
   result->rtyp=NONE;
 
-  if (arg == NULL || arg->next != NULL || arg->Typ() != IDEAL_CMD) {
-    WerrorS("Syntax: mathicgb(<ideal>)");
+  if (arg == NULL || arg->next != NULL || 
+  ((arg->Typ() != IDEAL_CMD) &&(arg->Typ() != MODUL_CMD))){
+    WerrorS("Syntax: mathicgb(<ideal>/<module>)");
     return TRUE;
   }
   if (!rField_is_Zp(currRing)) {
@@ -483,7 +479,9 @@ BOOLEAN mathicgb(leftv result, leftv arg)
 
   const int characteristic = n_GetChar(currRing);
   const int varCount = currRing->N;
-  mgb::GroebnerConfiguration conf(characteristic, varCount);
+  const ideal I=(ideal) arg->Data();
+  mgb::GroebnerConfiguration conf(characteristic, varCount,I->rank);
+  conf.setMaxThreadCount(0); // default number of cores
   if (!setOrder(currRing, conf))
     return TRUE;
   if (TEST_OPT_PROT)
@@ -502,7 +500,7 @@ BOOLEAN mathicgb(leftv result, leftv arg)
     toMathic.appendPolynomialBegin(termCount);
 
     for (poly p = origP; p != 0; p = pNext(p)) {
-      toMathic.appendTermBegin();
+      toMathic.appendTermBegin(pGetComp(p));
       for (int i = 1; i <= currRing->N; ++i)
         toMathic.appendExponent(i - 1, pGetExp(p, i));
       const long coefLong = reinterpret_cast<long>(pGetCoeff(p));
@@ -515,7 +513,7 @@ BOOLEAN mathicgb(leftv result, leftv arg)
   MathicToSingStream fromMathic(characteristic, varCount);
   mgb::computeGroebnerBasis(toMathic, fromMathic);
 
-  result->rtyp=IDEAL_CMD;
+  result->rtyp = arg->Typ();
   result->data = fromMathic.takeIdeal();
   return FALSE;
 }
@@ -524,7 +522,7 @@ template class std::vector<Exponent>;
 template void mgb::computeGroebnerBasis<MathicToSingStream>
   (mgb::GroebnerInputIdealStream&, MathicToSingStream&);
 
-int SI_MOD_INIT(singmathic)(SModulFunctions* psModulFunctions)
+extern "C" int SI_MOD_INIT(singmathic)(SModulFunctions* psModulFunctions)
 {
   PrintS("Initializing Singular-Mathic interface Singmathic.\n");
   psModulFunctions->iiAddCproc(
@@ -538,12 +536,6 @@ int SI_MOD_INIT(singmathic)(SModulFunctions* psModulFunctions)
     "mathicgb_prOrder",
     FALSE,
     prOrderX
-  );
-  psModulFunctions->iiAddCproc(
-    (currPack->libname ? currPack->libname : ""),
-    "mathicgb_setRingGlobal",
-    FALSE,
-    setRingGlobal
   );
   return MAX_TOK;
 }
@@ -561,4 +553,20 @@ int SI_MOD_INIT(singmathic)(SModulFunctions* psModulFunctions)
 }
 */
 
+/* ressources: ------------------------------------------------------------
+
+http://stackoverflow.com/questions/3786408/number-of-threads-used-by-intel-tbb
+When you create the scheduler, you can specify the number of threads as
+tbb::task_scheduler_init init(nthread);
+
+    How do I know how many threads are available?
+
+    Do not ask!
+
+        Not even the scheduler knows how many threads really are available
+        There may be other processes running on the machine
+        Routine may be nested inside other parallel routines
+
+  conf.setMaxThreadCount(0); // default number of cores
+*/
 #endif /* HAVE_MATHICGB */

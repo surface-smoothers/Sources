@@ -28,7 +28,6 @@ proc divisor_diff(divisor D, divisor D2)
 
 newstruct("divisor","ideal den,ideal num");
 newstruct("formaldivisor","list summands");
-newstruct("pdivisor","list summands, cone tail");
 
 system("install","divisor","status",divisor_status, 4);
 system("install","divisor","test",divisor_test,4);
@@ -51,24 +50,24 @@ gcd(C,C);
 extgcd(C,C);
 // -------------------------------------------------------
 newstruct("myunion", "poly p,int i");
-proc to_poly(myunion uni)            
-{                                    
-  return (uni.p);                    
-}                                    
+proc to_poly(myunion uni)
+{
+  return (uni.p);
+}
 
 proc to_int(myunion uni)
-{                       
-  return (uni.i);       
-}                       
+{
+  return (uni.i);
+}
 
-ring r=0,x,dp;
+ring r1=0,x,dp;
 
 myunion uni;
 uni.p = x+1;
-uni.i = 17; 
+uni.i = 17;
 
 system("install", "myunion", "poly", to_poly, 1);
-system("install", "myunion", "int", to_int, 1);  
+system("install", "myunion", "int", to_int, 1);
 
 poly(uni); // -> x+1
 int(uni);   // -> 17
@@ -95,5 +94,13 @@ system("install", "stringifiable", "print", printing,1);
 
 stry;  // now only print works correctly
 string(stry); // incorrectly converted, fall back to default
+
+// try dumb things:
+newstruct("TBoom",        "TUndefined boom , int something");
+newstruct("TWrong",       "int value, TUndefined undefined");
+ 
+TWrong f;
+type(f.undefined);
+TBoom g;
 
 tst_status(1);$

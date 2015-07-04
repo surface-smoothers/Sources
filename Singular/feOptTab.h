@@ -81,11 +81,13 @@ struct fe_option feOptSpec[] =
    0,          "Enable source code debugger (experimental)",           feOptBool,    0,      0},
 
   {"echo",              optional_argument,  'e',
-   "VAL",       "Set value of variable `echo' to (integer) VAL",        feOptInt,    0,      0},
+   "VAL",       "Set value of variable `echo' to (integer) VAL",       feOptInt,    0,      0},
 
   {"help",              no_argument,        'h',
    0,          "Print help message and exit",                          feOptUntyped,    0,      0},
 
+  {"profile",           no_argument,        'p',
+   0,          "Collect profiling data in smon.out",                   feOptBool,    0,      0},
   {"quiet",             no_argument,        'q',
    0,          "Do not print start-up banner and lib load messages",   feOptBool,    0,      0},
   {"sort",             no_argument,        's',
@@ -149,7 +151,10 @@ struct fe_option feOptSpec[] =
    "LINK",     "Use LINK for connections",                             feOptString,    0,   0},
 
   {"ticks-per-sec",     required_argument,  LONG_OPTION_RETURN,
-   "TICKS",     "Sets unit of timer to TICKS per second",               feOptInt,    (void*)1,      0},
+   "TICKS",    "Sets unit of timer to TICKS per second",               feOptInt,    (void*)1,      0},
+
+  {"dump-versiontuple",       no_argument,  LONG_OPTION_RETURN,
+   0,          "//Display the version-tuple and exit",  feOptUntyped,    0,      0},
 
 // terminator -- do NOT remove
   { 0, 0, 0, 0, 0, feOptInt, 0, 0}

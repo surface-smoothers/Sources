@@ -43,14 +43,14 @@ poly p_Farey(poly p, number N, const ring r);
 * assume: q[i]!=0
 * destroys xx
 */
-poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, const ring R);
+poly p_ChineseRemainder(poly *xx, number *x,number *q, int rl, CFArray &inv_cache, const ring R);
 /***************************************************************
  *
  * Divisiblity tests, args must be != NULL, except for
  * pDivisbleBy
  *
  ***************************************************************/
-unsigned long p_GetShortExpVector(poly a, const ring r);
+unsigned long p_GetShortExpVector(const poly a, const ring r);
 
 /// p_GetShortExpVector of p * pp
 unsigned long p_GetShortExpVector(const poly p, const poly pp, const ring r);
@@ -1775,7 +1775,6 @@ static inline BOOLEAN p_LmShortDivisibleBy(poly a, unsigned long sev_a, const ri
 static inline BOOLEAN p_IsConstantComp(const poly p, const ring r)
 {
   if (p == NULL) return TRUE;
-  p_Test(p, r);
   return (pNext(p)==NULL) && p_LmIsConstantComp(p, r);
 }
 
