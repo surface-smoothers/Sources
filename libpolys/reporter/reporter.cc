@@ -5,6 +5,8 @@
 * ABSTRACT: output system
 */
 
+#include  <signal.h>
+
 #include <misc/auxiliary.h>
 
 #include <omalloc/omalloc.h>
@@ -205,6 +207,7 @@ void Werror(const char *fmt, ...)
   WerrorS(s);
   omFreeSize(s,256);
   va_end(ap);
+  // exit erfolgt jetzt in resources/feFopen.cc!
 }
 
 void WarnS(const char *s)
@@ -232,7 +235,8 @@ void WarnS(const char *s)
       fwrite("\n",1,1,feProtFile);
     }
   }
-  exit(123);
+  //m2_end(123);
+  raise(SIGILL);
 }
 
 void Warn(const char *fmt, ...)
@@ -248,7 +252,8 @@ void Warn(const char *fmt, ...)
   WarnS(s);
   omFreeSize(s,256);
   va_end(ap);
-  exit(123);
+  raise(SIGILL);
+  //m2_end(123);
 }
 
 

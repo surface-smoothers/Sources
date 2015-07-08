@@ -1642,7 +1642,7 @@ loop_count = 1;
       if (strat->P.p==NULL)
       {
         Print("expoent overflow - wrong ordering");
-        exit(252);
+        m2_end(252);
         WerrorS("expoent overflow - wrong ordering");
         return(idInit(1,1));
       }

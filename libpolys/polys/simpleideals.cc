@@ -8,7 +8,7 @@
 
 /* includes */
 
-
+#include  <signal.h>
 
 #include <misc/auxiliary.h>
 
@@ -904,7 +904,8 @@ int binom (int n,int r)
     if (result<0)
     {
       Print("overflow in binomials");
-      exit(253);
+      raise(SIGTERM);
+      //m2_end(253);
       return 0;
     }
     result /= i;

@@ -576,7 +576,7 @@ static BOOLEAN jjPOWER_I(leftv res, leftv u, leftv v)
       if (overflow)
       {
         Print("int overflow(^), result may be wrong");
-        exit(253);
+        m2_end(253);
       }
     }
     res->data = (char *)((long)rc);
@@ -638,7 +638,7 @@ static BOOLEAN jjPOWER_P(leftv res, leftv u, leftv v)
   {
     Print("OVERFLOW in power(d=%ld, e=%d, max=%ld)",
                                     pTotaldegree(u_p),v_i,currRing->bitmask/2);
-    exit(253);                                    
+    m2_end(253);                                    
     pDelete(&u_p);
     return TRUE;
   }
@@ -784,7 +784,7 @@ static BOOLEAN jjPLUS_I(leftv res, leftv u, leftv v)
   {
     //WarnS("int overflow(+), result may be wrong");
     Print("int overflow(+), result may be wrong");
-    exit(253);    
+    m2_end(253);    
   }
   return jjPLUSMINUS_Gen(res,u,v);
 }
@@ -878,7 +878,7 @@ static BOOLEAN jjMINUS_I(leftv res, leftv u, leftv v)
   {
     //WarnS
     Print("int overflow(-), result may be wrong");
-    exit(253);
+    m2_end(253);
   }
   res->data = (char *)((long)cc);
   return jjPLUSMINUS_Gen(res,u,v);
@@ -940,7 +940,7 @@ static BOOLEAN jjTIMES_I(leftv res, leftv u, leftv v)
   {
     
     Print("int overflow(*), result may be wrong");
-    exit(253);
+    m2_end(253);
   }
   res->data = (char *)((long)((int)c));
   if ((u->Next()!=NULL) || (v->Next()!=NULL))
@@ -979,7 +979,7 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
       {
         Print("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
           pTotaldegree(a),pTotaldegree(b),currRing->bitmask/2);
-          exit(253);
+          m2_end(253);
       }
       res->data = (char *)(pMult( a, b));
       pNormalize((poly)res->data);
@@ -992,7 +992,7 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
     {
       Print("possible OVERFLOW in mult(d=%ld, d=%ld, max=%ld)",
           pTotaldegree(a),pTotaldegree(b),currRing->bitmask/2);
-      exit(253);
+      m2_end(253);
     }
     res->data = (char *)(pMult( a, b));
     pNormalize((poly)res->data);
@@ -1007,7 +1007,7 @@ static BOOLEAN jjTIMES_P(leftv res, leftv u, leftv v)
     pDelete(&a);
     pDelete(&b);
     Print("OVERFLOW");
-    exit(253);     
+    m2_end(253);     
     return TRUE;
   }
   res->data = (char *)(pMult( a, b));
@@ -6390,7 +6390,7 @@ static BOOLEAN jjSUBST_P(leftv res, leftv u, leftv v,leftv w)
     ((unsigned long)pTotaldegree(monomexpr) > (currRing->bitmask / (unsigned long)pTotaldegree(p)/2)))
     {
       Print("possible OVERFLOW in subst, max exponent is %ld, subtituting deg %d by deg %d",currRing->bitmask/2, pTotaldegree(monomexpr), pTotaldegree(p));
-      exit(253);
+      m2_end(253);
       //return TRUE;
     }
     if ((monomexpr==NULL)||(pNext(monomexpr)==NULL))
@@ -6431,7 +6431,7 @@ static BOOLEAN jjSUBST_Id(leftv res, leftv u, leftv v,leftv w)
     if (overflow)
     {
       Print("possible OVERFLOW in subst, max exponent is %ld",currRing->bitmask/2);
-      exit(253);
+      m2_end(253);
     }
     if ((monomexpr==NULL)||(pNext(monomexpr)==NULL))
     {

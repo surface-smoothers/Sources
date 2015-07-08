@@ -2,6 +2,8 @@
 #include "feResource.h"
 #include "feFopen.h"
 
+#include  <signal.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +30,7 @@ void WerrorS(const char *s)
      fwrite((char *)s,1,strlen((char *)s),stderr);
      fwrite("\n",1,1,stderr);
      fflush(stderr);
+     raise(SIGILL);
      exit(123);
   }
   else
