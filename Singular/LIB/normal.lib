@@ -3932,6 +3932,11 @@ static proc normalityTest(list mstdid)
       L = U*Dp + I;
       //### L=interred(L) oder mstd(L)[2]?
       //Wird dadurch kleiner aber string(L) wird groesser
+      // optimization debug for normal examples - outofmem, timeout
+      // dbprint(1, "// basering = "+string(basering));
+      // dbprint(1, "// ideal(basering) = "+string(ideal(basering)));
+      // dbprint(1, "// phi = "+string(phi));
+      // dbprint(1, "// L = "+string(L));
       K = preimage(Q,phi,L);    //### Improvement by block ordering?
       option(returnSB);
       K = intersect(U,K);          //K is the new U, it is a SB

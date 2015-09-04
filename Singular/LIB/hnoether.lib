@@ -612,7 +612,8 @@ EXAMPLES: example develop;         shows an example
    intvec nm = getnm(f);
    N = nm[1]; M = nm[2]; // Berechne Schnittpunkte Newtonpolygon mit Achsen
    if (N == 0) {
-     dbprint(printlevel+1,"The given polynomial is a unit as power series !");
+     dbprint(printlevel+1,"// The given polynomial is a unit as power series !");
+     quit;
      Abbruch=1; Ausgabe=1;
    }
    else {
@@ -717,7 +718,8 @@ EXAMPLES: example develop;         shows an example
   }                             // endelse(p==0)
 
   if (N==0) {
-    " Sorry. The remaining polynomial is a unit in the power series ring...";
+    "// Sorry. The remaining polynomial is a unit in the power series ring...";
+    quit;
     setring altring;kill guenstig;return(return_error);
   }
  //---------------------- gewaehrleiste, dass x transvers ist -----------------
@@ -2977,7 +2979,8 @@ RETURN: list:  first entry = HNEring  (containing list hne, poly f)
  //-------------------------- Test, ob Einheit oder Null ----------------------
  if (subst(subst(f,x,0),y,0)!=0) {
    dbprint(printlevel+1,
-           "The given polynomial is a unit in the power series ring!");
+           "// The given polynomial is a unit in the power series ring!");
+   quit;
    setring altring; kill HNEring;
    return(list());                   // there are no HNEs
  }
@@ -3105,7 +3108,8 @@ RETURN: list:  first entry = HNEring  (containing list hne, poly f)
  }
  //====================== Ende Test auf Quadratfreiheit =======================
  if (subst(subst(f,x,0),y,0)!=0) {
-   "The polynomial is a unit in the power series ring. No HNE computed.";
+   "// The polynomial is a unit in the power series ring. No HNE computed.";
+   quit;
    setring altring;kill HNEring;
    return(list());
  }
