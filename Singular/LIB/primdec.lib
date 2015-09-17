@@ -4636,6 +4636,9 @@ static proc min_ass_prim_charsets0_i (int patchPrimaryDecomposition, ideal PS)
 
   if (size(PS)==0) { return( list(ideal(0))); }
   intvec op;
+  dbprint(1,"basering",basering);
+  dbprint(1,"ringlist",ringlist(basering));
+  dbprint(1,"PS",PS);
   matrix m=char_series(PS);  // We compute an irreducible
                              // characteristic series
   if ((nrows(m)==1)
@@ -4661,7 +4664,13 @@ static proc min_ass_prim_charsets0_i (int patchPrimaryDecomposition, ideal PS)
     {
       I=I+ini_mod(PHI[i][j]);
     }
-    JS=std(PHI[i]);
+    short= 0;
+    dbprint(1, "basering ",string(basering));
+    dbprint(1, "ringlist ",ringlist(basering));
+    dbprint(1, "PHI[i] ",PHI[i]);
+
+    //JS=std(groebner(PHI[i]));
+    JS=std(groebner(PHI[i]));
     sizeJS=size(JS);
     for(j=size(I);j>0;j--)
     {
@@ -4762,6 +4771,9 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
   string n=system("neworder",PS);
   execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
   ideal PS=imap(oldring,PS);
+  dbprint(1,"basering",basering);
+  dbprint(1,"ringlist",ringlist(basering));
+  dbprint(1,"PS",PS);
   matrix m=char_series(PS);  // We compute an irreducible
                              // characteristic series
                              // this series may be empty (1x1: 1)
@@ -4777,6 +4789,9 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
     kill r;
     execute("ring r=("+charstr(oldring)+"),("+n+"),dp;");
     ideal PS=imap(oldring,PS);
+  dbprint(1,"basering",basering);
+  dbprint(1,"ringlist",ringlist(basering));
+  dbprint(1,"PS",PS);
     matrix m=char_series(PS);
   }
   ideal I;
@@ -4811,7 +4826,12 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
     {
       I=I+ITPHI[i][j];
     }
-    JS=std(PHI[i]);
+    short= 0;
+    dbprint(1, "basering ",string(basering));
+    dbprint(1, "ringlist ",ringlist(basering));
+    dbprint(1, "PHI[i] 2 ",PHI[i]);
+
+    JS=std(groebner(PHI[i]));
     sizeJS=size(JS);
     for(j=size(I);j>0;j--)
     {
@@ -4822,7 +4842,12 @@ static proc min_ass_prim_charsets1_i (int patchPrimaryDecomposition, ideal PS)
       {
         op=option(get);
         option(returnSB);
-        II=quotient(JS,I[j]);
+        dbprint(1, "JS", string(JS));
+        dbprint(1, "I[j]", string(I[j]));
+        II=quotient(JS,I[j]); //aa
+        //JS = groebner(JS);
+        //II=quotient(JS,I[j]); //aa
+        //II = groebner(II);
         option(set,op);
 //std
 //         II=std(II);
@@ -5421,7 +5446,11 @@ static proc extraction (ideal SI, ideal SP)
       execute("ring RAU=("+charstr(basering)+"),("+A+U+",(dp("+string(a)+"),dp);");
       ideal I=imap(R,SI);
       //I=std(I,hv);            // the standard basis in (R[U])[A]
-      I=std(I);            // the standard basis in (R[U])[A]
+      //I=std(I);            // the standard basis in (R[U])[A]
+      I=std(groebner(I));            // the standard basis in (R[U])[A]
+      dbprint(1,"basering", string(basering));
+      dbprint(1,"basering", ringlist(basering));
+      dbprint(1,"I", string(I));
       A[size(A)]=")";
       execute("ring Rloc=("+charstr(basering)+","+U+",("+A+",dp;");
       ideal I=imap(RAU,I);
@@ -9279,8 +9308,15 @@ EXAMPLE: example newZero_decomp; shows an example
 
 //=================== the new part ============================
 
-      if (npars(basering)>1) { @qh=groebner(@qh,"par2var"); }
-      else                   { @qh=groebner(@qh); }
+      if (npars(basering)>1) { print ("here1");@qh=groebner(@qh,"par2var"); }
+      else                   {
+                                 print ("here2");
+                                 dbprint(1, "basering",basering); 
+                                 dbprint(1, "ringlist",ringlist(basering));
+                                 dbprint(1, "@qh",@qh); 
+                                 @qh=groebner(@qh);
+                                 //@qh=std(@qh);  
+                                }
 
 //=============================================================
 //       if(npars(@P)>0)
@@ -9344,21 +9380,21 @@ EXAMPLE: example newZero_decomp; shows an example
       @k--;
       if(size(lres0)==2)
       {
-        if (npars(basering)>1) { lres0[2]=groebner(lres0[2],"par2var"); }
-        else                   { lres0[2]=groebner(lres0[2]); }
+        if (npars(basering)>1) { print ("here3"); lres0[2]=groebner(lres0[2],"par2var"); }
+        else                   { print ("here4"); lres0[2]=groebner(lres0[2]); }
       }
       else
       {
         for(@n=1;@n<=size(lres0) div 2;@n++)
         {
           if(specialIdealsEqual(lres0[2*@n-1],lres0[2*@n])==1)
-          {
+          {print ("here5");
             lres0[2*@n-1]=groebner(lres0[2*@n-1]);
             lres0[2*@n]=lres0[2*@n-1];
             attrib(lres0[2*@n],"isSB",1);
           }
           else
-          {
+          {print( "here6");
             lres0[2*@n-1]=groebner(lres0[2*@n-1]);
             lres0[2*@n]=groebner(lres0[2*@n]);
           }

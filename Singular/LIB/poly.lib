@@ -743,7 +743,9 @@ EXAMPLE: example rad_con; shows an example
   map f=br,irrel;
   poly p=f(g);
   ideal J=f(I),ideal(p*@z-1);
-  J=std(J);
+  print("here poly");
+  dbprint(1, "J=std(J);", string(J));
+  J=std(groebner(J));
   degBound=dB;
   if (J[1]==1)
   {

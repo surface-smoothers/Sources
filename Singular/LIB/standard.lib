@@ -348,6 +348,10 @@ EXAMPLE: example stdhilb;  shows an example"
   if (w == 1)
   {
     if (p_opt){ "std with hilb in " + string(Phelp);}
+    dbprint(1, "basering",basering); 
+    dbprint(1, "ringlist",ringlist(basering));
+    dbprint(1, "i",i);
+    dbprint(1, "hi",hi);  
     i = std(i, hi);
   }
   else
@@ -945,6 +949,7 @@ EXAMPLE: example groebner;  shows an example"
        ( find(ordstr_P,"M") > 0 )  || ( find(ordstr_P,"a") > 0 )  || neg )
   {
     if (p_opt) { "std in basering"; }
+    dbprint(1,"i",i);
     return(std(i));
   }
 
@@ -1063,6 +1068,7 @@ EXAMPLE: example groebner;  shows an example"
     if ( algorithm=="std" || (algorithm=="stdorslimgb") )                //V2
     {
       if (p_opt) { "std in " + string(P); }
+      dbprint(1,"i",i);
       return(std(i));
     }
   //if( algorithm=="slimgb" || (algorithm=="stdorslimgb" && char(P)==0)) //V1
